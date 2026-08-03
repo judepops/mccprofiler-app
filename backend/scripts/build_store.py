@@ -197,7 +197,8 @@ def add_symbol_key(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def build_embeddings(fm: pd.DataFrame, fnames: list[str], seed: int = 0) -> pd.DataFrame:
+def build_embeddings(fm: pd.DataFrame, fnames: list[str], seed: int = 0
+                     ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Per-gene 2D coordinates: PCA, gcPCA, UMAP, and a UMAP null.
 
     PCA is the default in the UI because it is linear and preserves distances,
@@ -216,10 +217,41 @@ def build_embeddings(fm: pd.DataFrame, fnames: list[str], seed: int = 0) -> pd.D
     X = fm[fnames].to_numpy(dtype=np.float64)
     gids = fm["gene_id"].astype(str).tolist()
 
-    pca = PCA(n_components=10, random_state=seed).fit(X)
+    pca = PCA(n_components=min(30, X.shape[1]), random_state=seed).fit(X)
     scores = pca.transform(X)
     var = pca.explained_variance_ratio_ * 100
     log("PCA variance %: " + ", ".join(f"PC{i+1} {v:.2f}" for i, v in enumerate(var[:5])))
+
+    # Loadings and a scree, so the axis names can be checked rather than trusted.
+    # A named axis is an interpretation of its loadings; showing the name without
+    # the loadings asks the reader to take it on faith.
+    load_rows = []
+    for i in range(pca.components_.shape[0]):
+        for j, fname in enumerate(fnames):
+            load_rows.append({"pc": i + 1, "feature": fname,
+                              "loading": float(pca.components_[i, j])})
+    loadings = pd.DataFrame(load_rows)
+
+    # Parallel-analysis noise ceiling: PCA on a per-feature-permuted copy gives
+    # the variance a component of this size explains when there is nothing to
+    # find. Components above it are the "real dimensions" the 08-03 session
+    # counted (19 on this substrate).
+    rng_null = np.random.default_rng(seed)
+    Xnull = X.copy()
+    for j in range(Xnull.shape[1]):
+        rng_null.shuffle(Xnull[:, j])
+    null_var = PCA(n_components=pca.n_components_, random_state=seed) \
+        .fit(Xnull).explained_variance_ratio_ * 100
+    n_real = int((var > null_var).sum())
+    log(f"parallel analysis: {n_real} components above the permuted-noise ceiling")
+
+    scree = pd.DataFrame({
+        "pc": np.arange(1, len(var) + 1),
+        "variance_pct": var,
+        "cumulative_pct": np.cumsum(var),
+        "noise_pct": null_var,
+        "above_noise": var > null_var,
+    })
 
     out = pd.DataFrame({"gene_id": gids})
     for i in range(scores.shape[1]):
@@ -262,7 +294,7 @@ def build_embeddings(fm: pd.DataFrame, fnames: list[str], seed: int = 0) -> pd.D
     log("UMAP fitted on the per-feature-permuted null (marginals kept, joint destroyed)")
 
     out["symbol_key"] = out["gene_id"].str.upper()
-    return out
+    return out, loadings, scree
 
 
 def build_cohorts(fm: pd.DataFrame) -> pd.DataFrame:
@@ -404,7 +436,10 @@ def build_tables(gene_ids: list[str] | None, source_labels: list[str] | None) ->
     log(f"features: {len(fnames)} features x {fm.shape[0]} genes (long form)")
 
     # embeddings -------------------------------------------------------------
-    write("embeddings", build_embeddings(fm, fnames))
+    emb, loadings, scree = build_embeddings(fm, fnames)
+    write("embeddings", emb)
+    write("pc_loadings", loadings)
+    write("pc_scree", scree)
 
     # cohort membership ------------------------------------------------------
     write("cohort_membership", build_cohorts(fm))

@@ -14,6 +14,8 @@ import { ProfilePlot } from './ProfilePlot'
 import { ArchetypeReadout } from './ArchetypeReadout'
 import { FeatureTable } from './FeatureTable'
 import { ContinuumMap } from './ContinuumMap'
+import { CohortView } from './CohortView'
+import { DimensionPanel } from './DimensionPanel'
 
 const CHANNEL_LABEL: Record<string, string> = {
   mcc: 'MCC',
@@ -189,9 +191,13 @@ export default function App() {
         </div>
 
         {!gene && !err && (
-          <p className="py-20 text-center text-sm text-ink-400">
-            Search a gene to see its contact architecture.
-          </p>
+          <div className="space-y-6">
+            <p className="pt-8 text-center text-sm text-ink-400">
+              Search a gene to see its contact architecture — or start from a gene set below.
+            </p>
+            <CohortView onPick={select} />
+            <DimensionPanel />
+          </div>
         )}
 
         {gene && (
@@ -309,19 +315,28 @@ export default function App() {
               <ArchetypeReadout a={gene.archetype} />
             </aside>
 
-            {/* Position first, then the feature detail that explains it. */}
-            <section className="lg:col-span-3">
-              {embedding && (
-                <ContinuumMap
-                  data={embedding}
-                  onAxisChange={(x, y) => setAxes([x, y])}
-                  onPick={select}
-                />
-              )}
-            </section>
-
+            {/* Gene-specific detail. */}
             <section className="lg:col-span-3">
               {features && <FeatureTable data={features} />}
+            </section>
+
+            {/* Panel-level below: these describe the coordinate system and the
+                population, not this gene. */}
+            <section className="lg:col-span-3 border-t border-ink-200 pt-6">
+              <p className="mb-4 text-[11px] uppercase tracking-wide text-ink-400">
+                Panel-level — the space {gene.gene_symbol} sits in
+              </p>
+              <div className="space-y-5">
+                {embedding && (
+                  <ContinuumMap
+                    data={embedding}
+                    onAxisChange={(x, y) => setAxes([x, y])}
+                    onPick={select}
+                  />
+                )}
+                <DimensionPanel />
+                <CohortView onPick={select} />
+              </div>
             </section>
           </div>
         )}

@@ -142,6 +142,74 @@ export interface Embedding {
   points: EmbeddingPoint[]
 }
 
+export interface CohortRow {
+  group: string
+  n_in_panel: number
+  usable: boolean
+  is_positive_control: boolean
+  is_super_enhancer: boolean
+  stratification: Record<string, { pct_retained: number; signal_over_random: number }> | null
+}
+
+export interface CohortList {
+  min_group_n: number
+  n_offered: number
+  n_filtered_out: number
+  positive_control: string
+  notes: {
+    why_external: string
+    positive_control: string
+    display: string
+    super_enhancer: string
+  }
+  rows: CohortRow[]
+}
+
+export interface CohortCompare {
+  label: string
+  n_in_panel: number
+  coverage: {
+    requested: number
+    in_panel: number
+    matched: string[]
+    missing: string[]
+    note: string
+  } | null
+  small_set_warning: string | null
+  axes: {
+    axis: string
+    label: string
+    n_in: number
+    cohen_d: number
+    in_quartiles: number[]
+    out_quartiles: number[]
+  }[]
+}
+
+export interface ScreeRow {
+  pc: number
+  variance_pct: number
+  cumulative_pct: number
+  noise_pct: number
+  above_noise: boolean
+}
+
+export interface Scree {
+  n_above_noise: number
+  method: string
+  note: string
+  rows: ScreeRow[]
+}
+
+export interface Loadings {
+  pc: number
+  label: string
+  variance_pct: number | null
+  above_noise: boolean | null
+  n_features: number
+  loadings: { pc: number; feature: string; loading: number }[]
+}
+
 async function get<T>(path: string, params?: Record<string, unknown>): Promise<T> {
   const url = new URL(BASE + path)
   for (const [k, v] of Object.entries(params ?? {})) {
@@ -167,6 +235,16 @@ export const api = {
     get<{ n: number; genes: GeneSummary[] }>('/api/genes', { q, limit }),
 
   gene: (gene: string) => get<Gene>(`/api/genes/${encodeURIComponent(gene)}`),
+
+  scree: () => get<Scree>('/api/dimensions/scree'),
+
+  loadings: (pc: number, top = 15) =>
+    get<Loadings>(`/api/dimensions/${pc}/loadings`, { top }),
+
+  cohorts: () => get<CohortList>('/api/cohorts'),
+
+  cohortCompare: (opts: { group?: string; symbols?: string }) =>
+    get<CohortCompare>('/api/cohorts/compare', opts),
 
   embedding: (x: string, y: string, highlight?: string) =>
     get<Embedding>('/api/embedding', { x, y, highlight }),

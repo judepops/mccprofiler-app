@@ -310,6 +310,64 @@ def get_features(gene: str):
     }
 
 
+@app.get("/api/dimensions/scree")
+def scree():
+    """Variance per component against a permuted-noise ceiling.
+
+    The ceiling is PCA on a per-feature-permuted copy: the variance a component
+    of this size explains when there is provably nothing to find. Components
+    above it are the "real dimensions". This store reproduces the 19 that
+    structure_vs_noise.tsv reports.
+    """
+    s_ = store()
+    if not s_.has("pc_scree"):
+        raise HTTPException(503, "pc_scree not built")
+    df = s_.table("pc_scree")
+    return _clean({
+        "n_above_noise": int(df["above_noise"].sum()),
+        "method": "parallel analysis against a per-feature-permuted null",
+        "note": "Components above the ceiling carry structure that survives "
+                "destroying all feature-feature covariance while keeping every "
+                "marginal distribution intact.",
+        "rows": df.to_dict("records"),
+    })
+
+
+@app.get("/api/dimensions/{pc}/loadings")
+def loadings(pc: int, top: int = 15):
+    """Feature loadings for one component — the evidence for its name.
+
+    A named axis is an interpretation of its loadings. Serving the name without
+    them would ask the reader to take the interpretation on trust.
+    """
+    s_ = store()
+    if not s_.has("pc_loadings"):
+        raise HTTPException(503, "pc_loadings not built")
+    df = s_.table("pc_loadings")
+    hit = df[df["pc"] == pc]
+    if hit.empty:
+        raise HTTPException(404, f"no loadings for PC{pc}")
+
+    ranked = hit.reindex(hit["loading"].abs().sort_values(ascending=False).index)
+    sel = ranked.head(top).sort_values("loading", ascending=False)
+
+    scree_row = None
+    if s_.has("pc_scree"):
+        sc = s_.table("pc_scree")
+        r = sc[sc["pc"] == pc]
+        if not r.empty:
+            scree_row = r.iloc[0].to_dict()
+
+    return _clean({
+        "pc": pc,
+        "label": S.PC_LABELS.get(f"pc{pc}", f"PC{pc}"),
+        "variance_pct": scree_row.get("variance_pct") if scree_row else None,
+        "above_noise": bool(scree_row.get("above_noise")) if scree_row else None,
+        "n_features": int(len(hit)),
+        "loadings": sel.to_dict("records"),
+    })
+
+
 @app.get("/api/embedding")
 def embedding(
     x: str = S.DEFAULT_EMBEDDING_AXES[0],
@@ -423,6 +481,7 @@ def cohort_compare(
         coverage = {
             "requested": len(set(wanted)),
             "in_panel": len(member),
+            "matched": sorted(member)[:200],
             "missing": sorted(set(wanted) - member)[:50],
             "note": "The panel is 1,846 of ~20,000 genes. Genes not captured cannot "
                     "be placed; they are not absent from the biology.",
@@ -484,16 +543,58 @@ def cohorts():
     they need no within/pooled-ratio argument to be interpretable.
     """
     s = store()
-    df = s.table("external_groups")
-    usable = df[df["passes_min_n"]] if "passes_min_n" in df.columns else df
-    return {
+    if not s.has("cohort_membership"):
+        raise HTTPException(503, "cohort_membership not built")
+
+    counts = s.table("cohort_membership")["group"].value_counts()
+
+    # Stratification statistics exist for only some sets — the seven the audit
+    # ran. Attach them where present rather than restricting the list to them.
+    strat: dict[str, dict] = {}
+    if s.has("external_groups"):
+        eg = s.table("external_groups")
+        for name, sub in eg.groupby("group"):
+            strat[str(name)] = {
+                str(r["stratifier"]): {
+                    "pct_retained": float(r["pct_retained"]),
+                    "signal_over_random": float(r["signal_over_random"]),
+                }
+                for _, r in sub.iterrows()
+            }
+
+    rows = []
+    for name, n in counts.items():
+        rows.append({
+            "group": str(name),
+            "n_in_panel": int(n),
+            "usable": bool(n >= S.MIN_GROUP_N),
+            "is_positive_control": name == "gene_desert_bottomQ_density",
+            "is_super_enhancer": "SE" in str(name) or "dbSUPER" in str(name),
+            "stratification": strat.get(str(name)),
+        })
+    rows.sort(key=lambda r: -r["n_in_panel"])
+
+    return _clean({
         "min_group_n": S.MIN_GROUP_N,
-        "n_offered": int(usable["group"].nunique()),
-        "n_filtered_out": int(df["group"].nunique() - usable["group"].nunique()),
+        "n_offered": sum(r["usable"] for r in rows),
+        "n_filtered_out": sum(not r["usable"] for r in rows),
         "positive_control": "gene_desert_bottomQ_density",
-        "note": "gene_desert_bottomQ_density is the positive control: defined FROM "
-                "gene density, it is the one group that collapses under density "
-                "stratification while surviving insulation. It is what makes the "
-                "other rows meaningful.",
-        "rows": _clean(usable.to_dict("records")),
-    }
+        "notes": {
+            "why_external": "These groups were not defined from the MCC features, so "
+                            "unlike the archetypes they need no within/pooled-ratio "
+                            "argument to be interpretable.",
+            "positive_control": "gene_desert_bottomQ_density is defined FROM gene "
+                                "density and is the one group that collapses under "
+                                "density stratification (11% retained) while surviving "
+                                "insulation (100%). That the method detects a genuinely "
+                                "positional group as positional is what makes the other "
+                                "rows meaningful.",
+            "display": "Report pct_retained and signal_over_random, not eta-squared. "
+                       "Pooled eta-squared runs 0.005-0.023; the ratio is the claim, "
+                       "not the absolute value.",
+            "super_enhancer": "Super-enhancer sets are shown for post-hoc comparison "
+                              "ONLY. They are never inputs to the features or the "
+                              "clustering — that would be circular.",
+        },
+        "rows": rows,
+    })

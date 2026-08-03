@@ -283,16 +283,21 @@ FEATURE_BLOCKS = [(c, BLOCK_DESC[c], ()) for c in ("G1", "G2", "G3", "G4", "G5",
 # the store's PCA reproduces dimension_names.tsv's variance shares exactly
 # (15.27 / 9.47 / 8.21 / 6.33 / 5.88), so these are the same components.
 PC_LABELS: dict[str, str] = {
-    "pc1": "amount — richness and reach vs emptiness",
-    "pc2": "local vs long-range",
-    "pc3": "promoter-driven vs enhancer-driven",
-    "pc4": "enhancer vs CTCF composition",
-    "pc5": "concentrated vs dispersed",
-    "pc6": "PC6",
-    "pc7": "PC7",
-    "pc8": "PC8",
-    "pc9": "PC9",
-    "pc10": "PC10",
+    # Format is "PC<n> (interpretation)" so the component number is never hidden
+    # behind the prose. The interpretation is exactly that — a reading of the
+    # loadings — and the app shows those loadings so it can be checked.
+    "pc1": "PC1 (amount — richness and reach vs emptiness)",
+    "pc2": "PC2 (local vs long-range)",
+    # CAVEAT, measured 2026-08-03 from the stored loadings: the positive pole is
+    # cleanly promoter (promoter_signal_fraction +0.278/+0.254), but the negative
+    # pole is NOT purely enhancer — its strongest loading is total_mcc (-0.227),
+    # i.e. raw amount, with CTCF terms (-0.193, -0.176) as prominent as
+    # n_peaks_enhancer (-0.216). The inherited name over-simplifies. Qualify
+    # before quoting PC3 as "housekeeping vs developmental from contact alone".
+    "pc3": "PC3 (promoter-driven vs enhancer/CTCF + amount)",
+    "pc4": "PC4 (enhancer vs CTCF composition)",
+    "pc5": "PC5 (concentrated vs dispersed)",
+    **{f"pc{i}": f"PC{i}" for i in range(6, 31)},
     "gcpca_b1_1": "gcPC1 (density-free, B1)",
     "gcpca_b1_2": "gcPC2 (density-free, B1)",
     "gcpca_b2_1": "gcPC1 (density-free, B2)",
