@@ -79,11 +79,25 @@ ARTEFACTS: list[Artefact] = [
     ),
     # ---- labels and coordinates -----------------------------------------
     Artefact(
+        "archetype_labels",
+        PROFILER / "outputs_gw_cd4_1/cluster/archetype_labels.tsv",
+        "base k=4 archetypes for all 1,846 genes (HK 844 / ME 720 / sparse 261 / off 21)",
+        phase="P0",
+        notes=(
+            "The k=4 file, NOT archetype_labels_k5.tsv which sits beside it and is "
+            "blacklisted. Confirmed as the ARI reference by the 2026-07-29 handoff."
+        ),
+    ),
+    Artefact(
         "me_subtypes_labels",
         GW_AUDIT / "output/me_subtypes_labels.tsv",
-        "validated ME split labels (the correct 5th group)",
+        "ME split for the 720 arch-ME genes only (constitutive 369 / effector 351)",
         phase="P0",
-        notes="Use INSTEAD of archetype_labels_k5.tsv, which is blacklisted.",
+        notes=(
+            "A SUBSET, not a full labelling — it covers only arch-ME. Overlay it on "
+            "archetype_labels to get the 5 groups. Counts are the post-amount-"
+            "correction 369/351; PROJECT_STATUS.md still quotes the stale 377/343."
+        ),
     ),
     Artefact(
         "posteriors",
@@ -256,6 +270,20 @@ BLACKLIST: dict[str, str] = {
 
 # Viewpoint positions must come from the BED, never from parsing viewpoint_id.
 VIEWPOINT_DIR = MCC_DATA / "viewpoints"
+
+
+_BY_KEY: dict[str, Artefact] = {a.key: a for a in ARTEFACTS}
+
+
+def by_key(key: str) -> Artefact:
+    """Look up a registered artefact. Raises rather than returning None, so a
+    typo fails at the call site instead of surfacing as a confusing None.path."""
+    try:
+        return _BY_KEY[key]
+    except KeyError:
+        raise KeyError(
+            f"unknown artefact {key!r}; registered: {', '.join(sorted(_BY_KEY))}"
+        ) from None
 
 
 def search_paths() -> list[Path]:
