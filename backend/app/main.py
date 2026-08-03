@@ -47,7 +47,11 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
-    allow_methods=["GET"],
+    # POST is required: /api/ask, /api/query and /api/cohorts/compare all take a
+    # body. This read GET only, which passed every curl test (curl sends no
+    # preflight) while failing in the browser, where the OPTIONS preflight 400s
+    # and fetch reports the generic "Failed to fetch".
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
