@@ -297,6 +297,48 @@ def build_embeddings(fm: pd.DataFrame, fnames: list[str], seed: int = 0
     return out, loadings, scree
 
 
+def build_repro_pairs(fm_gw: pd.DataFrame, fnames_gw: list[str]) -> pd.DataFrame:
+    """The 116 genes captured in BOTH panels, feature by feature, in each.
+
+    This is the only direct measurement of technical reproducibility available:
+    the same gene, two independent captures, the same pipeline. It is what makes
+    kappa = 0.72 and the 0.511 noise floor concrete rather than quoted.
+
+    LAB PAGE ONLY. The immune side is the stale 791 baseline missing PDCD1 and
+    15 others, so this is defensible as a technical demonstration and NOT as a
+    biological claim. The overlap may shift after the 791 re-run.
+    """
+    import pickle as _pickle
+
+    im_path = P.PROFILER / "outputs/features/features_zscored.pkl"
+    if not im_path.exists():
+        log("immune features absent; reproducibility pairs skipped")
+        return pd.DataFrame(columns=["symbol_key", "feature", "gw", "immune"])
+
+    with open(im_path, "rb") as f:
+        im = _pickle.load(f)
+    fm_im, fnames_im = im["feature_matrix"], list(im["feature_names"])
+
+    shared = [f for f in fnames_gw if f in set(fnames_im)]
+    g = fm_gw.copy()
+    g["symbol_key"] = g["gene_id"].astype(str).str.upper()
+    i = fm_im.copy()
+    i["symbol_key"] = i["gene_id"].astype(str).str.upper()
+
+    both = sorted(set(g["symbol_key"]) & set(i["symbol_key"]))
+    log(f"reproducibility: {len(both)} genes in both panels, {len(shared)} shared features")
+
+    gi = g.set_index("symbol_key").loc[both, shared]
+    ii = i.set_index("symbol_key").loc[both, shared]
+
+    rows = []
+    for feat in shared:
+        for sym in both:
+            rows.append({"symbol_key": sym, "feature": feat,
+                         "gw": float(gi.at[sym, feat]), "immune": float(ii.at[sym, feat])})
+    return pd.DataFrame(rows)
+
+
 def build_cohorts(fm: pd.DataFrame) -> pd.DataFrame:
     """Per-gene membership of the externally-defined reference sets.
 
@@ -440,6 +482,9 @@ def build_tables(gene_ids: list[str] | None, source_labels: list[str] | None) ->
     write("embeddings", emb)
     write("pc_loadings", loadings)
     write("pc_scree", scree)
+
+    # reproducibility pairs (lab page) ---------------------------------------
+    write("reproducibility_pairs", build_repro_pairs(fm, fnames))
 
     # cohort membership ------------------------------------------------------
     write("cohort_membership", build_cohorts(fm))

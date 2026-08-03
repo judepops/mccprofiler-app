@@ -16,6 +16,7 @@ import { FeatureTable } from './FeatureTable'
 import { ContinuumMap } from './ContinuumMap'
 import { CohortView } from './CohortView'
 import { DimensionPanel } from './DimensionPanel'
+import { LabPage } from './LabPage'
 
 const CHANNEL_LABEL: Record<string, string> = {
   mcc: 'MCC',
@@ -29,6 +30,7 @@ const CHANNEL_LABEL: Record<string, string> = {
 }
 
 export default function App() {
+  const [page, setPage] = useState<'explore' | 'lab'>('explore')
   const [health, setHealth] = useState<Health | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
@@ -150,6 +152,19 @@ export default function App() {
               Gene position in the MCC regulatory continuum · CD4+ T cells
             </p>
           </div>
+          <nav className="flex gap-1 text-[11px]">
+            {(['explore', 'lab'] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                className={`rounded px-2.5 py-1 ${
+                  page === p ? 'bg-ink-600 text-white' : 'text-ink-600 hover:bg-ink-50'
+                }`}
+              >
+                {p === 'explore' ? 'Explore' : 'Lab'}
+              </button>
+            ))}
+          </nav>
           {health && (
             <p className="text-right font-mono text-[10px] leading-4 text-ink-400">
               {health.panel} · {health.n_genes.toLocaleString()} genes
@@ -161,6 +176,9 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-6">
+        {page === 'lab' && <LabPage />}
+        {page === 'explore' && (
+        <>
         {err && (
           <div className="mb-4 rounded border border-element-enhancer/30 bg-element-enhancer/5 px-3 py-2 text-[13px] text-element-enhancer">
             {err}
@@ -359,6 +377,8 @@ export default function App() {
               </div>
             </section>
           </div>
+        )}
+        </>
         )}
       </main>
     </div>

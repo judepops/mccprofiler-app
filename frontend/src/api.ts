@@ -210,6 +210,21 @@ export interface Loadings {
   loadings: { pc: number; feature: string; loading: number }[]
 }
 
+export interface Repro {
+  caveat: string
+  n_genes: number | null
+  n_features: number
+  median_rho: number
+  n_above_0_7: number
+  n_below_0_3: number
+  note: string
+  per_feature: { feature: string; pearson_r: number; spearman_rho: number; n: number }[]
+  pairs?: {
+    feature: string
+    points: { symbol_key: string; gw: number; immune: number }[]
+  }
+}
+
 async function get<T>(path: string, params?: Record<string, unknown>): Promise<T> {
   const url = new URL(BASE + path)
   for (const [k, v] of Object.entries(params ?? {})) {
@@ -235,6 +250,9 @@ export const api = {
     get<{ n: number; genes: GeneSummary[] }>('/api/genes', { q, limit }),
 
   gene: (gene: string) => get<Gene>(`/api/genes/${encodeURIComponent(gene)}`),
+
+  labReproducibility: (feature?: string) =>
+    get<Repro>('/api/lab/reproducibility', { feature }),
 
   scree: () => get<Scree>('/api/dimensions/scree'),
 

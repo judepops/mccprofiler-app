@@ -360,6 +360,24 @@ POST /api/submit                              (phase 2) -> job id -> synthetic g
 16. **SE comparison** (optional, high rhetorical value) — a gene's SE status
     against its continuum position. **Display-only. Never touches the feature path.**
 
+### The Lab page (added 08-03)
+
+A second page, deliberately outside the product, for exploratory and
+methodological views: diagnostics, checks, and anything whose caveats are too
+heavy for a page a collaborator might skim. Nothing on it should be quoted
+without its caveat attached.
+
+First occupant is the **reproducibility view** — the 116 genes captured in both
+panels, per-feature agreement plus a paired scatter against the identity line.
+It is the only direct measurement of technical noise available (same gene, two
+independent captures, same pipeline) and it pre-empts "how do I know this is
+real" better than prose can. It reproduces the handoff exactly: median rho
+0.752, 40/63 above 0.7, one below 0.3, with `frac_local` (0.984) at one end and
+the `oe_asymmetry_*` family (0.27-0.37) at the other.
+
+It lives in the Lab rather than the app because the immune side is the stale 791
+baseline, so it is defensible as a technical demonstration and not as biology.
+
 ### Two decisions recorded against FEEDBACK.md
 
 **D1 — the therapeutic framing ships with its effect size or not at all.**

@@ -419,6 +419,54 @@ def embedding(
     }
 
 
+# ---------------------------------------------------------------------------
+# lab — exploratory views, not part of the main app
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/lab/reproducibility")
+def lab_reproducibility(feature: str | None = None):
+    """The 116 genes captured in both panels, feature by feature.
+
+    The only direct measurement of technical reproducibility available: same
+    gene, two independent captures, same pipeline. Makes the 0.511 noise floor
+    and kappa = 0.72 concrete rather than quoted.
+
+    LAB ONLY. The immune side is the stale 791 baseline (missing PDCD1 + 15),
+    so this is a technical demonstration, never a biological claim.
+    """
+    s_ = store()
+    if not s_.has("reproducibility"):
+        raise HTTPException(503, "reproducibility table not built")
+
+    per_feature = s_.table("reproducibility").sort_values("spearman_rho", ascending=False)
+    out = {
+        "caveat": "Immune side is the stale 791 baseline, missing PDCD1 and 15 other "
+                  "genes from the chromosome-edge bug. Valid as a technical "
+                  "reproducibility demonstration; not a biological claim. The overlap "
+                  "may shift after the re-run.",
+        "n_genes": int(per_feature["n"].max()) if "n" in per_feature else None,
+        "n_features": int(len(per_feature)),
+        "median_rho": float(per_feature["spearman_rho"].median()),
+        "n_above_0_7": int((per_feature["spearman_rho"] >= 0.7).sum()),
+        "n_below_0_3": int((per_feature["spearman_rho"] < 0.3).sum()),
+        "note": "Least reproducible are the asymmetry features — candidates for "
+                "removal, and the reason the profile view treats them cautiously.",
+        "per_feature": _clean(per_feature.to_dict("records")),
+    }
+
+    if feature and s_.has("reproducibility_pairs"):
+        pairs = s_.table("reproducibility_pairs")
+        hit = pairs[pairs["feature"] == feature]
+        if hit.empty:
+            raise HTTPException(404, f"no paired values for {feature!r}")
+        out["pairs"] = {
+            "feature": feature,
+            "points": _clean(hit[["symbol_key", "gw", "immune"]].to_dict("records")),
+        }
+    return _clean(out)
+
+
 @app.get("/api/archetypes")
 def archetypes():
     """Named regions of the continuum, described by architecture.
