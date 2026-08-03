@@ -326,7 +326,22 @@ POST /api/submit                              (phase 2) -> job id -> synthetic g
    overlap almost completely and that honesty is the point.
 10. **P(s)** — log-log with fitted α, the ~100 kb regime break (α_near 0.750,
    α_far 1.291), gene's α against the panel distribution.
-11. **Feature table** — 91 features with panel percentile and block grouping.
+11. **Case-study views (added 08-03)** — a better-formatted replacement for the
+   `audit/MCCProfiler/output_leiden_k7/J1_case_studies` figures, whose content is
+   right but which are unreadable: 2541x4909 px matplotlib dumps with 8 pt type,
+   a legend over the data, and a "y-axis capped at 36" note wedged into a corner.
+   Four parts, all interactive rather than baked:
+   - **Peak annotations on the profile** — coloured by element class, radius on a
+     sqrt scale so *area* tracks `peak_max` (a linear radius exaggerates tall
+     peaks roughly quadratically). Click selects the nearest peak.
+   - **Peak detail** — the tallest-peak zoom panel: FWHM, sharpness, enrichment,
+     consensus fraction, class.
+   - **Topology arcs** — the peak-peak graph that `mean_degree` and
+     `frac_active_pairs` summarise, drawn as arcs. *Not yet built.*
+   - **Feature table** — 91 features grouped by block, with **percentile leading
+     and z secondary**. The original showed rank as `#45/791`, which needs mental
+     arithmetic; "95th percentile" is directly readable. One stated colour scale
+     rather than the original's per-cell reference scheme.
 12. **Gene comparison** — two genes side by side: profiles, axis positions,
    distance in feature space. The natural follow-up to a lookup.
 13. **Confound panel (new, 08-03)** — per dimension, the probe-level and

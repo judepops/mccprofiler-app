@@ -4,11 +4,14 @@ import {
   levelForSpan,
   type Gene,
   type GeneSummary,
+  type FeatureSet,
   type Health,
+  type PeakSet,
   type Profile,
 } from './api'
 import { ProfilePlot } from './ProfilePlot'
 import { ArchetypeReadout } from './ArchetypeReadout'
+import { FeatureTable } from './FeatureTable'
 
 const CHANNEL_LABEL: Record<string, string> = {
   mcc: 'MCC',
@@ -33,6 +36,8 @@ export default function App() {
   const [mode, setMode] = useState<'raw' | 'oe'>('raw')
   const [range, setRange] = useState<{ start: number; end: number } | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [peaks, setPeaks] = useState<PeakSet | null>(null)
+  const [features, setFeatures] = useState<FeatureSet | null>(null)
   const [loading, setLoading] = useState(false)
 
   const plotWidth = useRef(900)
@@ -84,8 +89,14 @@ export default function App() {
     setRange(null)
     setErr(null)
     try {
-      const g = await api.gene(symbol)
+      const [g, pk, ft] = await Promise.all([
+        api.gene(symbol),
+        api.peaks(symbol).catch(() => null),
+        api.features(symbol).catch(() => null),
+      ])
       setGene(g)
+      setPeaks(pk)
+      setFeatures(ft)
       await loadProfile(symbol, null)
     } catch (e) {
       setErr(String((e as Error).message))
@@ -214,7 +225,12 @@ export default function App() {
                 </div>
 
                 {profile && (
-                  <ProfilePlot profile={profile} loading={loading} onZoom={setRange} />
+                  <ProfilePlot
+                    profile={profile}
+                    peaks={channel === 'mcc' ? peaks?.peaks ?? [] : []}
+                    loading={loading}
+                    onZoom={setRange}
+                  />
                 )}
 
                 <p className="mt-3 border-t border-ink-100 pt-2 text-[11px] leading-relaxed text-ink-500">
@@ -255,9 +271,14 @@ export default function App() {
                   </div>
                 </div>
               )}
+              {features && (
+                <div className="mt-5">
+                  <FeatureTable data={features} />
+                </div>
+              )}
             </section>
 
-            <aside>
+            <aside className="space-y-5">
               <ArchetypeReadout a={gene.archetype} />
             </aside>
           </div>

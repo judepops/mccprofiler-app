@@ -77,6 +77,18 @@ ARTEFACTS: list[Artefact] = [
         "MCCProfiler feature matrix, 1846 x 91, z-scored",
         phase="P0",
     ),
+    Artefact(
+        "annotated_peaks",
+        SCRIPTS / "process/output_gw_cd4_1/utils/peaks/annotated.tsv",
+        "Nick Denny's pre-called peaks, 40,987 rows, element-classified",
+        phase="P0",
+        notes=(
+            "`distance_to_viewpoint` is UNSIGNED. Signed placement must be computed "
+            "as peak_midpoint - viewpoint_pos, or every peak renders on the wrong "
+            "side of the profile. RE classes: ctcf 11,487 / enhancer 15,035 / "
+            "promoter 14,465."
+        ),
+    ),
     # ---- labels and coordinates -----------------------------------------
     Artefact(
         "archetype_labels",

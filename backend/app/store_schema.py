@@ -185,6 +185,96 @@ ARCHETYPE_DISPLAY: dict[str, dict] = {
     },
 }
 
+# ---------------------------------------------------------------------------
+# element classes and feature blocks
+# ---------------------------------------------------------------------------
+
+# Three classes from the `RE` column of annotated.tsv. Counts on the GW panel:
+# ctcf 11,487 / enhancer 15,035 / promoter 14,465.
+ELEMENT_COLOR = {
+    "enhancer": "#c2703d",
+    "ctcf": "#4a7c59",
+    "promoter": "#2b5070",
+}
+
+# Feature blocks, per mccprofiler/FEATURE_SPEC.md, which gives the block sizes
+# as G1 5, G2 7, G3 6, G4 5, G5 3, P1 12, P2-P5 64, P6 11.
+#
+# The classifier is exact-name-first, because prefix matching gets this badly
+# wrong: an `oe_` prefix rule swept the 60-odd per-peak O/E aggregations into
+# G5, which the spec says holds exactly three profile-level features. The
+# distinguishing property of the peak arm is the element-class suffix
+# (_all / _enhancer / _ctcf / _promoter), since the peak block computes every
+# aggregation once per class.
+ELEMENT_SUFFIXES = ("_all", "_enhancer", "_ctcf", "_promoter")
+
+BLOCK_DESC: dict[str, str] = {
+    "G1": "Intensity — how much signal is there",
+    "G2": "Spatial allocation — where in the window it sits",
+    "G3": "Distance moments and bimodality",
+    "G4": "Shape and inequality",
+    "G5": "O/E on the profile",
+    "P1": "Peak composition",
+    "P2": "Per-peak aggregations, by element class",
+    "P6": "Topology — peak-peak graph",
+}
+
+EXACT_BLOCK: dict[str, str] = {
+    # G1 — intensity
+    **{n: "G1" for n in ("total_mcc", "max_mcc", "mean_mcc", "q90_mcc", "q99_mcc")},
+    # G2 — spatial allocation
+    **{n: "G2" for n in ("frac_promoter_proximal", "frac_local", "frac_distal",
+                         "frac_far_distal", "bait_pileup_fraction",
+                         "distal_signal_density", "local_to_distal_ratio")},
+    # G3 — distance moments
+    **{n: "G3" for n in ("mean_contact_distance", "median_contact_distance",
+                         "std_contact_distance", "contact_distance_skew",
+                         "contact_distance_kurtosis", "bimodality_score",
+                         "oe_distance_kurtosis", "corr_oe_distance",
+                         "corr_raw_distance")},
+    # G4 — shape and inequality
+    **{n: "G4" for n in ("gini_mcc", "contact_asymmetry", "signal_entropy",
+                         "signal_entropy_distal", "signal_profile_kurtosis",
+                         "empty_band_fraction", "frac_signal_in_top_peak",
+                         "peak_dominance_index", "spacing_regularity",
+                         "mean_peak_gap_bp", "dominant_peak_isolation_bp", "dominant_peak_distance_bp",
+                         "distance_to_nearest_peak_bp")},
+    # G5 — O/E computed on the profile itself, not on peaks
+    **{n: "G5" for n in ("oe_distal_max", "oe_distal_mean", "oe_proximal_max",
+                         "raw_proximal_max")},
+    # P6 — topology
+    **{n: "P6" for n in ("mean_degree", "max_degree", "n_active_pairs",
+                         "frac_active_pairs", "n_isolates", "n_active_peaks",
+                         "mean_degree_raw", "max_degree_raw", "n_isolates_raw",
+                         "frac_active_pairs_raw", "n_active_peaks_raw",
+                         "oe_max_cv", "raw_peak_max_cv")},
+}
+
+# P1 composition: counts and per-class signal shares.
+P1_PREFIXES = ("n_peaks", "n_high_consensus")
+P1_SUFFIXES = ("_signal_fraction", "_signal_fraction_raw")
+
+
+def feature_block(name: str) -> tuple[str, str]:
+    """Return (block_code, description) for a feature name."""
+    if name in EXACT_BLOCK:
+        code = EXACT_BLOCK[name]
+        return code, BLOCK_DESC[code]
+
+    if name.startswith(P1_PREFIXES) or name.endswith(P1_SUFFIXES) or name.startswith("frac_"):
+        return "P1", BLOCK_DESC["P1"]
+
+    # Anything carrying an element-class suffix is a per-peak aggregation.
+    if name.endswith(ELEMENT_SUFFIXES):
+        return "P2", BLOCK_DESC["P2"]
+
+    return "other", "Unclassified"
+
+
+# Kept for the API's block ordering.
+FEATURE_BLOCKS = [(c, BLOCK_DESC[c], ()) for c in ("G1", "G2", "G3", "G4", "G5", "P1", "P2", "P6")]
+
+
 # Shown wherever groups are displayed. The groups are regions of a continuum,
 # not discovered clusters, and the UI must not let that fall away.
 CONTINUUM_CAVEAT = (

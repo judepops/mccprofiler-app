@@ -82,6 +82,43 @@ export interface Profile {
   channel_role: string | null
 }
 
+export interface Peak {
+  symbol_key: string
+  viewpoint_id: string
+  chromosome: string
+  start: number
+  end: number
+  peak_midpoint: number
+  /** SIGNED bp from the viewpoint. The source table's distance is unsigned. */
+  offset_bp: number
+  peak_max: number
+  peak_size: number
+  sharpness: number
+  log2_enrichment: number
+  consensus_fraction: number
+  re: 'enhancer' | 'ctcf' | 'promoter'
+}
+
+export interface PeakSet {
+  gene_id: string
+  n: number
+  by_class: Record<string, number>
+  colors: Record<string, string>
+  peaks: Peak[]
+}
+
+export interface FeatureBlock {
+  block: string
+  description: string
+  features: { name: string; z: number; percentile: number }[]
+}
+
+export interface FeatureSet {
+  gene_id: string
+  n_features: number
+  blocks: FeatureBlock[]
+}
+
 async function get<T>(path: string, params?: Record<string, unknown>): Promise<T> {
   const url = new URL(BASE + path)
   for (const [k, v] of Object.entries(params ?? {})) {
@@ -107,6 +144,11 @@ export const api = {
     get<{ n: number; genes: GeneSummary[] }>('/api/genes', { q, limit }),
 
   gene: (gene: string) => get<Gene>(`/api/genes/${encodeURIComponent(gene)}`),
+
+  peaks: (gene: string) => get<PeakSet>(`/api/genes/${encodeURIComponent(gene)}/peaks`),
+
+  features: (gene: string) =>
+    get<FeatureSet>(`/api/genes/${encodeURIComponent(gene)}/features`),
 
   profile: (
     gene: string,

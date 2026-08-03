@@ -253,6 +253,57 @@ def build_tables(gene_ids: list[str] | None, source_labels: list[str] | None) ->
     df_rep["feature_space"] = "shared63"
     write("dimension_reproducibility", df_rep, rep)
 
+    # peaks ------------------------------------------------------------------
+    # Signed placement is computed here, once, from peak_midpoint minus the
+    # viewpoint. `distance_to_viewpoint` in the source table is UNSIGNED and
+    # using it would put half the peaks on the wrong side of the profile.
+    if gene_ids is not None:
+        pk_path = P.by_key("annotated_peaks").path
+        pk = read_table(pk_path, low_memory=False)
+        pk.columns = [c.lower().replace(" ", "_") for c in pk.columns]
+        pk["symbol_key"] = pk["viewpoint"].astype(str).str.upper()
+
+        vp = build_genes(gene_ids, source_labels)[["symbol_key", "viewpoint_pos"]]
+        pk = pk.merge(vp, on="symbol_key", how="inner")
+        pk["offset_bp"] = pk["peak_midpoint"].astype("int64") - pk["viewpoint_pos"].astype("int64")
+
+        # Sanity: the unsigned source column must equal |our signed offset|.
+        # A mismatch means the viewpoint join is wrong, which would be invisible
+        # on a plot but wrong everywhere.
+        delta = (pk["offset_bp"].abs() - pk["distance_to_viewpoint"].abs()).abs()
+        bad = int((delta > 1).sum())
+        if bad:
+            log(f"WARNING: {bad}/{len(pk)} peaks disagree with distance_to_viewpoint "
+                f"(max {delta.max():.0f} bp) — check the viewpoint join")
+        else:
+            log(f"peak placement verified against unsigned distance for all {len(pk)}")
+
+        # Only peaks inside the +/-1 Mb window can be drawn.
+        in_window = pk["offset_bp"].abs() <= (S.N_BINS_L0 * S.BIN_SIZE_L0) // 2
+        log(f"peaks: {len(pk)} mapped, {int((~in_window).sum())} outside the window")
+        keep = ["symbol_key", "viewpoint", "viewpoint_id", "chromosome", "start", "end",
+                "peak_midpoint", "offset_bp", "peak_max", "peak_size", "sharpness",
+                "log2_enrichment", "consensus_fraction", "re"]
+        write("peaks", pk.loc[in_window, [c for c in keep if c in pk.columns]], pk_path)
+
+    # features ---------------------------------------------------------------
+    # 91 z-scored features plus panel percentile, for the feature table view.
+    import pickle as _pickle
+    fpath = P.by_key("features_gw").path
+    with open(fpath, "rb") as f:
+        F = _pickle.load(f)
+    fm = F["feature_matrix"].copy()
+    fnames = list(F["feature_names"])
+    idcol = [c for c in fm.columns if c not in fnames]
+    fm = fm.rename(columns={idcol[0]: "gene_id"}) if idcol else fm
+    long = fm.melt(id_vars="gene_id", value_vars=fnames,
+                   var_name="feature", value_name="z")
+    # Panel percentile per feature — what "where does this gene sit" means.
+    long["percentile"] = long.groupby("feature")["z"].rank(pct=True) * 100
+    long["symbol_key"] = long["gene_id"].astype(str).str.upper()
+    write("features", long, fpath)
+    log(f"features: {len(fnames)} features x {fm.shape[0]} genes (long form)")
+
     # cohort view ------------------------------------------------------------
     grp = P.by_key("external_groups").path
     df_grp = read_table(grp)

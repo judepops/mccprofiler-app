@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { formatBp, type Profile } from './api'
+import { formatBp, type Peak, type Profile } from './api'
 
 const BAND_FILL: Record<string, string> = {
   promoter_proximal: 'rgba(43, 80, 112, 0.10)',
@@ -31,13 +31,28 @@ const PAD = { top: 14, right: 16, bottom: 30, left: 56 }
 
 interface Props {
   profile: Profile
+  peaks?: Peak[]
+  onPeakClick?: (p: Peak) => void
   /** Called with the new window when the user brushes; null resets to full. */
   onZoom: (range: { start: number; end: number } | null) => void
   loading?: boolean
   height?: number
 }
 
-export function ProfilePlot({ profile, onZoom, loading, height = 300 }: Props) {
+const ELEMENT_COLOR: Record<string, string> = {
+  enhancer: '#c2703d',
+  ctcf: '#4a7c59',
+  promoter: '#2b5070',
+}
+
+export function ProfilePlot({
+  profile,
+  peaks = [],
+  onPeakClick,
+  onZoom,
+  loading,
+  height = 300,
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(900)
@@ -140,6 +155,26 @@ export function ProfilePlot({ profile, onZoom, loading, height = 300 }: Props) {
       if (h > 0) ctx.fillRect(PAD.left + col, PAD.top + plotH - h, 1, h)
     }
 
+    // ---- peaks -------------------------------------------------------------
+    // Marker radius encodes peak_max on a sqrt scale so area, not radius,
+    // tracks magnitude — a linear radius exaggerates tall peaks ~quadratically.
+    if (peaks.length) {
+      const pmax = Math.max(...peaks.map((p) => p.peak_max), 1)
+      for (const pk of peaks) {
+        const x = bpToX(pk.offset_bp)
+        if (x < PAD.left - 4 || x > PAD.left + plotW + 4) continue
+        const r = 2.5 + 5 * Math.sqrt(pk.peak_max / pmax)
+        const y = PAD.top + plotH - (Math.min(pk.peak_max, yMax) / yMax) * plotH
+        ctx.beginPath()
+        ctx.arc(x, Math.max(y, PAD.top + r), r, 0, Math.PI * 2)
+        ctx.fillStyle = (ELEMENT_COLOR[pk.re] ?? '#888') + 'cc'
+        ctx.fill()
+        ctx.strokeStyle = '#fff'
+        ctx.lineWidth = 1
+        ctx.stroke()
+      }
+    }
+
     // ---- viewpoint marker --------------------------------------------------
     const vpX = bpToX(0)
     if (vpX >= PAD.left && vpX <= PAD.left + plotW) {
@@ -180,7 +215,7 @@ export function ProfilePlot({ profile, onZoom, loading, height = 300 }: Props) {
       ctx.lineTo(hover.x, PAD.top + plotH)
       ctx.stroke()
     }
-  }, [values, yMax, width, height, plotW, plotH, bpToX, drag, hover, profile, start_bp, spanBp])
+  }, [values, yMax, width, height, plotW, plotH, bpToX, drag, hover, profile, peaks, start_bp, spanBp])
 
   function localX(e: React.MouseEvent) {
     const rect = canvasRef.current!.getBoundingClientRect()
@@ -201,12 +236,32 @@ export function ProfilePlot({ profile, onZoom, loading, height = 300 }: Props) {
     setHover({ x, bp, value: values[idx] })
   }
 
+  function nearestPeak(x: number): Peak | null {
+    if (!peaks.length) return null
+    let best: Peak | null = null
+    let bestDist = 12 // px tolerance
+    for (const pk of peaks) {
+      const d = Math.abs(bpToX(pk.offset_bp) - x)
+      if (d < bestDist) {
+        bestDist = d
+        best = pk
+      }
+    }
+    return best
+  }
+
   function onUp() {
     if (drag) {
       const a = xToBp(Math.min(drag.x0, drag.x1))
       const b = xToBp(Math.max(drag.x0, drag.x1))
       // Ignore a click-without-drag, and refuse to zoom below one native bin.
-      if (Math.abs(b - a) > 500) onZoom({ start: Math.round(a), end: Math.round(b) })
+      if (Math.abs(b - a) > 500) {
+        onZoom({ start: Math.round(a), end: Math.round(b) })
+      } else if (onPeakClick) {
+        // A click without a drag selects the nearest peak, if one is close.
+        const pk = nearestPeak(drag.x1)
+        if (pk) onPeakClick(pk)
+      }
       setDrag(null)
     }
   }
@@ -241,10 +296,29 @@ export function ProfilePlot({ profile, onZoom, loading, height = 300 }: Props) {
       )}
 
       <div className="mt-1 flex items-center justify-between text-[11px] text-ink-500">
-        <span>
-          {profile.n.toLocaleString()} bins @ {profile.bp_per_bin} bp
-          <span className="ml-2 text-ink-400">L{profile.level}</span>
-          {loading && <span className="ml-2 text-ink-400">loading…</span>}
+        <span className="flex items-center gap-3">
+          <span>
+            {profile.n.toLocaleString()} bins @ {profile.bp_per_bin} bp
+            <span className="ml-2 text-ink-400">L{profile.level}</span>
+            {loading && <span className="ml-2 text-ink-400">loading…</span>}
+          </span>
+          {peaks.length > 0 && (
+            <span className="flex items-center gap-2 border-l border-ink-200 pl-3">
+              {(['enhancer', 'ctcf', 'promoter'] as const).map((cls) => {
+                const n = peaks.filter((p) => p.re === cls).length
+                if (!n) return null
+                return (
+                  <span key={cls} className="flex items-center gap-1">
+                    <span
+                      className="inline-block h-2 w-2 rounded-full"
+                      style={{ background: ELEMENT_COLOR[cls] }}
+                    />
+                    {cls} {n}
+                  </span>
+                )
+              })}
+            </span>
+          )}
         </span>
         <span className="flex items-center gap-3">
           {profile.bands.map((b) => (

@@ -243,6 +243,73 @@ def dimensions():
     }
 
 
+@app.get("/api/genes/{gene}/peaks")
+def get_peaks(gene: str):
+    """Pre-called peaks for one gene, positioned by SIGNED offset.
+
+    The source table's `distance_to_viewpoint` is unsigned; offset_bp is
+    computed in the store as peak_midpoint - viewpoint_pos and verified against
+    the unsigned column, so peaks land on the correct side of the profile.
+    """
+    s = store()
+    gid = s.resolve(gene)
+    if gid is None:
+        raise HTTPException(404, f"gene {gene!r} not in the panel")
+    if not s.has("peaks"):
+        return {"peaks": [], "note": "peaks table not built"}
+
+    pk = s.table("peaks")
+    hit = pk[pk["symbol_key"] == gid.upper()].copy()
+    hit = hit.sort_values("peak_max", ascending=False)
+    return {
+        "gene_id": gid,
+        "n": int(len(hit)),
+        "by_class": {k: int(v) for k, v in hit["re"].value_counts().items()},
+        "colors": S.ELEMENT_COLOR,
+        "peaks": _clean(hit.to_dict("records")),
+    }
+
+
+@app.get("/api/genes/{gene}/features")
+def get_features(gene: str):
+    """All 91 features for one gene, grouped by block, with panel percentile.
+
+    Percentile is the point: a raw z means little on its own, but "97th
+    percentile of the panel on far-distal fraction" is directly readable.
+    """
+    s = store()
+    gid = s.resolve(gene)
+    if gid is None:
+        raise HTTPException(404, f"gene {gene!r} not in the panel")
+    if not s.has("features"):
+        raise HTTPException(503, "features table not built")
+
+    f = s.table("features")
+    hit = f[f["symbol_key"] == gid.upper()]
+    if hit.empty:
+        raise HTTPException(404, f"no features for {gene!r}")
+
+    blocks: dict[str, dict] = {}
+    for _, r in hit.iterrows():
+        code, desc = S.feature_block(str(r["feature"]))
+        b = blocks.setdefault(code, {"block": code, "description": desc, "features": []})
+        b["features"].append({
+            "name": r["feature"],
+            "z": float(r["z"]),
+            "percentile": float(r["percentile"]),
+        })
+
+    for b in blocks.values():
+        b["features"].sort(key=lambda x: -abs(x["z"]))
+
+    order = [c for c, _, _ in S.FEATURE_BLOCKS] + ["other"]
+    return {
+        "gene_id": gid,
+        "n_features": int(len(hit)),
+        "blocks": [blocks[c] for c in order if c in blocks],
+    }
+
+
 @app.get("/api/archetypes")
 def archetypes():
     """Named regions of the continuum, described by architecture.
