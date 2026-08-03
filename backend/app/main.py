@@ -19,6 +19,7 @@ from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import store_schema as S
+from .feature_geometry import describe as describe_feature
 from .query import QueryError, query_schema, run as run_query
 from .store import StoreMissing, get_store
 
@@ -687,6 +688,64 @@ def ask(body: dict):
         "disclaimer": "The model translated your question into the query shown. It "
                       "never saw the data. Check the query — if it misread you, edit "
                       "it and re-run.",
+    })
+
+
+@app.get("/api/feature/{name}")
+def feature_explainer(name: str, level: int = 2):
+    """What a feature measures, drawn on two real profiles.
+
+    Returns the geometry to overlay plus the panel's highest- and lowest-scoring
+    gene on this feature, with their profiles — so the feature is shown as a
+    contrast between two real traces rather than defined in prose.
+    """
+    s_ = store()
+    if not s_.has("features"):
+        raise HTTPException(503, "features table not built")
+
+    f = s_.table("features")
+    sub = f[f["feature"] == name]
+    if sub.empty:
+        raise HTTPException(404, f"unknown feature {name!r}")
+
+    geom = describe_feature(name)
+
+    # Exemplars: the extremes make the geometry legible in a way the median
+    # never does.
+    hi = sub.loc[sub["z"].idxmax()]
+    lo = sub.loc[sub["z"].idxmin()]
+
+    examples = []
+    for role, row in (("high", hi), ("low", lo)):
+        gid = s_.resolve(str(row["symbol_key"]))
+        if gid is None:
+            continue
+        try:
+            prof = s_.profile(gid, level=level, mode="raw")
+        except (KeyError, ValueError):
+            continue
+        g = s_.genes[s_.genes["gene_id"] == gid].iloc[0]
+        examples.append({
+            "role": role,
+            "gene_id": gid,
+            "gene_symbol": g["gene_symbol"],
+            "group": g.get("group"),
+            "z": float(row["z"]),
+            "percentile": float(row["percentile"]),
+            "profile": prof,
+        })
+
+    return _clean({
+        **geom,
+        "distribution": {
+            "min": float(sub["z"].min()),
+            "max": float(sub["z"].max()),
+            "median": float(sub["z"].median()),
+        },
+        "examples": examples,
+        "caveat": "These are the panel extremes, chosen to make the geometry "
+                  "visible. Most genes sit between them — the feature is a "
+                  "continuous quantity, not a two-way split.",
     })
 
 

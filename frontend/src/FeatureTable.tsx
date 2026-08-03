@@ -16,6 +16,7 @@
 
 import { useState } from 'react'
 import type { FeatureSet } from './api'
+import { FeatureExplainer } from './FeatureExplainer'
 
 /** Diverging low→high, colourblind-safe, avoiding red/green opposition. */
 function scaleColor(pct: number): string {
@@ -28,9 +29,18 @@ function scaleColor(pct: number): string {
   return `rgba(194, 112, 61, ${0.42 * k + 0.03})`
 }
 
-export function FeatureTable({ data }: { data: FeatureSet }) {
+export function FeatureTable({
+  data,
+  onPick,
+}: {
+  data: FeatureSet
+  onPick?: (s: string) => void
+}) {
   const [open, setOpen] = useState<Set<string>>(new Set(['G2', 'P1']))
   const [onlyExtreme, setOnlyExtreme] = useState(false)
+  // Clicking a feature name opens "what does this measure?" — the gap the
+  // percentile bars leave.
+  const [explain, setExplain] = useState<string | null>(null)
 
   function toggle(block: string) {
     const next = new Set(open)
@@ -92,8 +102,18 @@ export function FeatureTable({ data }: { data: FeatureSet }) {
                   <tbody>
                     {shown.map((f) => (
                       <tr key={f.name} className="border-b border-ink-50 last:border-0">
-                        <td className="py-1 pl-3 pr-2 font-mono text-[11px] text-ink-700">
-                          {f.name}
+                        <td className="py-1 pl-3 pr-2">
+                          <button
+                            onClick={() => setExplain(f.name)}
+                            className={`font-mono text-[11px] hover:underline ${
+                              explain === f.name
+                                ? 'font-semibold text-ink-900'
+                                : 'text-ink-700'
+                            }`}
+                            title="What does this measure?"
+                          >
+                            {f.name}
+                          </button>
                         </td>
                         <td className="w-40 py-1 pr-2">
                           <div className="h-3 w-full overflow-hidden rounded-sm bg-ink-50">
@@ -123,8 +143,19 @@ export function FeatureTable({ data }: { data: FeatureSet }) {
         })}
       </div>
 
+      {explain && (
+        <div className="mt-4">
+          <FeatureExplainer
+            feature={explain}
+            onClose={() => setExplain(null)}
+            onPick={onPick}
+          />
+        </div>
+      )}
+
       <p className="mt-3 border-t border-ink-100 pt-2 text-[11px] leading-relaxed text-ink-500">
-        Percentile is against the {'{'}panel{'}'} of 1,846 genes, computed per feature. Bars
+        Click a feature name to see what it measures, drawn on the panel's most and
+        least extreme genes. Percentile is against the panel of 1,846 genes, computed per feature. Bars
         show percentile; σ is the z-score on the same scaled substrate the clustering uses.
         Features are correlation-pruned at |r| &gt; 0.8, so the set is not exhaustive of
         everything computed.

@@ -384,7 +384,7 @@ export default function App() {
 
             {/* Gene-specific detail. */}
             <section className="lg:col-span-3">
-              {features && <FeatureTable data={features} />}
+              {features && <FeatureTable data={features} onPick={select} />}
             </section>
 
             <section className="lg:col-span-3">

@@ -295,6 +295,35 @@ export interface QueryResult {
   error?: string
 }
 
+export interface FeatureExplain {
+  feature: string
+  drawable: boolean
+  kind: string | null
+  measures: string | null
+  reads?: string
+  why_not_drawable?: string
+  quantile?: number | null
+  element_class?: string | null
+  regions?: {
+    start_bp: number
+    end_bp: number
+    label: string
+    mirrored?: boolean
+    role?: string
+  }[]
+  distribution: { min: number; max: number; median: number }
+  examples: {
+    role: 'high' | 'low'
+    gene_id: string
+    gene_symbol: string
+    group: string | null
+    z: number
+    percentile: number
+    profile: Profile
+  }[]
+  caveat: string
+}
+
 async function post<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(BASE + path, {
     method: 'POST',
@@ -341,6 +370,9 @@ export const api = {
 
   labReproducibility: (feature?: string) =>
     get<Repro>('/api/lab/reproducibility', { feature }),
+
+  feature: (name: string) =>
+    get<FeatureExplain>(`/api/feature/${encodeURIComponent(name)}`),
 
   vocabulary: () => get<Vocabulary>('/api/vocabulary'),
 
