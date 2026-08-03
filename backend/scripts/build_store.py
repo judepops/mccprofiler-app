@@ -265,6 +265,37 @@ def build_embeddings(fm: pd.DataFrame, fnames: list[str], seed: int = 0) -> pd.D
     return out
 
 
+def build_cohorts(fm: pd.DataFrame) -> pd.DataFrame:
+    """Per-gene membership of the externally-defined reference sets.
+
+    Reuses `benchmarking.loaders.build_reference_sets` verbatim rather than
+    re-deriving the sets, so the app's cohorts are the same objects the audit
+    scripts test. Membership is restricted to panel genes here — the sets are
+    genome-wide, and a group with 5,391 members genome-wide may have far fewer
+    in a 1,846-gene panel, which is the number that governs whether it is worth
+    displaying at all.
+    """
+    sys.path.insert(0, str(P.SCRIPTS / "benchmarking/src"))
+    from benchmarking.loaders import (build_reference_sets, load_anchor,
+                                      load_bio_labels, load_dice, load_lambert)
+
+    anchor = load_anchor()
+    refs = build_reference_sets(anchor, load_lambert()[0], load_dice(), load_bio_labels())
+
+    syms = [str(g).upper() for g in fm["gene_id"]]
+    rows = []
+    for name, members in sorted(refs.items()):
+        hit = [s for s in syms if s in members]
+        rows.extend({"group": name, "symbol_key": s} for s in hit)
+
+    df = pd.DataFrame(rows)
+    counts = df["group"].value_counts()
+    usable = int((counts >= S.MIN_GROUP_N).sum())
+    log(f"cohorts: {len(refs)} reference sets, {usable} with >= {S.MIN_GROUP_N} "
+        f"panel genes ({len(refs) - usable} too small to offer)")
+    return df
+
+
 def build_genes(gene_ids: list[str], source_labels: list[str]) -> pd.DataFrame:
     """Gene index with viewpoint positions loaded from the BED, never parsed
     from viewpoint_id (PLAN.md trap #3)."""
@@ -374,6 +405,9 @@ def build_tables(gene_ids: list[str] | None, source_labels: list[str] | None) ->
 
     # embeddings -------------------------------------------------------------
     write("embeddings", build_embeddings(fm, fnames))
+
+    # cohort membership ------------------------------------------------------
+    write("cohort_membership", build_cohorts(fm))
 
     # cohort view ------------------------------------------------------------
     grp = P.by_key("external_groups").path

@@ -393,6 +393,89 @@ def archetypes():
     }
 
 
+@app.get("/api/cohorts/compare")
+def cohort_compare(
+    group: str | None = None,
+    symbols: str | None = None,
+    axes: str = "pc1,pc2,pc3,pc4,pc5",
+):
+    """Where does a gene set sit on each axis, against the rest of the panel?
+
+    Either a built-in `group`, or a pasted `symbols` list. For a pasted list the
+    response leads with coverage, because the panel is 1,846 of ~20,000 genes —
+    a collaborator's 40 hits may match 4, and plotting 4 points as though they
+    were 40 would be the wrong answer delivered confidently.
+    """
+    s = store()
+    if not s.has("embeddings"):
+        raise HTTPException(503, "embeddings table not built")
+
+    emb = s.table("embeddings")
+    axis_keys = [a.strip() for a in axes.split(",") if a.strip()]
+    for a in axis_keys:
+        if a not in emb.columns:
+            raise HTTPException(400, f"unknown axis {a!r}")
+
+    coverage = None
+    if symbols:
+        wanted = [w.strip().upper() for w in symbols.replace("\n", ",").split(",") if w.strip()]
+        member = set(emb.loc[emb["symbol_key"].isin(wanted), "symbol_key"])
+        coverage = {
+            "requested": len(set(wanted)),
+            "in_panel": len(member),
+            "missing": sorted(set(wanted) - member)[:50],
+            "note": "The panel is 1,846 of ~20,000 genes. Genes not captured cannot "
+                    "be placed; they are not absent from the biology.",
+        }
+        label = "pasted list"
+    elif group:
+        if not s.has("cohort_membership"):
+            raise HTTPException(503, "cohort_membership not built")
+        cm = s.table("cohort_membership")
+        member = set(cm.loc[cm["group"] == group, "symbol_key"])
+        if not member:
+            raise HTTPException(404, f"no panel genes in group {group!r}")
+        label = group
+    else:
+        raise HTTPException(400, "pass either group= or symbols=")
+
+    if len(member) < S.MIN_GROUP_N:
+        note = (f"Only {len(member)} panel genes — below the {S.MIN_GROUP_N}-gene "
+                f"floor. Treat any apparent difference as noise.")
+    else:
+        note = None
+
+    in_set = emb["symbol_key"].isin(member)
+    rows = []
+    for a in axis_keys:
+        v_in = emb.loc[in_set, a].dropna()
+        v_out = emb.loc[~in_set, a].dropna()
+        if len(v_in) < 2 or len(v_out) < 2:
+            continue
+        # Pooled-SD standardised difference. Reported as an effect size, not a
+        # p-value: with n in the hundreds almost anything reaches significance.
+        sd = np.sqrt(((len(v_in) - 1) * v_in.var() + (len(v_out) - 1) * v_out.var())
+                     / max(len(v_in) + len(v_out) - 2, 1))
+        d = (v_in.mean() - v_out.mean()) / sd if sd > 0 else 0.0
+        rows.append({
+            "axis": a,
+            "label": S.PC_LABELS.get(a, a),
+            "n_in": int(len(v_in)),
+            "cohen_d": float(d),
+            "in_quartiles": [float(v_in.quantile(q)) for q in (0.25, 0.5, 0.75)],
+            "out_quartiles": [float(v_out.quantile(q)) for q in (0.25, 0.5, 0.75)],
+        })
+
+    rows.sort(key=lambda r: -abs(r["cohen_d"]))
+    return _clean({
+        "label": label,
+        "n_in_panel": int(len(member)),
+        "coverage": coverage,
+        "small_set_warning": note,
+        "axes": rows,
+    })
+
+
 @app.get("/api/cohorts")
 def cohorts():
     """Externally-defined gene groups — the strongest non-circular evidence.

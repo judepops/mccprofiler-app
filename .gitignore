@@ -31,3 +31,6 @@ dist/
 
 # frontend build output
 frontend/dist/
+
+# local working context for Claude sessions — never published
+CLAUDE.md

@@ -55,6 +55,7 @@ export function ProfilePlot({
   loading,
   height = 300,
 }: Props) {
+  const totalHeight = height + (peaks.length ? PEAK_LANE : 0)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(900)
@@ -71,7 +72,7 @@ export function ProfilePlot({
   }, [])
 
   const plotW = Math.max(width - PAD.left - PAD.right, 10)
-  const plotH = height - PAD.top - PAD.bottom - (peaks.length ? PEAK_LANE : 0)
+  const plotH = height - PAD.top - PAD.bottom
 
   const { values, start_bp, end_bp } = profile
   const spanBp = end_bp - start_bp
@@ -96,11 +97,11 @@ export function ProfilePlot({
     if (!canvas) return
     const dpr = window.devicePixelRatio || 1
     canvas.width = width * dpr
-    canvas.height = height * dpr
+    canvas.height = totalHeight * dpr
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    ctx.clearRect(0, 0, width, height)
+    ctx.clearRect(0, 0, width, totalHeight)
 
     // ---- distance bands, mirrored either side of the viewpoint -------------
     for (const band of profile.bands) {
@@ -122,6 +123,13 @@ export function ProfilePlot({
     ctx.lineTo(PAD.left, PAD.top + plotH)
     ctx.lineTo(PAD.left + plotW, PAD.top + plotH)
     ctx.stroke()
+    if (peaks.length) {
+      // left edge extended down past the peak lane, so the lane is enclosed
+      ctx.beginPath()
+      ctx.moveTo(PAD.left, PAD.top + plotH)
+      ctx.lineTo(PAD.left, PAD.top + plotH + PEAK_LANE)
+      ctx.stroke()
+    }
 
     // y ticks
     ctx.fillStyle = '#5b89ae'
@@ -206,7 +214,11 @@ export function ProfilePlot({
     const nTicks = 7
     for (let i = 0; i <= nTicks; i++) {
       const bp = start_bp + (i / nTicks) * spanBp
-      ctx.fillText(formatBp(Math.round(bp)), bpToX(bp), PAD.top + plotH + 16)
+      ctx.fillText(
+        formatBp(Math.round(bp)),
+        bpToX(bp),
+        PAD.top + plotH + (peaks.length ? PEAK_LANE : 0) + 14,
+      )
     }
 
     // ---- brush selection ---------------------------------------------------
@@ -227,7 +239,7 @@ export function ProfilePlot({
       ctx.lineTo(hover.x, PAD.top + plotH)
       ctx.stroke()
     }
-  }, [values, yMax, width, height, plotW, plotH, bpToX, drag, hover, profile, peaks, start_bp, spanBp])
+  }, [values, yMax, width, height, totalHeight, plotW, plotH, bpToX, drag, hover, profile, peaks, start_bp, spanBp])
 
   function localX(e: React.MouseEvent) {
     const rect = canvasRef.current!.getBoundingClientRect()
@@ -284,7 +296,7 @@ export function ProfilePlot({
     <div ref={wrapRef} className="relative w-full">
       <canvas
         ref={canvasRef}
-        style={{ width: '100%', height }}
+        style={{ width: '100%', height: totalHeight }}
         className={`select-none ${drag ? 'cursor-col-resize' : 'cursor-crosshair'}`}
         onMouseDown={(e) => {
           const x = localX(e)
