@@ -344,6 +344,27 @@ def scree():
     })
 
 
+def _annotate_cohorts(s_, genes: list[dict]) -> list[dict]:
+    """Attach external set membership to an already-selected gene list.
+
+    Annotation, never selection. Super-enhancer membership is included because
+    seeing it here is exactly the post-hoc comparison it is licensed for, and
+    excluding it would hide the one label the project most wants to argue
+    against.
+    """
+    if not genes or not s_.has("cohort_membership"):
+        return genes
+    cm = s_.table("cohort_membership")
+    by_gene: dict[str, list[str]] = {}
+    for sym, grp in zip(cm["symbol_key"], cm["group"]):
+        by_gene.setdefault(sym, []).append(grp)
+    out = []
+    for g in genes:
+        key = (g.get("gene_symbol") or "").upper()
+        out.append({**g, "in_sets": sorted(by_gene.get(key, []))})
+    return out
+
+
 @app.get("/api/embedding/loadings")
 def plane_loadings(x: str = "pc2", y: str = "pc3", top: int = 8):
     """Loading vectors for the two displayed axes, for a biplot overlay.
@@ -657,9 +678,16 @@ def ask(body: dict):
     """Translate a question into a query, then run it.
 
     The model never sees the data, only the question and a schema naming the
-    available axes, cohorts and features. The parsed query comes back with the
-    results so the translation can be checked and corrected: a misread question
-    shows up as a wrong query, not a wrong gene list.
+    available axes and features. The parsed query comes back with the results so
+    the translation can be checked and corrected: a misread question shows up as
+    a wrong query, not a wrong gene list.
+
+    Selection is on contact architecture ONLY. External reference sets are not
+    in the schema the model receives, so it cannot select on them even if the
+    question invites it. That is the super-enhancer rule generalised: borrowed
+    labels are post-hoc validation, and a tool whose claim is that architecture
+    is more informative than those labels cannot use them to choose its genes.
+    Membership is attached to the results afterwards, as annotation.
     """
     question = (body or {}).get("question", "").strip()
     if not question:
@@ -675,7 +703,10 @@ def ask(body: dict):
         f"  {a}: {S.PC_LABELS.get(a, a)}, low end = {p['neg']}, high end = {p['pos']}"
         for a, p in S.PC_POLES.items() if a in v["axes"]
     )
-    schema = _translate.flat_schema(v["axes"], v["cohorts"], v["groups"], v["features"])
+    # Empty cohort list, so the `cohort` filter type is absent from the schema
+    # rather than merely discouraged. A model cannot emit what it has no
+    # vocabulary for, which is a stronger guarantee than an instruction.
+    schema = _translate.flat_schema(v["axes"], [], v["groups"], v["features"])
 
     try:
         query = _translate.translate(question, schema, pole_lines)
@@ -708,10 +739,20 @@ def ask(body: dict):
         # of what the model misread.
         return _clean({"question": question, "query": query, "error": str(e)})
 
+    # Post-hoc only. These sets played no part in choosing the genes above, which
+    # is what makes them worth reading: the overlap is an observation about an
+    # architecture-selected list, not a property it was selected for.
+    result = dict(result)
+    result["genes"] = _annotate_cohorts(s_, result.get("genes", []))
+
     return _clean({
         "question": question,
         "query": query,
         "interpretation": query.get("interpretation"),
+        "reasoning": query.get("reasoning") or None,
+        "annotation_note": "External set membership is shown for the returned genes "
+                           "but played no part in selecting them. Selection used "
+                           "contact architecture only.",
         # Set when part of the question asks for something the store does not
         # hold, TADs and insulation being the usual cases. Shown rather than
         # swallowed, because the failure mode worth avoiding is a confident

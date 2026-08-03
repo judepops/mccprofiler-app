@@ -300,13 +300,24 @@ export interface QueryStep {
 export interface QueryResult {
   n_matched: number
   steps: QueryStep[]
-  genes: { gene_id: string; gene_symbol: string; group: string | null }[]
+  genes: {
+    gene_id: string
+    gene_symbol: string
+    group: string | null
+    /** External sets this gene belongs to. Annotation on an
+     *  architecture-selected list; these sets never drive selection. */
+    in_sets?: string[]
+  }[]
   note: string | null
   query?: Record<string, unknown>
   interpretation?: string | null
   /** Part of the question the store cannot answer, for example TADs or
    *  insulation. Set by the translator, never inferred here. */
   unsupported?: string | null
+  /** The model's stated working. A rationale it wrote alongside the query, not
+   *  a trace of how it actually computed one, and labelled as such in the UI. */
+  reasoning?: string[] | null
+  annotation_note?: string
   error?: string
 }
 

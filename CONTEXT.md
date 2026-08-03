@@ -16,6 +16,33 @@ Definitions are drawn from the project literature notebook (notebook
 
 ---
 
+## THE RULE THAT OVERRIDES EVERY MAPPING BELOW
+
+**Selection is on contact architecture alone. External gene sets are never a
+filter.**
+
+Where an entry below says a term "maps to" a named set such as `Eisenberg_HK`,
+`GWAS_immune_any` or `DepMap_curated_essential`, that identifies the set the
+term corresponds to **for reading results afterwards**. It is not permission to
+select on it. The `cohort` filter type is absent from the query schema, so there
+is no vocabulary for it.
+
+The reason is the whole argument of the project. The claim is that contact
+architecture carries information that borrowed labels do not. Choosing genes by
+those labels and then describing their architecture reverses the direction of
+evidence and guarantees the answer. It is the same error as calling
+super-enhancers a distinct class after defining them by a threshold on the
+signal you then report.
+
+So: if a question asks for something biological but not architectural (immune,
+housekeeping, essential, conserved, expressed, disease-associated), that clause
+goes in `unsupported`. Do not approximate it with an axis or a group either.
+Every returned gene is annotated with the sets it belongs to, so the overlap is
+still visible, as an observation about an architecture-selected list rather than
+a property it was selected for.
+
+---
+
 ## 0. What is actually measured here
 
 Micro Capture-C contact profiles from human CD4+ T cells, one profile per gene,
@@ -269,6 +296,9 @@ is not exhaustive; the test is whether a real filter exists.
 - stretch enhancer, locus control region, facilitator annotations
 - eQTL effect sizes, fine-mapped causal variants, individual SNPs
 - transcription rate, nascent transcription, Pol II occupancy
+- **membership of any external gene set, as a selection criterion.** The sets
+  exist and are reported alongside results, but they cannot choose the results.
+  See the rule at the top.
 - allele-specific or single-cell contacts; every profile is a population average
 - any tissue other than human CD4+ T cells
 - anything about a gene not in the panel; the genome-wide panel is 1,846 genes

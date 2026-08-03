@@ -33,7 +33,7 @@ DEFAULT_PROVIDER = "gemini"
 # default starts failing, list the models the key actually serves rather than
 # guessing an id.
 DEFAULT_MODELS = {
-    "gemini": os.environ.get("GEMINI_MODEL", "gemini-3.5-flash"),
+    "gemini": os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite"),
     "claude": os.environ.get("ANTHROPIC_MODEL", "claude-opus-5"),
 }
 
@@ -58,7 +58,22 @@ def flat_schema(axes: list[str], cohorts: list[str], groups: list[str],
     `type` says which fields matter; the rest are optional and ignored when
     irrelevant. Less elegant than a union, but it survives the trip through
     two different structured-output implementations.
+
+    Pass `cohorts=[]` to remove external reference sets from the query language
+    entirely, which is how the ask endpoint calls it. Selection then runs on
+    contact architecture alone and external membership survives only as
+    annotation on the results. Dropping the field from the schema rather than
+    filtering afterwards is deliberate: a model cannot emit a filter it has no
+    vocabulary for.
     """
+    types = ["axis", "archetype", "feature"] + (["cohort"] if cohorts else [])
+    props: dict[str, Any] = {
+        "type": {"type": "string", "enum": types},
+        "axis": {"type": "string", "enum": axes},
+        "group": {"type": "string", "enum": groups},
+    }
+    if cohorts:
+        props["cohort"] = {"type": "string", "enum": cohorts}
     return {
         "type": "object",
         "properties": {
@@ -68,13 +83,7 @@ def flat_schema(axes: list[str], cohorts: list[str], groups: list[str],
                 "items": {
                     "type": "object",
                     "properties": {
-                        "type": {
-                            "type": "string",
-                            "enum": ["axis", "cohort", "archetype", "feature"],
-                        },
-                        "axis": {"type": "string", "enum": axes},
-                        "cohort": {"type": "string", "enum": cohorts},
-                        "group": {"type": "string", "enum": groups},
+                        **props,
                         "feature": {"type": "string", "enum": features},
                         "direction": {"type": "string", "enum": ["high", "low"]},
                         "percentile": {
@@ -93,12 +102,21 @@ def flat_schema(axes: list[str], cohorts: list[str], groups: list[str],
             "unsupported": {
                 "type": "string",
                 "description": "Any part of the question this dataset cannot answer, "
-                               "such as TADs, compartments, insulation or expression "
-                               "level. Empty if the question is fully answerable. "
-                               "Filters should still cover the answerable part.",
+                               "such as TADs, compartments, insulation, expression "
+                               "level, or membership of an external gene set. Empty "
+                               "if the question is fully answerable. Filters should "
+                               "still cover the answerable part.",
+            },
+            "reasoning": {
+                "type": "array",
+                "description": "Your working, one short step per element. Say which "
+                               "term you mapped, what you mapped it to, and why that "
+                               "pole or feature. Mention anything you considered and "
+                               "rejected. Three to six steps.",
+                "items": {"type": "string"},
             },
         },
-        "required": ["filters", "interpretation"],
+        "required": ["filters", "interpretation", "reasoning"],
     }
 
 
@@ -149,8 +167,14 @@ def build_prompt(pole_lines: str) -> str:
         "LOW end of PC2, not the high end.\n"
         "- PC1 is contact amount, not biology. Only use it if the question is about "
         "how much signal a gene has.\n"
-        "- Prefer a cohort filter for biological categories such as immune, "
-        "housekeeping or essential, rather than expressing them as axis positions.\n"
+        "- Selection runs on contact architecture ONLY. You have no filter for "
+        "external gene sets, and there is deliberately no vocabulary for one. If a "
+        "question asks for a biological category that is not architectural, such as "
+        "immune, housekeeping, essential, conserved or expressed, that part is "
+        "`unsupported`. Do NOT approximate it with an axis or a group: the point of "
+        "this tool is that architecture is measured independently of borrowed "
+        "labels, and selecting on those labels would destroy that independence. "
+        "Membership is reported alongside the results afterwards instead.\n"
         "- Each filter object only needs the fields its type uses: axis filters need "
         "`axis` and `direction`; cohort filters need `cohort`; archetype filters need "
         "`group`; feature filters need `feature` and `direction`.\n"

@@ -84,6 +84,11 @@ export default function App() {
   const embReq = useRef(0)
   // Lifted out of GeneCompare so the map can mark the compared gene too.
   const [compareGenes, setCompareGenes] = useState<string[]>([])
+  // Latched on first visit to the Panel page. Before that the panel is not
+  // rendered at all, so an initial Gene-page load does not pay for cohort and
+  // ranked-list fetches nobody asked for.
+  const panelVisited = useRef(false)
+  if (page === 'panel') panelVisited.current = true
 
   const plotWidth = useRef(900)
 
@@ -446,8 +451,14 @@ export default function App() {
         {/* ---------------------------------------------------------------- */}
         {/* PANEL: the coordinate system and the population. No single gene.  */}
         {/* ---------------------------------------------------------------- */}
-        {page === 'panel' && (
-          <div className="space-y-5">
+        {/* Mounted on first visit and kept mounted, hidden with CSS rather than
+            unmounted. Picking a gene here switches to the Gene page, and
+            unmounting would throw away the search results that led you to that
+            gene, so coming back would mean re-running the question. React keeps
+            child state only while the component stays mounted, so `hidden` is
+            doing real work here and is not a style choice. */}
+        {panelVisited && (
+          <div className="space-y-5" hidden={page !== 'panel'}>
             <p className="text-[11px] leading-relaxed text-ink-500">
               These views describe the panel and the coordinate system, not any one
               gene. {gene && (
@@ -456,7 +467,8 @@ export default function App() {
                   reference.{' '}
                 </>
               )}
-              Selecting a gene anywhere here opens it on the Gene page.
+              Selecting a gene anywhere here opens it on the Gene page, and what you
+              found here is kept.
             </p>
 
             <AskPanel onPick={select} />
