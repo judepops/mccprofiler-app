@@ -53,6 +53,77 @@ scientific through transparent communication, not uniqueness).
 
 ---
 
+## 1b. Revised 2026-08-03 — the axes are the product, not the archetypes
+
+The 08-03 session named the real dimensions, and that supersedes the
+archetype-centric framing above. **The primary coordinate system is the named
+interpretable axes; the archetypes are one derived readout among several.**
+
+`14_name_dimensions.py` → `dimension_names.tsv`. 19 components sit above the
+95th-percentile noise ceiling and carry 78% of variance. The leading five are
+interpretable:
+
+| axis | reading | var % |
+|---|---|---|
+| PC1 | richness / reach vs emptiness — **this is the amount axis, label it as such** | 15.3 |
+| PC2 | local vs long-range | 9.5 |
+| PC3 | **promoter-driven vs enhancer-driven** | 8.2 |
+| PC4 | enhancer vs CTCF composition | 6.3 |
+| PC5 | concentrated vs dispersed | 5.9 |
+
+**PC3 is the most quotable result in the project**: the classic
+housekeeping-vs-developmental axis, recovered from contact architecture alone,
+with no chromatin marks and no sequence. Placing a gene on PC3 live is a better
+app than any label.
+
+### The six candidate dimensions
+
+Cross-referencing `dimension_reproducibility.tsv` (`explained=False` and
+`reproduces=True`, excluding PC1 because it is amount) gives **PC5, PC6, PC9,
+PC10, PC13, PC14** — summing to **20.3%** of variance, which matches the
+handoff's "~20% of the real signal".
+
+These are amount-independent, cross-capture reproducible, and not explained by
+any biology anchor, by 3D insulation, by probe-level sequence or mappability, or
+by window-level GC / AT-run density / mappability **including radial gradients**
+(max |ρ| 0.069, r² 0.5% — and a radial gradient is the *only* artefact class that
+could manufacture a shape feature, so this is the specific falsification and it
+came back clean).
+
+**Wording rule, from the handoff verbatim:** say "candidates for regulatory
+variation not captured by existing assays". Never "unexplained" — that is
+provisional by construction and Phase B is the test. This phrasing goes in the
+UI string table, not just the docs.
+
+### Display rule: numbers, never verdicts
+
+The 08-03 decision removed binary survive/compromised classification because
+PC5's verdict flipped twice as the threshold moved. **The app inherits this
+rule**: show max |ρ| and r² against the largest association the test demonstrably
+resolves. No pass/fail badges, no green ticks, no "confound-free" labels.
+
+**PC5 carries a GC caveat that must render inline** wherever PC5 appears: most
+GC-associated of the six in both independent tests, same sign, ~6% of variance at
+probe level and ~2% at window level, versus <1% for the other five. Sign
+agreement alone does not discriminate (4/6 agree, about chance) — what singles
+PC5 out is ranking first in both by a 3× margin.
+
+### Why the 91-feature substrate exists at all
+
+`13_nested_baselines.py` answers the viability question and belongs in the
+explanation layer, because it is the justification for the whole app:
+
+| comparison | mean gain | targets won | p |
+|---|---|---|---|
+| 91 features vs `n_peaks` alone | +0.140 | **9/9** | 1.7e-13 |
+| 91 vs the 11-feature magnitude basis | +0.034 | **9/9** | 7.5e-06 |
+
+gnomAD LOEUF goes 0.031 → 0.210, carried almost entirely by shape. The nonlinear
+arm was **uniformly worse**, which kills the "a linear model just couldn't reach
+it" objection.
+
+---
+
 ## 2. Architecture — the store is the contract
 
 ```
@@ -124,6 +195,18 @@ All small enough to be parquet and loaded once at startup:
 - peaks with element class and signed distance
 - viewpoint positions (from the viewpoint BED — **never** parsed from `viewpoint_id`)
 - anchor table joined per gene (expression, tau, CpG, conservation, essentiality)
+- **named dimensions** — `dimension_names.tsv` (loadings, dominant class, per-anchor ρ),
+  `dimension_reproducibility.tsv` (namespaced separately, see trap #10),
+  `structure_vs_noise.tsv`
+- **confounds** — `locus_intrinsic_confounds.tsv`, `window_confounds.tsv`,
+  `window_sequence_properties.tsv`, plus per-probe design properties from
+  `panel_ON_A/final_oligo_list.txt`
+- **baselines** — `nested_baselines.tsv` for the explanation layer
+- cross-panel reproducibility, external-group stratification, HiChIP per-gene
+  insulation targets
+
+Everything in `audit/continuous_methods/` except `hichip_insulation_bins.tsv.gz`
+(37 MB) is under 600 KB, so the whole tabular layer is trivial to load at startup.
 
 ### manifest.json — provenance is not optional here
 
@@ -186,21 +269,38 @@ POST /api/submit                              (phase 2) -> job id -> synthetic g
    toggle raw / O/E / P(s)-residual, channel selector, the four feature distance
    bands shaded at their real cutoffs (0–10 kb, 10–50 kb, 50–250 kb, 250 kb–1 Mb),
    peaks marked and coloured by element class. Brush to zoom pulls L0.
-2. **Continuum map** — all genes in gcPCA space, selected gene highlighted,
-   archetype regions as soft density contours **not** hard boundaries. Colour by
-   posterior confidence so the 44% mixture body is visually obvious.
-3. **Archetype readout** — posterior bars + entropy + AA mixture weights.
-   Below-threshold genes read "mixture", not a corner.
-4. **Radar** — gene trace over archetype IQR bands. Port from `07_radar.py`.
-   **Keep the bands.** They overlap almost completely and that honesty is the point.
-5. **P(s)** — log-log with fitted α, the ~100 kb regime break (α_near 0.750,
+2. **Dimension profile — the primary readout (revised 08-03).** The gene's
+   position on each named axis as a percentile bar against the panel
+   distribution, PC1 explicitly labelled *amount*, PC3 given prominence as
+   promoter-driven vs enhancer-driven. Each axis expands to show its top ±
+   loading features and its confound numbers.
+3. **Continuum map** — all genes in PC or gcPCA space, axis pair selectable
+   (default PC2 × PC3, which is the interpretable plane, not PC1 × PC2 which is
+   amount-dominated). Selected gene highlighted; archetype regions as soft
+   density contours **not** hard boundaries. Colour by posterior confidence so
+   the 44% mixture body is visually obvious.
+4. **Archetype readout** — demoted to a secondary panel. Posterior bars +
+   entropy + AA mixture weights. Below-threshold genes read "mixture", not a corner.
+5. **Radar** — gene trace over archetype IQR bands. Port from `07_radar.py`
+   (`archetype_radar_profiles.tsv` already on disk). **Keep the bands.** They
+   overlap almost completely and that honesty is the point.
+6. **P(s)** — log-log with fitted α, the ~100 kb regime break (α_near 0.750,
    α_far 1.291), gene's α against the panel distribution.
-6. **Feature table** — 91 features with panel percentile and block grouping.
-7. **Genomic context** — igv.js, all 8 channels, GENCODE. Secondary view.
-8. **Explanation layer** — woven through, not a separate About page. Reuse the
-   `html_dphil/dphil_html.py` house style so it matches the existing explainers.
-9. **SE comparison** (optional, high rhetorical value) — a gene's SE status
-   against its continuum position. **Display-only. Never touches the feature path.**
+7. **Feature table** — 91 features with panel percentile and block grouping.
+8. **Confound panel (new, 08-03)** — per dimension, the probe-level and
+   window-level association numbers from `locus_intrinsic_confounds.tsv` and
+   `window_confounds.tsv`, including the radial-gradient result. Numbers and
+   effect sizes only, per §1b. Also exposes the per-probe design properties
+   (GC%, alignment count, repeat length, density score) that exist for
+   **1846/1846** GW genes in `panel_ON_A/final_oligo_list.txt` — zero fetch, and
+   previously unused.
+9. **Genomic context** — igv.js, all 8 channels, GENCODE. Secondary view.
+10. **Explanation layer** — woven through, not a separate About page. Leads with
+    the nested-baseline justification (§1b), then the structure-vs-noise evidence.
+    Reuse the `html_dphil/dphil_html.py` house style so it matches the existing
+    explainers.
+11. **SE comparison** (optional, high rhetorical value) — a gene's SE status
+    against its continuum position. **Display-only. Never touches the feature path.**
 
 ---
 
@@ -251,6 +351,23 @@ hosting and no API.
 7. **The technical noise floor is real**: gene-to-itself distance 5.36 vs
    gene-to-other 10.49, ratio 0.511. About half a typical between-gene distance
    is technical. Worth surfacing in the UI rather than hiding.
+8. **Use trimmed statistics, not raw (08-03).** The `meeting_2026-07-31.html`
+   deck overclaims with "5.2× more extreme genes", skew −2.50, excess kurtosis
+   16.4 — all outlier-inflated. Trimmed values are **3.7×, −0.84, 1.01**. Note
+   `structure_vs_noise.tsv` stores the *untrimmed* PC1 excess kurtosis (16.41),
+   so reading that field naively reproduces the overclaim.
+9. **SigClust: quote z = −11.86 (trimmed), not −5.38 or −5.26.** Trimming makes
+   the result *stronger* — the outliers were inflating the null's variance, so
+   the departure from Gaussian is a property of the bulk distribution, not a
+   tail artefact.
+10. **`dimension_names.tsv` and `dimension_reproducibility.tsv` are keyed on PC
+    number but computed in different feature spaces** — PC1 variance reads 15.27
+    in one and 14.17 in the other (91-feature vs 63-shared). **Do not join them
+    on PC index without recording which space each came from.** The store builder
+    must namespace them.
+11. **Staging is dead (08-03).** The 2026-07-27 two-stage active/silenced design
+    was overturned — active-only loses in all four configurations, and on the
+    immune panel it destroys signal (−1.63 SD). Do not build a staged view.
 
 ---
 
