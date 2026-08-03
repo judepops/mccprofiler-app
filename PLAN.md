@@ -486,6 +486,39 @@ hosting and no API.
 | **P11** | igv.js genomic context + bigWig range passthrough |
 | **P12** | Gene comparison; SE panel (optional) |
 | **P13** | BYOG worker in cd4env writing to the store (deferred, API already shaped) |
+| **P14** | Natural-language gene finder (queued 08-03, see below) |
+
+### P14 — natural-language gene finder
+
+*"I want a gene with long-range contacts, enhancer-driven, and immune."*
+
+**The LLM does not do the retrieval.** It translates the sentence into a
+structured query; a deterministic filter over the store executes it. That split
+is the whole design:
+
+    natural language --[Claude]--> query DSL --[plain pandas]--> genes
+
+Retrieval stays reproducible and auditable, the same question always returns the
+same genes, and a model that misreads the sentence produces a *visibly wrong
+query* rather than a plausible-looking gene list with no provenance.
+
+**Show the parsed query, always.** The UI renders the translation before the
+results — "long-range contacts" becomes `pc2 <= 25th percentile`, "immune"
+becomes `cohort = GWAS_immune_hot` — and lets the user edit it. An LLM that
+silently misinterprets is worse than no LLM, and the axis directions are exactly
+what it could get backwards: PC2's negative pole is long-range, which is not
+guessable from the label alone.
+
+**It does not break the localhost-only decision.** Only the *question text*
+leaves the machine; the panel, the profiles and the features never do. The model
+sees a sentence and a schema describing the available axes and cohorts, and
+returns a query.
+
+Implementation: Anthropic SDK, `claude-opus-5`, structured outputs via
+`output_config.format` with a JSON schema over the query DSL, so the response is
+schema-valid by construction rather than parsed out of prose. `effort: "low"` —
+this is translation, not reasoning. Needs `ANTHROPIC_API_KEY`; the endpoint
+should degrade to the manual filter UI when the key is absent.
 
 Commit at phase boundaries. PR at the end of P2 (first genuinely usable slice)
 unless asked sooner.
