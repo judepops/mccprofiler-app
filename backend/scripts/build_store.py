@@ -305,8 +305,19 @@ def build_tables(gene_ids: list[str] | None, source_labels: list[str] | None) ->
 
     post = P.by_key("posteriors").path
     df_post = read_table(post)
-    if "confidence" in df_post.columns:
-        df_post["is_core"] = df_post["confidence"] >= S.CORE_POSTERIOR_MIN
+    required = {"gene_symbol", "max_posterior", "assignment_entropy", "confidence_class"}
+    missing = required - set(df_post.columns)
+    if missing:
+        raise SystemExit(
+            f"posteriors table is missing {sorted(missing)}; got {list(df_post.columns)}"
+        )
+    # The pipeline already bins confidence as core(>0.8) / leaning(0.5-0.8) etc.
+    # Derive the boolean from the same threshold rather than inventing a second
+    # convention that could drift from confidence_class.
+    df_post["is_core"] = df_post["max_posterior"] >= S.CORE_POSTERIOR_MIN
+    n_core = int(df_post["is_core"].sum())
+    log(f"posteriors: {n_core}/{len(df_post)} core (>{S.CORE_POSTERIOR_MIN}), "
+        f"{len(df_post) - n_core} mixtures")
     write("posteriors", df_post, post)
 
     return written
