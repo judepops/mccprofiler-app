@@ -82,6 +82,8 @@ export default function App() {
   const [embLoading, setEmbLoading] = useState(false)
   const [embErr, setEmbErr] = useState<string | null>(null)
   const embReq = useRef(0)
+  // Lifted out of GeneCompare so the map can mark the compared gene too.
+  const [compareGenes, setCompareGenes] = useState<string[]>([])
 
   const plotWidth = useRef(900)
 
@@ -154,10 +156,12 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channel, mode, range])
 
-  // The map is only fetched for the Panel page, and only highlights a gene when
-  // one is selected.
+  // Fetched for both the Gene and Panel pages. The same view answers two
+  // different questions: on the Panel page it is the population, on the Gene
+  // page it is where this one gene sits within it. The Lab page does not need
+  // it, so it is still not fetched there.
   useEffect(() => {
-    if (page !== 'panel') return
+    if (page === 'lab') return
     const token = ++embReq.current
     setEmbLoading(true)
     setEmbErr(null)
@@ -402,12 +406,37 @@ export default function App() {
                   )}
                 </aside>
 
+                {/* Where this gene sits among the rest. Placed above the
+                    feature table because position is the headline and the
+                    features are the detail behind it, and above the compare
+                    box so that adding a gene there visibly moves the map. */}
+                <section className="lg:col-span-3">
+                  {embedding && (
+                    <ContinuumMap
+                      data={embedding}
+                      axes={axes}
+                      loading={embLoading}
+                      error={embErr}
+                      onAxisChange={(x, y) => setAxes([x, y])}
+                      onPick={select}
+                      compare={compareGenes}
+                      subtitle={`${gene.gene_symbol} in black${
+                        compareGenes.length ? `, compared with ${compareGenes.join(', ')}` : ''
+                      }`}
+                    />
+                  )}
+                </section>
+
                 <section className="lg:col-span-3">
                   {features && <FeatureTable data={features} onPick={select} />}
                 </section>
 
                 <section className="lg:col-span-3">
-                  <GeneCompare primary={gene} primaryFeatures={features} />
+                  <GeneCompare
+                    primary={gene}
+                    primaryFeatures={features}
+                    onCompareChange={setCompareGenes}
+                  />
                 </section>
               </div>
             )}

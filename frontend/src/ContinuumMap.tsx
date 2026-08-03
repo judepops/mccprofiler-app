@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import type { Embedding } from './api'
+import { api, type Embedding, type PlaneLoadings } from './api'
 
 const GROUP_COLOR: Record<string, string> = {
   'arch-HK': '#3d6b91',
@@ -41,7 +41,18 @@ interface Props {
   loading?: boolean
   error?: string | null
   height?: number
+  /** Extra genes to mark alongside `data.highlight`, for the comparison view.
+   *  Matched on gene_symbol because that is what the compare UI carries. */
+  compare?: string[]
+  /** Shown above the plot when the map is embedded in the gene page, where the
+   *  question is "where does THIS gene sit" rather than "what is the panel". */
+  subtitle?: string
 }
+
+/** Comparison marker colours. Distinct from the group palette on purpose: a
+ *  compared gene is not a category, and reusing a group colour would read as
+ *  one. */
+const COMPARE_COLORS = ['#c2703d', '#4a7c59', '#7a5c9e', '#a8452f']
 
 export function ContinuumMap({
   data,
@@ -51,12 +62,30 @@ export function ContinuumMap({
   loading,
   error,
   height = 360,
+  compare = [],
+  subtitle,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(600)
   const [hover, setHover] = useState<{ x: number; y: number; label: string } | null>(null)
   const [dimByConfidence, setDimByConfidence] = useState(true)
+  const [showLoadings, setShowLoadings] = useState(false)
+  const [vecs, setVecs] = useState<PlaneLoadings | null>(null)
+
+  // Fetched per plane rather than once, because the vectors are a property of
+  // the pair of axes on screen, not of the dataset.
+  useEffect(() => {
+    if (!showLoadings) return
+    let live = true
+    api
+      .planeLoadings(axes[0], axes[1], 8)
+      .then((r) => live && setVecs(r))
+      .catch(() => live && setVecs(null))
+    return () => {
+      live = false
+    }
+  }, [showLoadings, axes[0], axes[1]])
 
   useEffect(() => {
     const el = wrapRef.current
@@ -108,7 +137,50 @@ export function ContinuumMap({
       ctx.fill()
     }
 
+    // ---- comparison genes -------------------------------------------------
+    // Drawn before the primary highlight so the searched gene stays on top.
+    // A connecting line makes the separation between compared genes readable
+    // as a distance, which is the whole point of comparing on a map.
+    const cmp = compare
+      .map((sym, i) => ({
+        p: pts.find((q) => q.gene_symbol === sym),
+        color: COMPARE_COLORS[i % COMPARE_COLORS.length],
+      }))
+      .filter((c): c is { p: (typeof pts)[number]; color: string } => !!c.p)
+
     const hlPoint = pts.find((p) => p.gene_id === data.highlight)
+
+    if (hlPoint && cmp.length) {
+      ctx.strokeStyle = '#8badc9'
+      ctx.lineWidth = 1
+      ctx.setLineDash([3, 3])
+      for (const c of cmp) {
+        ctx.beginPath()
+        ctx.moveTo(sx(hlPoint.x), sy(hlPoint.y))
+        ctx.lineTo(sx(c.p.x), sy(c.p.y))
+        ctx.stroke()
+      }
+      ctx.setLineDash([])
+    }
+
+    for (const c of cmp) {
+      const px = sx(c.p.x)
+      const py = sy(c.p.y)
+      ctx.beginPath()
+      ctx.arc(px, py, 6, 0, Math.PI * 2)
+      ctx.strokeStyle = c.color
+      ctx.lineWidth = 2
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.arc(px, py, 3, 0, Math.PI * 2)
+      ctx.fillStyle = c.color
+      ctx.fill()
+      ctx.font = '11px ui-sans-serif, system-ui'
+      ctx.fillStyle = c.color
+      ctx.textAlign = px > PAD.left + plotW * 0.75 ? 'right' : 'left'
+      ctx.fillText(c.p.gene_symbol, px + (ctx.textAlign === 'right' ? -10 : 10), py + 4)
+    }
+
     if (hlPoint) {
       const px = sx(hlPoint.x)
       const py = sy(hlPoint.y)
@@ -125,6 +197,50 @@ export function ContinuumMap({
       ctx.fillStyle = '#0f1e2e'
       ctx.textAlign = px > PAD.left + plotW * 0.75 ? 'right' : 'left'
       ctx.fillText(hlPoint.gene_symbol, px + (ctx.textAlign === 'right' ? -11 : 11), py + 4)
+    }
+
+    // ---- loading vectors --------------------------------------------------
+    // Drawn from the centre of the plot and scaled to a fixed fraction of it.
+    // Loadings and scores live in different units, so arrow length here is
+    // relative between arrows and carries no absolute meaning against the
+    // point cloud. Said in the caption rather than implied by the drawing.
+    if (showLoadings && vecs?.available && vecs.vectors?.length) {
+      const cx = PAD.left + plotW / 2
+      const cy = PAD.top + plotH / 2
+      const maxLen = Math.max(...vecs.vectors.map((v) => v.length))
+      const reach = Math.min(plotW, plotH) * 0.42
+
+      for (const v of vecs.vectors) {
+        // Screen y is inverted relative to data y, so the vertical component
+        // is negated. Without this every arrow points at the wrong quadrant.
+        const ex = cx + (v.x / maxLen) * reach
+        const ey = cy - (v.y / maxLen) * reach
+
+        ctx.strokeStyle = '#0f1e2e'
+        ctx.globalAlpha = 0.55
+        ctx.lineWidth = 1.4
+        ctx.beginPath()
+        ctx.moveTo(cx, cy)
+        ctx.lineTo(ex, ey)
+        ctx.stroke()
+
+        const ang = Math.atan2(ey - cy, ex - cx)
+        ctx.beginPath()
+        ctx.moveTo(ex, ey)
+        ctx.lineTo(ex - 6 * Math.cos(ang - 0.4), ey - 6 * Math.sin(ang - 0.4))
+        ctx.lineTo(ex - 6 * Math.cos(ang + 0.4), ey - 6 * Math.sin(ang + 0.4))
+        ctx.closePath()
+        ctx.fillStyle = '#0f1e2e'
+        ctx.fill()
+
+        ctx.globalAlpha = 0.9
+        ctx.font = '9px ui-monospace, monospace'
+        ctx.fillStyle = '#2b5070'
+        ctx.textAlign = ex >= cx ? 'left' : 'right'
+        // Label sits just beyond the head, pushed clear of the arrow line.
+        ctx.fillText(v.feature, ex + (ex >= cx ? 4 : -4), ey + (ey >= cy ? 10 : -4))
+        ctx.globalAlpha = 1
+      }
     }
 
     // ---- axis labels, with the poles named -------------------------------
@@ -167,7 +283,7 @@ export function ContinuumMap({
       ctx.fillText(`${yp.pos} \u2192`, 0, 0)
       ctx.restore()
     }
-  }, [data, width, height, plotW, plotH, dimByConfidence])
+  }, [data, width, height, plotW, plotH, dimByConfidence, compare, showLoadings, vecs])
 
   function onMove(e: React.MouseEvent) {
     const rect = canvasRef.current!.getBoundingClientRect()
@@ -205,8 +321,24 @@ export function ContinuumMap({
           {error && (
             <span className="ml-2 font-normal text-element-enhancer">{error}</span>
           )}
+          {subtitle && (
+            <span className="ml-2 font-normal normal-case tracking-normal text-ink-400">
+              {subtitle}
+            </span>
+          )}
         </h2>
         <div className="flex items-center gap-2 text-[11px]">
+          <label
+            className="flex items-center gap-1.5"
+            title="Overlay the features that drive variation in this plane"
+          >
+            <input
+              type="checkbox"
+              checked={showLoadings}
+              onChange={(e) => setShowLoadings(e.target.checked)}
+            />
+            loadings
+          </label>
           <select
             value={axes[0]}
             onChange={(e) => onAxisChange(e.target.value, axes[1])}
@@ -285,6 +417,27 @@ export function ContinuumMap({
         )}
       </div>
 
+      {showLoadings && (
+        <div className="mt-2 rounded border border-ink-100 bg-ink-50/60 px-3 py-2 text-[11px] leading-relaxed text-ink-600">
+          {vecs?.available ? (
+            <>
+              <strong className="text-ink-800">
+                Top {vecs.vectors?.length} of {vecs.n_features} features
+              </strong>{' '}
+              by loading length in this plane, so a feature that loads hard on one
+              axis and not the other ranks below one that drives both. Each arrow
+              points the way that feature increases. Arrow lengths are comparable
+              with each other only: loadings and gene scores are in different
+              units, so the arrows carry no scale against the point cloud. PCA
+              sign is arbitrary, read the contrast between opposite arrows rather
+              than the absolute orientation.
+            </>
+          ) : (
+            <>{vecs?.reason ?? 'Loading vectors…'}</>
+          )}
+        </div>
+      )}
+
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-ink-500">
         <span className="flex flex-wrap items-center gap-3">
           {Object.entries(GROUP_DISPLAY).map(([k, label]) => (
@@ -294,6 +447,15 @@ export function ContinuumMap({
                 style={{ background: GROUP_COLOR[k] }}
               />
               {label}
+            </span>
+          ))}
+          {compare.map((sym, i) => (
+            <span key={sym} className="flex items-center gap-1 font-medium">
+              <span
+                className="inline-block h-2 w-2 rounded-full"
+                style={{ background: COMPARE_COLORS[i % COMPARE_COLORS.length] }}
+              />
+              {sym}
             </span>
           ))}
         </span>

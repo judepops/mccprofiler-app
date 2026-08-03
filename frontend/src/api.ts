@@ -150,6 +150,18 @@ export interface Embedding {
   points: EmbeddingPoint[]
 }
 
+/** Loading vectors for the two displayed axes, for the biplot overlay.
+ *  `available` is false over UMAP, which has no linear map back to features. */
+export interface PlaneLoadings {
+  available: boolean
+  reason?: string
+  x_axis?: string
+  y_axis?: string
+  n_features?: number
+  vectors?: { feature: string; x: number; y: number; length: number }[]
+  note?: string
+}
+
 export interface CohortRow {
   group: string
   n_in_panel: number
@@ -292,6 +304,9 @@ export interface QueryResult {
   note: string | null
   query?: Record<string, unknown>
   interpretation?: string | null
+  /** Part of the question the store cannot answer, for example TADs or
+   *  insulation. Set by the translator, never inferred here. */
+  unsupported?: string | null
   error?: string
 }
 
@@ -397,6 +412,9 @@ export const api = {
 
   embedding: (x: string, y: string, highlight?: string) =>
     get<Embedding>('/api/embedding', { x, y, highlight }),
+
+  planeLoadings: (x: string, y: string, top = 8) =>
+    get<PlaneLoadings>('/api/embedding/loadings', { x, y, top }),
 
   peaks: (gene: string) => get<PeakSet>(`/api/genes/${encodeURIComponent(gene)}/peaks`),
 

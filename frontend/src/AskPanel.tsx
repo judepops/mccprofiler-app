@@ -23,6 +23,7 @@ export function AskPanel({ onPick }: { onPick?: (s: string) => void }) {
   const [query, setQuery] = useState<Record<string, unknown> | null>(null)
   const [result, setResult] = useState<QueryResult | null>(null)
   const [interpretation, setInterpretation] = useState<string | null>(null)
+  const [unsupported, setUnsupported] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -38,6 +39,7 @@ export function AskPanel({ onPick }: { onPick?: (s: string) => void }) {
       const r = await api.ask(question.trim())
       setQuery(r.query ?? null)
       setInterpretation(r.interpretation ?? null)
+      setUnsupported(r.unsupported ?? null)
       setResult(r.error ? null : r)
       if (r.error) setErr(r.error)
     } catch (e) {
@@ -138,6 +140,15 @@ export function AskPanel({ onPick }: { onPick?: (s: string) => void }) {
           </h3>
           {interpretation && (
             <p className="mb-2 text-[12px] italic text-ink-700">“{interpretation}”</p>
+          )}
+          {/* Shown above the filter chain, not below the results. A gap in what
+              the data can answer changes how you read the genes, so it has to
+              arrive before them. */}
+          {unsupported && (
+            <p className="mb-2 rounded border border-element-enhancer/40 bg-element-enhancer/5 px-2 py-1.5 text-[11px] leading-relaxed text-ink-700">
+              <strong className="text-element-enhancer">Not in this dataset.</strong>{' '}
+              {unsupported}
+            </p>
           )}
           <div className="space-y-1">
             {result?.steps?.map((s, i) => (

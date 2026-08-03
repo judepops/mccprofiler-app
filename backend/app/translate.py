@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 from typing import Any
 
 DEFAULT_PROVIDER = "gemini"
@@ -89,13 +90,53 @@ def flat_schema(axes: list[str], cohorts: list[str], groups: list[str],
                 "description": "One plain sentence restating the query, naming each "
                                "direction explicitly so the user can spot a misreading.",
             },
+            "unsupported": {
+                "type": "string",
+                "description": "Any part of the question this dataset cannot answer, "
+                               "such as TADs, compartments, insulation or expression "
+                               "level. Empty if the question is fully answerable. "
+                               "Filters should still cover the answerable part.",
+            },
         },
         "required": ["filters", "interpretation"],
     }
 
 
+# `CONTEXT.md` at the repo root. Loaded once and cached, because it is static
+# and the prompt is rebuilt on every question.
+_CONTEXT_PATH = Path(__file__).resolve().parents[2] / "CONTEXT.md"
+_context_cache: str | None = None
+
+
+def load_context() -> str:
+    """The literature glossary, or an empty string if it is missing.
+
+    Missing is survivable and must not be fatal: without it the model still
+    translates, it just no longer knows that "housekeeping" is a cohort rather
+    than the similarly named group. Absence is reported by `status()` so the
+    degradation is visible rather than silent.
+    """
+    global _context_cache
+    if _context_cache is None:
+        try:
+            _context_cache = _CONTEXT_PATH.read_text(encoding="utf-8")
+        except OSError:
+            _context_cache = ""
+    return _context_cache
+
+
 def build_prompt(pole_lines: str) -> str:
     """The system instruction. Identical across providers on purpose."""
+    context = load_context()
+    glossary = (
+        "\n\nREFERENCE GLOSSARY. This tells you what a user's term means in the "
+        "literature and what it maps to in this dataset. Two things to take from "
+        "it. Where it says a term maps to nothing, do NOT invent a filter for it, "
+        "set `unsupported` instead. Where it warns that an obvious-looking mapping "
+        "is wrong, such as housekeeping being a cohort and not the similarly named "
+        "group, follow the warning over the resemblance.\n\n"
+        f"{context}\n"
+    ) if context else ""
     return (
         "You translate a biologist's question about gene contact architecture into a "
         "structured query. You do NOT answer the question or name genes. You only "
@@ -115,7 +156,12 @@ def build_prompt(pole_lines: str) -> str:
         "`group`; feature filters need `feature` and `direction`.\n"
         "- Always fill `interpretation` with one plain sentence naming each direction "
         "explicitly, so the user can spot a misreading.\n"
-        "Return only the JSON object."
+        "- If part of the question asks for something this dataset does not hold, "
+        "put that in `unsupported`, in plain words, and build filters only for the "
+        "part that IS answerable. An approximation offered silently is worse than "
+        "a stated gap.\n"
+        + glossary +
+        "\nReturn only the JSON object."
     )
 
 
@@ -221,11 +267,17 @@ def status() -> dict[str, Any]:
         "claude": bool(os.environ.get("ANTHROPIC_API_KEY")
                        or os.environ.get("ANTHROPIC_AUTH_TOKEN")),
     }
+    ctx = load_context()
     return {
         "provider": provider,
         "model": DEFAULT_MODELS.get(provider),
         "available": keys.get(provider, False),
         "credentials_present": keys,
+        # Reported so a missing glossary is visible. Without it the model still
+        # answers, it just loses the mappings and the traps, which is a quiet
+        # quality drop rather than an error.
+        "context_loaded": bool(ctx),
+        "context_chars": len(ctx),
         "note": "Only the plain-English box needs a model. Building and running "
                 "queries by hand works regardless.",
     }

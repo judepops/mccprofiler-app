@@ -21,9 +21,14 @@ interface Row {
 export function GeneCompare({
   primary,
   primaryFeatures,
+  onCompareChange,
 }: {
   primary: Gene
   primaryFeatures: FeatureSet | null
+  /** Reported upward so the continuum map can mark the compared gene. The
+   *  feature table answers "how do they differ"; the map answers "how far
+   *  apart are they overall", and one without the other is half the picture. */
+  onCompareChange?: (symbols: string[]) => void
 }) {
   const [query, setQuery] = useState('')
   const [other, setOther] = useState<Gene | null>(null)
@@ -35,7 +40,15 @@ export function GeneCompare({
     setOther(null)
     setOtherFeatures(null)
     setQuery('')
+    // Cleared here as well as by the effect below. The effect below would not
+    // observe `other` as null until the next render, which is one frame of a
+    // stale marker sitting on the map under the new gene.
+    onCompareChange?.([])
   }, [primary.gene_id])
+
+  useEffect(() => {
+    onCompareChange?.(other ? [other.gene_symbol] : [])
+  }, [other?.gene_symbol])
 
   async function load(symbol: string) {
     setErr(null)

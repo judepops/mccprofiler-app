@@ -340,6 +340,61 @@ def scree():
     })
 
 
+@app.get("/api/embedding/loadings")
+def plane_loadings(x: str = "pc2", y: str = "pc3", top: int = 8):
+    """Loading vectors for the two displayed axes, for a biplot overlay.
+
+    Ranked by length in the plane, sqrt(lx^2 + ly^2), not by either component
+    alone. A feature can load hard on x and not at all on y, and ranking by x
+    would draw it as a long arrow that says nothing about the vertical spread
+    the viewer is looking at.
+
+    Returns `available: False` rather than an error for UMAP axes. UMAP has no
+    loadings at all: it is a nonlinear embedding with no linear map back to
+    features, so an arrow over it would be an invention.
+    """
+    s_ = store()
+    if not s_.has("pc_loadings"):
+        raise HTTPException(503, "pc_loadings not built")
+
+    def pc_index(a: str) -> int | None:
+        return int(a[2:]) if a.startswith("pc") and a[2:].isdigit() else None
+
+    ix, iy = pc_index(x), pc_index(y)
+    if ix is None or iy is None:
+        return {
+            "available": False,
+            "reason": "Loadings exist only for the principal components. UMAP is "
+                      "nonlinear and has no linear map back to the features, so "
+                      "there is no arrow to draw.",
+        }
+
+    df = s_.table("pc_loadings")
+    lx = df[df["pc"] == ix].set_index("feature")["loading"]
+    ly = df[df["pc"] == iy].set_index("feature")["loading"]
+    if lx.empty or ly.empty:
+        raise HTTPException(404, f"no loadings for {x} or {y}")
+
+    both = pd.DataFrame({"x": lx, "y": ly}).dropna()
+    both["length"] = np.hypot(both["x"], both["y"])
+    sel = both.sort_values("length", ascending=False).head(top)
+
+    return _clean({
+        "available": True,
+        "x_axis": x,
+        "y_axis": y,
+        "n_features": int(len(both)),
+        "vectors": [
+            {"feature": f, "x": float(r.x), "y": float(r.y), "length": float(r.length)}
+            for f, r in sel.iterrows()
+        ],
+        "note": "Arrow direction is the direction in which that feature increases. "
+                "Length is how strongly the feature loads on this plane. PCA sign "
+                "is arbitrary, so read the contrast between opposite arrows, not "
+                "the absolute orientation.",
+    })
+
+
 @app.get("/api/dimensions/{pc}/loadings")
 def loadings(pc: int, top: int = 15):
     """Feature loadings for one component, the evidence for its name.
@@ -625,6 +680,23 @@ def ask(body: dict):
     except _translate.TranslationFailed as e:
         raise HTTPException(502, f"translation failed: {e}") from None
 
+    # A wholly unanswerable question translates to no filters, and no filters
+    # means every gene passes, so the honest "cannot answer" would render as all
+    # 1,846 genes matched. Refuse instead of returning the panel.
+    if not query.get("filters") and (query.get("unsupported") or "").strip():
+        return _clean({
+            "question": question,
+            "query": query,
+            "interpretation": query.get("interpretation"),
+            "unsupported": query["unsupported"].strip(),
+            "provider": _translate.active_provider(),
+            "n_matched": 0,
+            "steps": [],
+            "genes": [],
+            "note": "Nothing in this question maps to something the store holds, "
+                    "so no filter was built. See what is missing above.",
+        })
+
     try:
         result = run_query(query, s_)
     except QueryError as e:
@@ -636,6 +708,11 @@ def ask(body: dict):
         "question": question,
         "query": query,
         "interpretation": query.get("interpretation"),
+        # Set when part of the question asks for something the store does not
+        # hold, TADs and insulation being the usual cases. Shown rather than
+        # swallowed, because the failure mode worth avoiding is a confident
+        # answer to a question the data cannot address.
+        "unsupported": (query.get("unsupported") or "").strip() or None,
         "provider": _translate.active_provider(),
         **result,
         "disclaimer": "The model translated your question into the query shown. It "
