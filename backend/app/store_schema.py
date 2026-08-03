@@ -286,7 +286,13 @@ PC_LABELS: dict[str, str] = {
     # Format is "PC<n> (interpretation)" so the component number is never hidden
     # behind the prose. The interpretation is exactly that, a reading of the
     # loadings, and the app shows those loadings so it can be checked.
-    "pc1": "PC1 (amount, richness and reach vs emptiness)",
+    # Measured 2026-08-03, and NOT "amount" in the sense of signal. PC1
+    # correlates with total_mcc at +0.033, essentially zero. It tracks peak
+    # counts and reach: n_high_consensus_peaks_075 +0.787, mean_degree +0.763,
+    # n_peaks_all +0.717, max_distance_to_viewpoint_all +0.715. Total signal
+    # sits on PC3 (-0.621) and PC6 (-0.433). Calling this axis "amount" implied
+    # amount was quarantined here, which is the opposite of the truth.
+    "pc1": "PC1 (peak richness and reach vs emptiness)",
     "pc2": "PC2 (local vs long-range)",
     # CAVEAT, measured 2026-08-03 from the stored loadings: the positive pole is
     # cleanly promoter (promoter_signal_fraction +0.278/+0.254), but the negative
@@ -326,7 +332,7 @@ PC_LABELS: dict[str, str] = {
 #          frac_signal_in_top_peak +0.23
 #        - signal_entropy -0.21
 PC_POLES: dict[str, dict[str, str]] = {
-    "pc1": {"neg": "empty, few contacts", "pos": "rich, many contacts"},
+    "pc1": {"neg": "few peaks, short reach", "pos": "many peaks, long reach"},
     "pc2": {"neg": "long-range", "pos": "local"},
     "pc3": {"neg": "enhancer / CTCF, high amount", "pos": "promoter-driven"},
     "pc4": {"neg": "CTCF", "pos": "enhancer"},

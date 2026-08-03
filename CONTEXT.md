@@ -277,12 +277,32 @@ mccprofiler. `total_mcc` is the undivided amount.
 ### contact amount, signal depth
 How much contact signal a gene has in total, before any question of shape.
 
-**Maps to:** axis `pc1` and feature `total_mcc`.
+**Maps to:** feature `total_mcc`. **Not `pc1`.**
 
-**This is not biology.** PC1 is amount. Filtering on it re-sorts genes by how
-much signal they have, which is partly capture efficiency, and it will look like
-a biological result if it is presented as one. Only use PC1 when the question is
-explicitly about how much contact a gene has.
+Measured 2026-08-03: `r(PC1, total_mcc) = +0.033`, essentially zero. PC1 tracks
+peak counts and reach, not signal. Total signal sits on **PC3** (`-0.621`) and
+PC6 (`-0.433`). "Amount" is not even a single quantity here: total signal and
+number of confident peaks correlate at `-0.127`, so the genes with the most
+signal are not the genes with the most peaks.
+
+**Two consequences.** Filtering on PC1 does not filter on amount. And the
+promoter-versus-enhancer contrast on PC3 is entangled with amount, so a result
+read off PC3 may be partly a statement about how much signal a gene has. Amount
+is not quarantined on PC1; it never was.
+
+### how far a name can be trusted
+
+Every axis name is a summary of one contrast within a mixed axis, not a
+definition. Measured share of each axis's squared loading mass that sits in the
+concept its name refers to:
+
+    PC1  23%   PC2  26%   PC3  31%   PC4  35%   PC5  22%
+
+All are well above chance, so no name is invented, but each accounts for roughly
+a quarter to a third of its axis. PC1 to PC5 carry 45% of total variance while
+19 components clear the noise ceiling at 78%, so about a third of the real
+structure has no name at all. When a question names something a **feature**
+measures directly, prefer the feature over the axis.
 
 ---
 

@@ -34,10 +34,34 @@ export function DimensionPanel() {
       <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-500">
         Coordinate system, components and what they are made of
       </h2>
-      <p className="mb-4 text-[11px] leading-relaxed text-ink-500">
+      <p className="mb-3 text-[11px] leading-relaxed text-ink-500">
         Panel-level, not gene-specific. Axis names are readings of the loadings below;
         if a name does not match its loadings, the name is wrong.
       </p>
+
+      {/* Measured, not asserted. Reproduce with
+          backend/scripts/diagnose_pc_names.py. This sits at the top of the
+          panel because it governs how every name below should be read. */}
+      <div className="mb-4 rounded border border-element-enhancer/30 bg-element-enhancer/5 px-3 py-2 text-[11px] leading-relaxed text-ink-700">
+        <strong>How much of a name is true.</strong> Each axis name summarises one
+        contrast inside a mixed axis. The share of an axis's squared loading mass
+        that sits in the concept its name refers to is{' '}
+        <span className="font-mono">23%</span> for PC1,{' '}
+        <span className="font-mono">26%</span> PC2,{' '}
+        <span className="font-mono">31%</span> PC3,{' '}
+        <span className="font-mono">35%</span> PC4,{' '}
+        <span className="font-mono">22%</span> PC5. All are well above chance, so no
+        name is invented, but a name accounts for roughly a quarter to a third of
+        its axis. Two specifics worth carrying:{' '}
+        <strong>PC1 is not signal amount</strong> (it correlates with{' '}
+        <span className="font-mono">total_mcc</span> at{' '}
+        <span className="font-mono">+0.03</span>; it tracks peak counts and reach),
+        and <strong>amount lives on PC3</strong> (
+        <span className="font-mono">-0.62</span>), so the promoter-versus-enhancer
+        contrast there is partly a statement about how much signal a gene has.
+        PC1-5 cover 45% of variance while 19 components clear the noise ceiling at
+        78%, so about a third of the real structure is unnamed.
+      </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* scree ------------------------------------------------------------ */}
