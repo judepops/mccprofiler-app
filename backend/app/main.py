@@ -19,6 +19,7 @@ from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import store_schema as S
+from .query import QueryError, query_schema, run as run_query
 from .store import StoreMissing, get_store
 
 # Feature distance bands, mirrored from mccprofiler.config.DISTANCE_BANDS so the
@@ -532,6 +533,161 @@ def export_gene(gene: str):
         media_type="text/csv",
         headers={"Content-Disposition": f'attachment; filename="{gid}_mccprofiler.csv"'},
     )
+
+
+# ---------------------------------------------------------------------------
+# gene finder — the LLM translates, pandas retrieves
+# ---------------------------------------------------------------------------
+
+
+def _vocabulary(s_) -> dict:
+    """What a query may refer to. Also the model's entire view of the data."""
+    emb = s_.table("embeddings") if s_.has("embeddings") else None
+    axes = [c for c in (emb.columns if emb is not None else [])
+            if c not in ("gene_id", "symbol_key")]
+    cohorts: list[str] = []
+    if s_.has("cohort_membership"):
+        counts = s_.table("cohort_membership")["group"].value_counts()
+        cohorts = sorted(counts[counts >= S.MIN_GROUP_N].index.tolist())
+    groups = sorted(x for x in s_.genes["group"].dropna().unique())
+    features = sorted(s_.table("features")["feature"].unique()) if s_.has("features") else []
+    return {"axes": axes, "cohorts": cohorts, "groups": groups, "features": features}
+
+
+@app.get("/api/vocabulary")
+def vocabulary():
+    """The query vocabulary, so the UI can build a query without the model."""
+    s_ = store()
+    v = _vocabulary(s_)
+    return {
+        **v,
+        "axis_labels": {a: S.PC_LABELS.get(a, a) for a in v["axes"]},
+        "axis_poles": {a: S.PC_POLES[a] for a in v["axes"] if a in S.PC_POLES},
+        "archetype_labels": {g: S.ARCHETYPE_DISPLAY.get(g, {}).get("display", g)
+                             for g in v["groups"]},
+    }
+
+
+@app.post("/api/query")
+def execute_query(query: dict):
+    """Run a query DSL object. Deterministic; needs no API key.
+
+    This is the retrieval path. /api/ask only adds a translation step in front
+    of it, so anything the model can ask for, the UI can ask for directly.
+    """
+    try:
+        return _clean(run_query(query, store()))
+    except QueryError as e:
+        raise HTTPException(400, str(e)) from None
+
+
+@app.post("/api/ask")
+def ask(body: dict):
+    """Translate a question into a query, then run it.
+
+    The model never sees the data — only the question and a schema naming the
+    available axes, cohorts and features. The parsed query is returned
+    alongside the results so the translation can be checked and corrected;
+    a misread question shows up as a wrong query, not a wrong gene list.
+    """
+    question = (body or {}).get("question", "").strip()
+    if not question:
+        raise HTTPException(400, "no question given")
+
+    s_ = store()
+    v = _vocabulary(s_)
+
+    try:
+        import anthropic
+    except ImportError:
+        raise HTTPException(
+            503,
+            "the anthropic SDK is not installed — run `pip install anthropic` in the "
+            "mccapp env. Query building still works without it.",
+        ) from None
+
+    # The SDK constructor does not raise on missing credentials — it fails at
+    # call time with a wall of text about header names. Check up front so the
+    # UI can show something a person can act on.
+    import os
+
+    if not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
+        raise HTTPException(
+            503,
+            "No Anthropic credentials. Set ANTHROPIC_API_KEY and restart the server. "
+            "Building queries by hand works without it — the model only translates.",
+        )
+    client = anthropic.Anthropic()
+
+    # The model gets the vocabulary and the axis DIRECTIONS. Without the poles it
+    # would have to guess which end of PC2 is long-range, and it would guess
+    # wrong as often as not — the sign is arbitrary in PCA.
+    pole_lines = "\n".join(
+        f"  {a}: {S.PC_LABELS.get(a, a)} — low end = {p['neg']}, high end = {p['pos']}"
+        for a, p in S.PC_POLES.items() if a in v["axes"]
+    )
+    system = (
+        "You translate a biologist's question about gene contact architecture into a "
+        "structured query. You do NOT answer the question or name genes — you only "
+        "build the query; a deterministic filter runs it.\n\n"
+        f"Axes and which end is which:\n{pole_lines}\n\n"
+        "Rules:\n"
+        "- Use the fewest filters that capture the question. Extra filters silently "
+        "shrink the result to a handful.\n"
+        "- Map direction words to the correct POLE, not to 'high'. 'Long-range' is the "
+        "LOW end of PC2, not the high end.\n"
+        "- PC1 is contact amount, not biology. Only use it if the question is about "
+        "how much signal a gene has.\n"
+        "- Prefer a cohort filter for biological categories (immune, housekeeping, "
+        "essential) rather than trying to express them as axis positions.\n"
+        "- Always fill `interpretation` with one plain sentence naming each direction "
+        "explicitly, so the user can spot a misreading."
+    )
+
+    try:
+        resp = client.messages.create(
+            model="claude-opus-5",
+            max_tokens=2000,
+            system=system,
+            output_config={
+                "effort": "low",  # translation, not reasoning
+                "format": {
+                    "type": "json_schema",
+                    "schema": query_schema(v["axes"], v["cohorts"], v["groups"],
+                                           v["features"]),
+                },
+            },
+            messages=[{"role": "user", "content": question}],
+        )
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(502, f"translation failed: {e}") from None
+
+    if resp.stop_reason == "refusal":
+        raise HTTPException(400, "the question was declined by safety classifiers")
+
+    text = next((b.text for b in resp.content if b.type == "text"), None)
+    if not text:
+        raise HTTPException(502, "translation returned no query")
+
+    import json as _json
+    query = _json.loads(text)
+
+    try:
+        result = run_query(query, s_)
+    except QueryError as e:
+        # A query that cannot execute is still worth showing — it is the
+        # evidence of what the model misread.
+        return _clean({"question": question, "query": query, "error": str(e)})
+
+    return _clean({
+        "question": question,
+        "query": query,
+        "interpretation": query.get("interpretation"),
+        **result,
+        "disclaimer": "The model translated your question into the query shown. It "
+                      "never saw the data. Check the query — if it misread you, edit "
+                      "it and re-run.",
+    })
 
 
 @app.get("/api/ranked")

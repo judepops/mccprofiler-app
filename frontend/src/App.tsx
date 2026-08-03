@@ -20,6 +20,7 @@ import { DimensionPanel } from './DimensionPanel'
 import { LabPage } from './LabPage'
 import { ExplainPanel } from './ExplainPanel'
 import { RankedLists } from './RankedLists'
+import { AskPanel } from './AskPanel'
 import { PeakDetail } from './PeakDetail'
 import { GeneCompare } from './GeneCompare'
 
@@ -244,6 +245,7 @@ export default function App() {
             <p className="pt-8 text-center text-sm text-ink-400">
               Search a gene to see its contact architecture — or start from a gene set below.
             </p>
+            <AskPanel onPick={select} />
             <RankedLists onPick={select} />
             <CohortView onPick={select} />
             <DimensionPanel />
@@ -407,6 +409,7 @@ export default function App() {
                   />
                 )}
                 <DimensionPanel />
+                <AskPanel onPick={select} />
                 <RankedLists onPick={select} />
                 <CohortView onPick={select} />
                 <ExplainPanel />

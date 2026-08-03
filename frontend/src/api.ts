@@ -268,6 +268,51 @@ export interface Explain {
   [k: string]: unknown
 }
 
+export interface Vocabulary {
+  axes: string[]
+  cohorts: string[]
+  groups: string[]
+  features: string[]
+  axis_labels: Record<string, string>
+  axis_poles: Record<string, { neg: string; pos: string }>
+  archetype_labels: Record<string, string>
+}
+
+export interface QueryStep {
+  filter: Record<string, unknown>
+  reads_as: string
+  before: number
+  after: number
+}
+
+export interface QueryResult {
+  n_matched: number
+  steps: QueryStep[]
+  genes: { gene_id: string; gene_symbol: string; group: string | null }[]
+  note: string | null
+  query?: Record<string, unknown>
+  interpretation?: string | null
+  error?: string
+}
+
+async function post<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(BASE + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    let detail = res.statusText
+    try {
+      detail = (await res.json()).detail ?? detail
+    } catch {
+      /* not JSON */
+    }
+    throw new Error(detail)
+  }
+  return res.json() as Promise<T>
+}
+
 async function get<T>(path: string, params?: Record<string, unknown>): Promise<T> {
   const url = new URL(BASE + path)
   for (const [k, v] of Object.entries(params ?? {})) {
@@ -296,6 +341,12 @@ export const api = {
 
   labReproducibility: (feature?: string) =>
     get<Repro>('/api/lab/reproducibility', { feature }),
+
+  vocabulary: () => get<Vocabulary>('/api/vocabulary'),
+
+  ask: (question: string) => post<QueryResult>('/api/ask', { question }),
+
+  query: (q: Record<string, unknown>) => post<QueryResult>('/api/query', q),
 
   ranked: (axis: string, limit = 25) =>
     get<Ranked>('/api/ranked', { axis, limit }),
