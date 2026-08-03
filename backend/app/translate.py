@@ -59,20 +59,29 @@ def flat_schema(axes: list[str], cohorts: list[str], groups: list[str],
     irrelevant. Less elegant than a union, but it survives the trip through
     two different structured-output implementations.
 
-    Pass `cohorts=[]` to remove external reference sets from the query language
-    entirely, which is how the ask endpoint calls it. Selection then runs on
-    contact architecture alone and external membership survives only as
-    annotation on the results. Dropping the field from the schema rather than
-    filtering afterwards is deliberate: a model cannot emit a filter it has no
-    vocabulary for.
+    Pass an empty list to remove that filter type from the language entirely.
+    The ask endpoint passes `cohorts=[]` and `axes=[]`, so selection runs on
+    measured features alone. Dropping the field from the schema rather than
+    discouraging it in prose is deliberate: a model cannot emit a filter it has
+    no vocabulary for.
+
+    Axes are excluded because a principal component is a mixture. Measured in
+    scripts/diagnose_pc_names.py, the concept each PC is named after accounts
+    for only 22 to 35 percent of that axis, so "PC2 low" is a blunt way of
+    asking for long-range when `frac_far_distal` high asks for it exactly.
     """
-    types = ["axis", "archetype", "feature"] + (["cohort"] if cohorts else [])
+    types = ["archetype"]
     props: dict[str, Any] = {
         "type": {"type": "string", "enum": types},
-        "axis": {"type": "string", "enum": axes},
         "group": {"type": "string", "enum": groups},
     }
+    if features:
+        types.append("feature")
+    if axes:
+        types.append("axis")
+        props["axis"] = {"type": "string", "enum": axes}
     if cohorts:
+        types.append("cohort")
         props["cohort"] = {"type": "string", "enum": cohorts}
     return {
         "type": "object",
@@ -155,34 +164,50 @@ def build_prompt(pole_lines: str, feature_reference: str = "") -> str:
         "group, follow the warning over the resemblance.\n\n"
         f"{context}\n"
     ) if context else ""
+    axis_block = f"\nAxes and which end is which:\n{pole_lines}\n" if pole_lines else ""
     return (
         "You translate a biologist's question about gene contact architecture into a "
         "structured query. You do NOT answer the question or name genes. You only "
         "build the query; a deterministic filter runs it.\n\n"
-        f"Axes and which end is which:\n{pole_lines}\n\n"
+        "Build the query out of MEASURED FEATURES. Each feature is one quantity "
+        "computed from the contact profile, so a feature filter asks for exactly the "
+        "thing it names. Principal components are deliberately not available: a "
+        "component is a mixture, and the concept each one is named after accounts for "
+        "only 22 to 35 percent of it, so selecting on a component would quietly "
+        "select on several other things at the same time.\n"
+        f"{axis_block}\n"
         "Rules:\n"
         "- Use the fewest filters that capture the question. Extra filters silently "
         "shrink the result to a handful.\n"
-        "- Map direction words to the correct POLE, not to 'high'. 'Long-range' is the "
-        "LOW end of PC2, not the high end.\n"
-        "- PC1 is peak COUNT and reach, not total signal. It correlates with "
-        "total_mcc at only +0.03. If a question is about how much signal a gene has, "
-        "use the total_mcc feature directly; PC1 will not answer it.\n"
-        "- Every axis name describes only part of its axis, between 22 and 35 percent "
-        "of the loading mass. Treat a name as the dominant contrast, not a "
-        "definition, and prefer a named FEATURE over an axis when the question names "
-        "something a feature measures directly.\n"
-        "- Selection runs on contact architecture ONLY. You have no filter for "
-        "external gene sets, and there is deliberately no vocabulary for one. If a "
-        "question asks for a biological category that is not architectural, such as "
+        "- Every clause maps to one or more features. Read the feature reference "
+        "below and pick the feature that measures the thing asked for. If two "
+        "features both fit, pick the more specific one, and use both only if the "
+        "question really has two conditions.\n"
+        "- `direction` is which END of that feature you want, high or low. Read the "
+        "reference, which says what HIGH means for every feature. Do not assume the "
+        "wanted answer is always 'high': 'local' is `frac_far_distal` LOW just as "
+        "much as it is `frac_local` high.\n"
+        "- A property attached to an element class is ONE condition, not two. "
+        "'Long-range enhancer interactions' means the enhancer contacts are far "
+        "away, so it is `max_distance_to_viewpoint_enhancer` high, a single filter. "
+        "Filtering `frac_far_distal` high AND `n_peaks_enhancer` high is a different "
+        "and wrong question: it returns genes with long-range contacts somewhere and "
+        "enhancers somewhere, which need not be the same peaks. See JOINT CONDITIONS "
+        "in the reference and look for a feature naming both the property and the "
+        "element before you reach for two filters.\n"
+        "- For contact amount use `total_mcc`. Note that amount and peak count are "
+        "close to unrelated here, they correlate at -0.13, so 'a lot of signal' and "
+        "'a lot of peaks' are different requests: `total_mcc` and `n_peaks_all`.\n"
+        "- Selection runs on measured contact architecture ONLY. You have no filter "
+        "for external gene sets, and there is deliberately no vocabulary for one. If "
+        "a question asks for a biological category that is not architectural, such as "
         "immune, housekeeping, essential, conserved or expressed, that part is "
-        "`unsupported`. Do NOT approximate it with an axis or a group: the point of "
+        "`unsupported`. Do NOT approximate it with a feature or a group: the point of "
         "this tool is that architecture is measured independently of borrowed "
         "labels, and selecting on those labels would destroy that independence. "
         "Membership is reported alongside the results afterwards instead.\n"
-        "- Each filter object only needs the fields its type uses: axis filters need "
-        "`axis` and `direction`; cohort filters need `cohort`; archetype filters need "
-        "`group`; feature filters need `feature` and `direction`.\n"
+        "- Each filter object only needs the fields its type uses: feature filters "
+        "need `feature` and `direction`; archetype filters need `group`.\n"
         "- Always fill `interpretation` with one plain sentence naming each direction "
         "explicitly, so the user can spot a misreading.\n"
         "- If part of the question asks for something this dataset does not hold, "

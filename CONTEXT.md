@@ -16,9 +16,17 @@ Definitions are drawn from the project literature notebook (notebook
 
 ---
 
-## THE RULE THAT OVERRIDES EVERY MAPPING BELOW
+## TWO RULES THAT OVERRIDE EVERY MAPPING BELOW
 
-**Selection is on contact architecture alone. External gene sets are never a
+**1. Queries are built from features, not principal components.** There is no
+`axis` filter type in the schema. A component is a mixture: measured in
+`scripts/diagnose_pc_names.py`, the concept each PC is named after carries only
+22 to 35 percent of that axis, so selecting on one selects on several things at
+once. A feature is a single measured quantity and means what it says. Where an
+entry below explains a contrast in terms of a component, that is background for
+understanding the data, not a filter you can build.
+
+**2. Selection is on contact architecture alone. External gene sets are never a
 filter.**
 
 Where an entry below says a term "maps to" a named set such as `Eisenberg_HK`,
@@ -48,14 +56,15 @@ a property it was selected for.
 Micro Capture-C contact profiles from human CD4+ T cells, one profile per gene,
 anchored on an experimental viewpoint, plus or minus 1 Mb at 50 bp resolution.
 From each profile, 91 position-invariant features are computed. Genes are placed
-in a continuous coordinate system by PCA on those features.
+in a continuous coordinate system by PCA on those features, but **queries are
+built from the 91 features, not from the components**. See the rule below.
 
 Three consequences govern every mapping below.
 
 **This measures contact architecture, not transcription.** No feature reads
 expression, chromatin state, or sequence. When a user asks for something
-transcriptional ("highly expressed", "silenced"), the only honest route is an
-external reference set, never an axis.
+transcriptional ("highly expressed", "silenced"), no feature answers it and the
+clause is `unsupported`.
 
 **The groups are a resolution choice, not a discovery.** Gap statistic returns
 k=1, HDBSCAN returns one cluster, the dip test is unimodal on PC1 to PC5, and
@@ -134,9 +143,9 @@ least 2.
 **Maps to:** `DICE_top_TPM_quartile`, `cd4_rna_top_quartile`,
 `cd4_specific_immune`. Silenced is `Roadmap_silenced`.
 
-**Not an axis.** Expression breadth is not a contact feature. If a user asks for
-"broadly expressed genes with X architecture", the breadth half is a cohort
-filter and only the X half is an axis.
+**Not a feature.** Expression breadth is not measured from contacts. If a user
+asks for "broadly expressed genes with X architecture", the breadth half is
+`unsupported` and only the X half becomes a filter.
 
 ### immune GWAS gene
 Literature: a gene implicated by variants at genome-wide significance
@@ -172,7 +181,7 @@ aggregate.
 **Maps to:** element-class features, for example `n_peaks_enhancer`,
 `enhancer_signal_fraction_raw`, `n_peaks_promoter`,
 `promoter_signal_fraction_raw`, `n_peaks_ctcf`, `ctcf_signal_fraction`. Also
-axis `pc4` (enhancer versus CTCF composition).
+the element-class features directly. For a property OF one class, use the feature naming both, for example `max_distance_to_viewpoint_enhancer` for long-range enhancer contacts.
 
 ### super-enhancer
 Literature: introduced by Whyte et al. (2013) and Hnisz et al. (2013) for large
@@ -229,8 +238,7 @@ are the poised developmental class in stem cells.
 ### local versus long-range, proximal versus distal
 The primary architectural contrast in this dataset.
 
-**Maps to:** axis `pc2` (local versus long-range), where the **low** end is
-long-range and the high end is local. Features: `frac_local`, `frac_distal`,
+**Maps to:** `frac_local`, `frac_distal`,
 `frac_far_distal`, `local_to_distal_ratio`, `distal_signal_density`,
 `frac_promoter_proximal`, and the `max_distance_to_viewpoint_*` family.
 
@@ -245,7 +253,7 @@ cohesin and CTCF, average around 360 kb, and over 90% have convergently oriented
 CTCF motifs (Rao et al. 2014). Micro Capture-C localises the contact to the
 central consensus motif rather than to a general anchor region.
 
-**Maps to:** the CTCF element-class features and `pc4`. There is no loop-calling
+**Maps to:** the CTCF element-class features. There is no loop-calling
 step in this pipeline, so there is no per-loop object to filter on. A question
 about "genes with strong CTCF loops" becomes a question about CTCF contact
 features.
@@ -336,8 +344,9 @@ is not exhaustive; the test is whether a real filter exists.
 3. **PC3's negative pole is not purely enhancer.** Its strongest negative
    loading is `total_mcc` (-0.227), with `n_peaks_enhancer` (-0.216) and
    `raw_peak_max_max_ctcf` (-0.193). So the negative pole is enhancer plus CTCF
-   plus amount. To ask for enhancer-driven cleanly, add `pc4` high, which
-   separates enhancer from CTCF.
+   plus amount. This is one reason axis filters were removed: ask for
+   enhancer-driven with `enhancer_signal_fraction_raw` high, which means only
+   that.
 4. **Axis poles must be read, not guessed.** PCA sign is arbitrary. Long-range
    is the low end of PC2.
 5. **Super-enhancer labels are display-only** and are never a feature.

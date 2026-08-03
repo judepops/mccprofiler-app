@@ -708,17 +708,20 @@ def ask(body: dict):
     s_ = store()
     v = _vocabulary(s_)
 
-    # The model is given the axis DIRECTIONS. Without the poles it would have to
-    # guess which end of PC2 is long-range, and PCA sign is arbitrary, so it
-    # would guess wrong about half the time.
-    pole_lines = "\n".join(
-        f"  {a}: {S.PC_LABELS.get(a, a)}, low end = {p['neg']}, high end = {p['pos']}"
-        for a, p in S.PC_POLES.items() if a in v["axes"]
-    )
-    # Empty cohort list, so the `cohort` filter type is absent from the schema
-    # rather than merely discouraged. A model cannot emit what it has no
+    # No axis poles, because there are no axis filters. See below.
+    pole_lines = ""
+    # Empty axis AND cohort lists, so neither filter type exists in the schema
+    # rather than being merely discouraged. A model cannot emit what it has no
     # vocabulary for, which is a stronger guarantee than an instruction.
-    schema = _translate.flat_schema(v["axes"], [], v["groups"], v["features"])
+    #
+    # Axes are gone because a principal component is a mixture: the concept each
+    # one is named after carries only 22 to 35 percent of it
+    # (scripts/diagnose_pc_names.py), so "PC2 low" silently selects on several
+    # things at once where `frac_far_distal` high selects on one. The 91
+    # features say what they mean, including 34 that are element-class specific,
+    # which is what lets "long-range enhancer contacts" be asked as the single
+    # joint condition it actually is.
+    schema = _translate.flat_schema([], [], v["groups"], v["features"])
 
     try:
         query = _translate.translate(

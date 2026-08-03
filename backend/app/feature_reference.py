@@ -72,6 +72,53 @@ EXTRA: dict[str, str] = {
         "periodic placement rather than clustered.",
 }
 
+# The single most important thing in this file. "Long-range enhancer contacts"
+# is one condition about one set of peaks, not two conditions about a gene.
+# Two marginal filters return genes that have long-range contacts SOMEWHERE and
+# enhancers SOMEWHERE, which they need not be the same peaks, so the answer
+# quietly stops being about long-range enhancers at all. 34 of the 91 features
+# are element-class specific precisely so the joint question can be asked
+# directly.
+JOINT_HINTS = """\
+JOINT CONDITIONS. Read this before combining filters.
+
+When a question attaches a property to an ELEMENT CLASS (enhancer, promoter,
+CTCF), that is ONE condition about those peaks, not two conditions about the
+gene. Use the single feature ending in _enhancer / _promoter / _ctcf.
+
+  "long-range enhancer interactions"
+      RIGHT  max_distance_to_viewpoint_enhancer high        (one filter)
+      WRONG  frac_far_distal high + n_peaks_enhancer high
+             That returns genes with long-range contacts somewhere and
+             enhancers somewhere. They need not be the same peaks, so the
+             result stops being about long-range enhancers.
+
+  "local CTCF contacts"     -> oe_local_enrichment_max_ctcf high, or
+                               max_distance_to_viewpoint_ctcf low
+  "distant promoter contacts" -> max_distance_to_viewpoint_promoter high
+  "one strong enhancer"     -> raw_peak_max_max_enhancer high
+  "broad enhancer contact"  -> oe_fwhm_bp_max_enhancer high
+  "one-sided enhancer contacts" -> oe_asymmetry_mean_enhancer high
+  "reproducible enhancer contacts" -> consensus_fraction_max_enhancer high
+  "enhancer-dominated"      -> enhancer_signal_fraction_raw high
+
+The rule generally: if the question says "<property> <element> contacts", look
+for a feature whose name contains BOTH the property and the element, and prefer
+that one feature over two. Only use two filters when the question genuinely has
+two independent conditions, such as "long-range enhancer contacts in genes that
+also have many CTCF sites".
+
+Element-specific features exist for these properties:
+  distance   max_distance_to_viewpoint_{enhancer,promoter,ctcf}
+  count      n_peaks_{enhancer,promoter,ctcf}
+  strength   raw_peak_max_max_*, oe_max_max_*, raw_log2_enrichment_max_*
+  locality   oe_local_enrichment_max_*
+  asymmetry  oe_asymmetry_{mean,max}_*      (one-tailed)
+  tailedness oe_tailedness_{mean,max}_*
+  width      oe_fwhm_bp_max_{enhancer,ctcf}
+  agreement  consensus_fraction_max_{enhancer,ctcf}
+"""
+
 # Questions phrased in ordinary words that no axis expresses, mapped to the
 # feature that answers them exactly. Listed separately because these are the
 # cases where the model reliably reached for a PC and should not have.
@@ -110,11 +157,10 @@ def build(features: list[str]) -> str:
     """The reference block injected into the prompt."""
     lines = "\n".join(_line(f) for f in sorted(features))
     return (
-        "FEATURE REFERENCE. Every one of these can be filtered directly with a "
-        "`feature` filter and a direction. Prefer a feature over an axis whenever "
-        "the question names something a feature measures: a feature is exactly "
-        "that quantity, whereas an axis is a mixture in which the named contrast "
-        "is only a quarter to a third of what is there.\n\n"
+        "FEATURE REFERENCE. The query is built from these. Each is one measured "
+        "quantity computed from the contact profile, so a feature filter asks for "
+        "exactly the thing it names.\n\n"
+        f"{JOINT_HINTS}\n"
         f"{PHRASE_HINTS}\n"
         f"All {len(features)} features, and what HIGH means:\n{lines}\n"
     )
