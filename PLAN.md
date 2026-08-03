@@ -281,26 +281,90 @@ POST /api/submit                              (phase 2) -> job id -> synthetic g
    the 44% mixture body is visually obvious.
 4. **Archetype readout** — demoted to a secondary panel. Posterior bars +
    entropy + AA mixture weights. Below-threshold genes read "mixture", not a corner.
-5. **Radar** — gene trace over archetype IQR bands. Port from `07_radar.py`
+5. **Cohort view (added 08-03 from FEEDBACK.md) — the strongest single view.**
+   Pick a built-in reference set or paste a gene list; see that set's distribution
+   on each named axis against the panel. This is a live demo of the best
+   non-circular result in the project: externally-defined groups separate
+   architecture at **5.9–41.1×** over a size-matched random floor and retain
+   ≥94% of it within both density and insulation strata. Unlike the archetype
+   version it needs no within/pooled-ratio argument, because the groups were not
+   defined from the features.
+
+   Three design constraints, all load-bearing:
+   - **Report coverage prominently.** The panel is 1,846 of ~20,000 genes, so a
+     pasted list of 40 collaborator hits may match 4. Show "7 of your 40 genes
+     are in the panel" and degrade honestly rather than plotting 4 points as if
+     they were 40. Built-in sets are the primary path until BYOG lands.
+   - **Apply the ≥25-gene filter.** Of 23 reference sets, `Roadmap_CTCF_bound`
+     has 1 GW gene and `ChromHMM_polycomb` has 7. Enrichments over those are
+     noise and must not render with the same confidence as Eisenberg_HK's 633.
+   - **Display `pct_retained` and `signal_over_random`, not η².** Pooled η² runs
+     0.005–0.023; the absolute value is not the claim, the ratio is. Same lesson
+     as the archetype circularity caveat.
+
+   Keep `gene_desert_bottomQ_density` visible as the **positive control** — it is
+   defined from gene density and is the one group that collapses under density
+   stratification (11% retained) while surviving insulation (100%). It is what
+   makes the other six rows meaningful.
+6. **Ranked lists** — the inverse of the cohort view: given an axis, which genes
+   sit at the extremes. Nearly free once the store exists, and it is how a user
+   finds a gene worth looking at when they do not already have one in mind.
+7. **Export** — gene × 91 features + axis percentiles + coordinates + archetype
+   proximity, for one gene, a list, or the whole panel. The CellProfiler analogy
+   only holds if the output is portable; CellProfiler's deliverable *is* a
+   feature table. Minimum bar for "tool, not demo".
+8. **Reproducibility demo** — the 116 genes measured twice in independent
+   captures, both profiles overlaid and both positions on the map. Makes κ=0.72
+   and the 0.511 technical noise floor visceral instead of a caption. Cheap:
+   `cross_panel_reproducibility.tsv` already holds all 63 features at n=116
+   (median ρ 0.752, `frac_local` 0.984, asymmetry features <0.3), so it is a
+   table read, not an analysis. **Label it**: the immune side is the stale 791
+   baseline missing PDCD1 + 15 genes, so the overlap may shift after the re-run.
+   Acceptable for a technical-noise demo, not for a biological claim.
+9. **Radar** — gene trace over archetype IQR bands. Port from `07_radar.py`
    (`archetype_radar_profiles.tsv` already on disk). **Keep the bands.** They
    overlap almost completely and that honesty is the point.
-6. **P(s)** — log-log with fitted α, the ~100 kb regime break (α_near 0.750,
+10. **P(s)** — log-log with fitted α, the ~100 kb regime break (α_near 0.750,
    α_far 1.291), gene's α against the panel distribution.
-7. **Feature table** — 91 features with panel percentile and block grouping.
-8. **Confound panel (new, 08-03)** — per dimension, the probe-level and
+11. **Feature table** — 91 features with panel percentile and block grouping.
+12. **Gene comparison** — two genes side by side: profiles, axis positions,
+   distance in feature space. The natural follow-up to a lookup.
+13. **Confound panel (new, 08-03)** — per dimension, the probe-level and
    window-level association numbers from `locus_intrinsic_confounds.tsv` and
    `window_confounds.tsv`, including the radial-gradient result. Numbers and
    effect sizes only, per §1b. Also exposes the per-probe design properties
    (GC%, alignment count, repeat length, density score) that exist for
    **1846/1846** GW genes in `panel_ON_A/final_oligo_list.txt` — zero fetch, and
    previously unused.
-9. **Genomic context** — igv.js, all 8 channels, GENCODE. Secondary view.
-10. **Explanation layer** — woven through, not a separate About page. Leads with
+14. **Genomic context** — igv.js, all 8 channels, GENCODE. Deferred, **not cut**
+    (see decision D2 below).
+15. **Explanation layer** — woven through, not a separate About page. Leads with
     the nested-baseline justification (§1b), then the structure-vs-noise evidence.
     Reuse the `html_dphil/dphil_html.py` house style so it matches the existing
     explainers.
-11. **SE comparison** (optional, high rhetorical value) — a gene's SE status
+16. **SE comparison** (optional, high rhetorical value) — a gene's SE status
     against its continuum position. **Display-only. Never touches the feature path.**
+
+### Two decisions recorded against FEEDBACK.md
+
+**D1 — the therapeutic framing ships with its effect size or not at all.**
+FEEDBACK.md proposes attaching "different CRISPR strategies and redundancy
+expectations" to PC3. PC3 carries 8.2% of variance and correlates with tau at
+ρ = −0.221; the best R² against any anchor anywhere in the project is 0.077.
+Hanging a therapeutic implication on that reproduces the overclaim pattern the
+08-03 session retracted twice under challenge, and "the sentence that makes a
+clinician care" is a rhetorical goal, not a scientific one. **Resolution:** keep
+it, in the explanation layer, on PC3, framed as *motivation* with the number
+rendered adjacent — never as an implication of the result.
+
+**D2 — igv.js is deferred, not cut.** FEEDBACK.md argues UCSC/IGV already do
+this well. That is an argument against *building a browser*, which igv.js already
+satisfies — it is an embed, and the only infrastructure it needs is one
+range-serving endpoint. It also has a function the feedback misses: the
+viewpoint-anchored ±1 Mb profile is an unfamiliar view carrying no genomic
+coordinates, and the first question any viewer asks is "where actually is this?".
+igv.js is the orientation anchor that makes the primary view trustworthy.
+**Resolution:** demote below cohort and export, keep in scope.
 
 ---
 
@@ -378,13 +442,17 @@ hosting and no API.
 | **P0** | Path audit; `build_store.py`; manifest + provenance guard; blacklist enforcement |
 | **P1** | FastAPI skeleton, gene + panel endpoints, React/Vite/Tailwind shell, gene search |
 | **P2** | Viewpoint profile plot — the core view, raw/OE toggle, bands, peaks, brush-zoom |
-| **P3** | Continuum map + archetype readout with posteriors and mixture state |
-| **P4** | Radar with IQR bands; feature table |
-| **P5** | P(s) panel |
-| **P6** | igv.js genomic context + bigWig range passthrough |
-| **P7** | Explanation layer in `html_dphil` house style |
-| **P8** | SE comparison panel (optional) |
-| **P9** | BYOG worker in cd4env writing to the store (deferred, API already shaped) |
+| **P3** | Dimension profile — the primary readout |
+| **P4** | **Cohort view** with coverage reporting and the ≥25-gene filter |
+| **P5** | Continuum map + archetype readout with posteriors and mixture state |
+| **P6** | Export + ranked lists |
+| **P7** | Radar with IQR bands; feature table; P(s) panel |
+| **P8** | Reproducibility demo (116 twice-captured genes) |
+| **P9** | Confound panel |
+| **P10** | Explanation layer in `html_dphil` house style |
+| **P11** | igv.js genomic context + bigWig range passthrough |
+| **P12** | Gene comparison; SE panel (optional) |
+| **P13** | BYOG worker in cd4env writing to the store (deferred, API already shaped) |
 
 Commit at phase boundaries. PR at the end of P2 (first genuinely usable slice)
 unless asked sooner.
