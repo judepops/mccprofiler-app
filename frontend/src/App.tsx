@@ -44,6 +44,9 @@ export default function App() {
   const [features, setFeatures] = useState<FeatureSet | null>(null)
   const [embedding, setEmbedding] = useState<Embedding | null>(null)
   const [axes, setAxes] = useState<[string, string]>(['pc2', 'pc3'])
+  const [embLoading, setEmbLoading] = useState(false)
+  const [embErr, setEmbErr] = useState<string | null>(null)
+  const embReq = useRef(0)
   const [peakLimit, setPeakLimit] = useState(25)
   const [loading, setLoading] = useState(false)
 
@@ -111,10 +114,24 @@ export default function App() {
   }
 
   useEffect(() => {
+    // Token guards against out-of-order responses: changing axes twice quickly
+    // used to let the slower first request overwrite the newer second one.
+    const token = ++embReq.current
+    setEmbLoading(true)
+    setEmbErr(null)
     api
       .embedding(axes[0], axes[1], gene?.gene_symbol)
-      .then(setEmbedding)
-      .catch(() => setEmbedding(null))
+      .then((e) => {
+        if (token === embReq.current) setEmbedding(e)
+      })
+      .catch((e) => {
+        // Keep the last good plot rather than blanking the view — a transient
+        // failure should not destroy what the user was looking at.
+        if (token === embReq.current) setEmbErr(String((e as Error).message))
+      })
+      .finally(() => {
+        if (token === embReq.current) setEmbLoading(false)
+      })
   }, [axes, gene])
 
   // Re-fetch when channel, mode or zoom changes.
@@ -330,6 +347,9 @@ export default function App() {
                 {embedding && (
                   <ContinuumMap
                     data={embedding}
+                    axes={axes}
+                    loading={embLoading}
+                    error={embErr}
                     onAxisChange={(x, y) => setAxes([x, y])}
                     onPick={select}
                   />

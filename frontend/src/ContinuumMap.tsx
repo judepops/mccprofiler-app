@@ -31,12 +31,27 @@ const PAD = { top: 12, right: 12, bottom: 42, left: 48 }
 
 interface Props {
   data: Embedding
+  /** The REQUESTED axes, not the loaded ones. The selects must reflect intent:
+   *  reading them back off `data` meant that while a fetch was in flight the
+   *  other select still held the previous response's axis, so a second change
+   *  silently reverted the first. */
+  axes: [string, string]
   onAxisChange: (x: string, y: string) => void
   onPick?: (symbol: string) => void
+  loading?: boolean
+  error?: string | null
   height?: number
 }
 
-export function ContinuumMap({ data, onAxisChange, onPick, height = 360 }: Props) {
+export function ContinuumMap({
+  data,
+  axes,
+  onAxisChange,
+  onPick,
+  loading,
+  error,
+  height = 360,
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(600)
@@ -65,7 +80,7 @@ export function ContinuumMap({ data, onAxisChange, onPick, height = 360 }: Props
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, width, height)
 
-    const pts = data.points
+    const pts = data.points.filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y))
     if (!pts.length) return
     const xs = pts.map((p) => p.x)
     const ys = pts.map((p) => p.y)
@@ -148,31 +163,35 @@ export function ContinuumMap({ data, onAxisChange, onPick, height = 360 }: Props
     setHover(best ? { x: mx, y: my, label: best.gene_symbol } : null)
   }
 
-  const axes = data.axes_available
+  const axisOptions = data.axes_available
 
   return (
     <div className="rounded-lg border border-ink-200 bg-white p-4">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-500">
           Continuum map · {data.n.toLocaleString()} genes
+          {loading && <span className="ml-2 font-normal text-ink-400">updating…</span>}
+          {error && (
+            <span className="ml-2 font-normal text-element-enhancer">{error}</span>
+          )}
         </h2>
         <div className="flex items-center gap-2 text-[11px]">
           <select
-            value={data.x_axis.key}
-            onChange={(e) => onAxisChange(e.target.value, data.y_axis.key)}
+            value={axes[0]}
+            onChange={(e) => onAxisChange(e.target.value, axes[1])}
             className="rounded border border-ink-200 px-1.5 py-0.5"
           >
-            {axes.map((a) => (
+            {axisOptions.map((a) => (
               <option key={a.key} value={a.key}>{a.label}</option>
             ))}
           </select>
           <span className="text-ink-400">×</span>
           <select
-            value={data.y_axis.key}
-            onChange={(e) => onAxisChange(data.x_axis.key, e.target.value)}
+            value={axes[1]}
+            onChange={(e) => onAxisChange(axes[0], e.target.value)}
             className="rounded border border-ink-200 px-1.5 py-0.5"
           >
-            {axes.map((a) => (
+            {axisOptions.map((a) => (
               <option key={a.key} value={a.key}>{a.label}</option>
             ))}
           </select>
