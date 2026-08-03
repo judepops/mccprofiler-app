@@ -233,6 +233,41 @@ export interface Repro {
   }
 }
 
+export interface Ranked {
+  axis: string
+  label: string
+  poles: { neg: string; pos: string } | null
+  n: number
+  caveat: string
+  top?: { gene_id: string; gene_symbol: string; value: number; percentile: number; group: string | null }[]
+  bottom?: { gene_id: string; gene_symbol: string; value: number; percentile: number; group: string | null }[]
+  top_pole?: string | null
+  bottom_pole?: string | null
+}
+
+export interface ExplainSection {
+  claim: string
+  detail: string
+  citations?: string[]
+  table?: Record<string, unknown>[]
+}
+
+export interface Explain {
+  why_these_features: ExplainSection & { table?: Record<string, unknown>[] }
+  why_not_clusters: ExplainSection
+  why_name_regions_at_all: ExplainSection
+  what_it_is_not: ExplainSection
+  noise_floor: ExplainSection
+  atac_is_not_a_feature: ExplainSection
+  provenance: {
+    panel: string
+    n_genes: number
+    built: string
+    scripts_cleaned_commit: string | null
+  }
+  [k: string]: unknown
+}
+
 async function get<T>(path: string, params?: Record<string, unknown>): Promise<T> {
   const url = new URL(BASE + path)
   for (const [k, v] of Object.entries(params ?? {})) {
@@ -261,6 +296,11 @@ export const api = {
 
   labReproducibility: (feature?: string) =>
     get<Repro>('/api/lab/reproducibility', { feature }),
+
+  ranked: (axis: string, limit = 25) =>
+    get<Ranked>('/api/ranked', { axis, limit }),
+
+  explain: () => get<Explain>('/api/explain'),
 
   scree: () => get<Scree>('/api/dimensions/scree'),
 

@@ -534,6 +534,58 @@ def export_gene(gene: str):
     )
 
 
+@app.get("/api/ranked")
+def ranked(
+    axis: str = "pc3",
+    direction: Literal["top", "bottom", "both"] = "both",
+    limit: int = Query(25, le=200),
+):
+    """Given an axis, which genes sit at its extremes?
+
+    The inverse of the cohort view, and how you find a gene worth looking at
+    when you do not already have one in mind. Percentile is reported alongside
+    the raw score because a score is meaningless without the distribution.
+    """
+    s_ = store()
+    if not s_.has("embeddings"):
+        raise HTTPException(503, "embeddings table not built")
+    emb = s_.table("embeddings")
+    if axis not in emb.columns:
+        raise HTTPException(
+            400,
+            f"unknown axis {axis!r}; available: "
+            f"{', '.join(c for c in emb.columns if c not in ('gene_id', 'symbol_key'))}",
+        )
+
+    df = emb[["gene_id", axis]].merge(
+        s_.genes[["gene_id", "gene_symbol", "group", "max_posterior"]],
+        on="gene_id", how="left",
+    )
+    df["percentile"] = df[axis].rank(pct=True) * 100
+    df = df.rename(columns={axis: "value"})
+
+    def take(asc: bool) -> list[dict]:
+        return _clean(df.sort_values("value", ascending=asc).head(limit).to_dict("records"))
+
+    poles = S.PC_POLES.get(axis)
+    out = {
+        "axis": axis,
+        "label": S.PC_LABELS.get(axis, axis),
+        "poles": poles,
+        "n": int(len(df)),
+        "caveat": "Extremes of a continuum, not a category. A gene at the 99th "
+                  "percentile differs from one at the 95th by degree, and roughly "
+                  "half a typical between-gene distance is technical noise.",
+    }
+    if direction in ("top", "both"):
+        out["top"] = take(asc=False)
+        out["top_pole"] = poles["pos"] if poles else None
+    if direction in ("bottom", "both"):
+        out["bottom"] = take(asc=True)
+        out["bottom_pole"] = poles["neg"] if poles else None
+    return out
+
+
 @app.get("/api/explain")
 def explain():
     """The argument the app is making, with its numbers.

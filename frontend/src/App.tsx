@@ -18,6 +18,8 @@ import { ContinuumMap } from './ContinuumMap'
 import { CohortView } from './CohortView'
 import { DimensionPanel } from './DimensionPanel'
 import { LabPage } from './LabPage'
+import { ExplainPanel } from './ExplainPanel'
+import { RankedLists } from './RankedLists'
 import { PeakDetail } from './PeakDetail'
 import { GeneCompare } from './GeneCompare'
 
@@ -242,8 +244,10 @@ export default function App() {
             <p className="pt-8 text-center text-sm text-ink-400">
               Search a gene to see its contact architecture — or start from a gene set below.
             </p>
+            <RankedLists onPick={select} />
             <CohortView onPick={select} />
             <DimensionPanel />
+            <ExplainPanel />
           </div>
         )}
 
@@ -403,7 +407,9 @@ export default function App() {
                   />
                 )}
                 <DimensionPanel />
+                <RankedLists onPick={select} />
                 <CohortView onPick={select} />
+                <ExplainPanel />
               </div>
             </section>
           </div>
