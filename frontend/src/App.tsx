@@ -7,6 +7,7 @@ import {
   type Embedding,
   type FeatureSet,
   type Health,
+  type Peak,
   type PeakSet,
   type Profile,
 } from './api'
@@ -17,6 +18,8 @@ import { ContinuumMap } from './ContinuumMap'
 import { CohortView } from './CohortView'
 import { DimensionPanel } from './DimensionPanel'
 import { LabPage } from './LabPage'
+import { PeakDetail } from './PeakDetail'
+import { GeneCompare } from './GeneCompare'
 
 const CHANNEL_LABEL: Record<string, string> = {
   mcc: 'MCC',
@@ -50,6 +53,7 @@ export default function App() {
   const [embErr, setEmbErr] = useState<string | null>(null)
   const embReq = useRef(0)
   const [peakLimit, setPeakLimit] = useState(25)
+  const [selectedPeak, setSelectedPeak] = useState<Peak | null>(null)
   const [loading, setLoading] = useState(false)
 
   const plotWidth = useRef(900)
@@ -100,6 +104,7 @@ export default function App() {
     setHits([])
     setRange(null)
     setErr(null)
+    setSelectedPeak(null)
     try {
       const [g, pk, ft] = await Promise.all([
         api.gene(symbol),
@@ -303,6 +308,7 @@ export default function App() {
                     }
                     loading={loading}
                     onZoom={setRange}
+                    onPeakClick={setSelectedPeak}
                   />
                 )}
 
@@ -348,11 +354,18 @@ export default function App() {
 
             <aside className="space-y-5">
               <ArchetypeReadout a={gene.archetype} />
+              {selectedPeak && (
+                <PeakDetail peak={selectedPeak} onClose={() => setSelectedPeak(null)} />
+              )}
             </aside>
 
             {/* Gene-specific detail. */}
             <section className="lg:col-span-3">
               {features && <FeatureTable data={features} />}
+            </section>
+
+            <section className="lg:col-span-3">
+              <GeneCompare primary={gene} primaryFeatures={features} />
             </section>
 
             {/* Panel-level below: these describe the coordinate system and the
