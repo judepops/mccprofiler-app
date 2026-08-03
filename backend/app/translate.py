@@ -25,9 +25,14 @@ from typing import Any
 
 DEFAULT_PROVIDER = "gemini"
 
-# Overridable because model ids move faster than this file does.
+# Overridable because model ids move faster than this file does. Checked
+# against `client.models.list()` on 2026-08-03: the 2.0 family still lists but
+# its free tier is now zero-quota, which surfaces as a 429 reading
+# `limit: 0` rather than as a 404, so a working key looks broken. If the
+# default starts failing, list the models the key actually serves rather than
+# guessing an id.
 DEFAULT_MODELS = {
-    "gemini": os.environ.get("GEMINI_MODEL", "gemini-2.0-flash"),
+    "gemini": os.environ.get("GEMINI_MODEL", "gemini-3.5-flash"),
     "claude": os.environ.get("ANTHROPIC_MODEL", "claude-opus-5"),
 }
 
@@ -149,7 +154,19 @@ def _translate_gemini(question: str, schema: dict, system: str, model: str) -> d
         )
         return json.loads(resp.text)
     except Exception as e:  # noqa: BLE001
-        raise TranslationFailed(str(e)) from None
+        msg = str(e)
+        # A quota refusal arrives as several hundred characters of nested JSON
+        # and reads like a credentials problem, which it is not. Say which of
+        # the two it actually is.
+        if "RESOURCE_EXHAUSTED" in msg or "429" in msg:
+            kind = ("has no free-tier quota for it" if "limit: 0" in msg
+                    else "is rate limited on it")
+            raise TranslationFailed(
+                f"model {model!r} refused the request: this key {kind}. "
+                "Set GEMINI_MODEL in .env to a model the key serves, or wait "
+                "and retry."
+            ) from None
+        raise TranslationFailed(msg) from None
 
 
 def _translate_claude(question: str, schema: dict, system: str, model: str) -> dict:
