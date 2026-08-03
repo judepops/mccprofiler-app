@@ -157,6 +157,13 @@ export default function App() {
               Gene position in the MCC regulatory continuum · CD4+ T cells
             </p>
           </div>
+          <a
+            href="http://localhost:8000/api/export/panel.csv"
+            className="text-[11px] text-ink-500 underline-offset-2 hover:underline"
+            title="All 1,846 genes with labels and coordinates"
+          >
+            export panel
+          </a>
           <nav className="flex gap-1 text-[11px]">
             {(['explore', 'lab'] as const).map((p) => (
               <button
@@ -283,6 +290,16 @@ export default function App() {
                         peaks
                       </label>
                     )}
+
+                    <a
+                      href={`http://localhost:8000/api/export/${encodeURIComponent(
+                        gene.gene_symbol,
+                      )}.csv`}
+                      className="rounded border border-ink-200 px-2 py-1 text-[11px] text-ink-600 hover:bg-ink-50"
+                      title="Features, coordinates and label as CSV"
+                    >
+                      export
+                    </a>
 
                     <div className="flex overflow-hidden rounded border border-ink-200 text-xs">
                       {(['raw', 'oe'] as const).map((m) => (

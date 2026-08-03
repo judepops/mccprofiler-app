@@ -15,7 +15,7 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import store_schema as S
@@ -466,6 +466,153 @@ def lab_reproducibility(feature: str | None = None):
             "feature": feature,
             "points": _clean(hit[["symbol_key", "gw", "immune"]].to_dict("records")),
         }
+    return _clean(out)
+
+
+# NOTE: panel.csv is declared BEFORE {gene}.csv. FastAPI matches routes in
+# declaration order, so the parameterised route would otherwise capture
+# "panel" as a gene name and 404.
+@app.get("/api/export/panel.csv")
+def export_panel():
+    """The whole panel: gene, label, posterior, and every stored coordinate."""
+    s_ = store()
+    cols = [c for c in ("gene_id", "gene_symbol", "viewpoint_chrom", "viewpoint_pos",
+                        "group", "max_posterior", "confidence_class", "is_core")
+            if c in s_.genes.columns]
+    df = s_.genes[cols].copy()
+    if s_.has("embeddings"):
+        emb = s_.table("embeddings").drop(columns=["symbol_key"], errors="ignore")
+        df = df.merge(emb, on="gene_id", how="left")
+    return Response(
+        content=df.to_csv(index=False),
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="mccprofiler_panel.csv"'},
+    )
+
+
+@app.get("/api/export/{gene}.csv")
+def export_gene(gene: str):
+    """One gene, everything known about it, as CSV.
+
+    The CellProfiler analogy only holds if the output is portable — its
+    deliverable IS a feature table. This is the line between a demo and a tool.
+    """
+    s_ = store()
+    gid = s_.resolve(gene)
+    if gid is None:
+        raise HTTPException(404, f"gene {gene!r} not in the panel")
+
+    rows: list[dict] = []
+    row = s_.genes[s_.genes["gene_id"] == gid].iloc[0]
+    for k in ("gene_id", "gene_symbol", "viewpoint_chrom", "viewpoint_pos",
+              "group", "max_posterior", "confidence_class"):
+        if k in row:
+            rows.append({"section": "gene", "name": k, "value": row[k]})
+
+    if s_.has("features"):
+        f = s_.table("features")
+        for _, r in f[f["symbol_key"] == gid.upper()].iterrows():
+            rows.append({"section": "feature", "name": r["feature"],
+                         "value": r["z"], "percentile": r["percentile"]})
+
+    if s_.has("embeddings"):
+        e = s_.table("embeddings")
+        hit = e[e["symbol_key"] == gid.upper()]
+        if not hit.empty:
+            for c in hit.columns:
+                if c in ("gene_id", "symbol_key"):
+                    continue
+                rows.append({"section": "coordinate", "name": c,
+                             "value": float(hit.iloc[0][c])})
+
+    df = pd.DataFrame(rows)
+    csv = df.to_csv(index=False)
+    return Response(
+        content=csv,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{gid}_mccprofiler.csv"'},
+    )
+
+
+@app.get("/api/explain")
+def explain():
+    """The argument the app is making, with its numbers.
+
+    Leads with the nested-baseline result because that is the justification for
+    the 91-feature substrate existing at all — without it, `n_peaks` would do.
+    """
+    s_ = store()
+    out: dict = {
+        "why_these_features": {
+            "claim": "The 91-feature substrate beats counting peaks on every "
+                     "target tested.",
+            "detail": "Nested, cross-validated, fixed cell state, identical folds, "
+                      "regularisation tuned inside each training fold. The 9/9 "
+                      "consistency matters more than the size: there is no target "
+                      "where the extra 80 features are dead weight. The nonlinear "
+                      "arm was uniformly WORSE, which kills the objection that the "
+                      "features carry more and a linear model simply could not "
+                      "reach it.",
+        },
+        "why_not_clusters": {
+            "claim": "The landscape is a continuum, and that is a positive result "
+                     "rather than a failure to cluster.",
+            "detail": "SigClust rejects a single Gaussian (z = -11.86 trimmed) with "
+                      "the permuted control clean at p = 1.000, while the dip test "
+                      "finds no multimodality. Two tests with opposite assumptions. "
+                      "The gap statistic returns k=1 with the gap declining "
+                      "monotonically, HDBSCAN returns one cluster, and 44% of active "
+                      "genes are mixtures.",
+        },
+        "why_name_regions_at_all": {
+            "claim": "The groups are not discoverable, but they are reproducible "
+                     "once imposed.",
+            "detail": "Using the 116 genes captured in BOTH panels — cluster once on "
+                      "the pooled matrix, then assign each gene's two independent "
+                      "captures separately — Cohen's kappa peaks at 0.72 for k=3-4. "
+                      "That separates two claims usually conflated: the groups "
+                      "cannot be found from the data's density, but once defined "
+                      "they are reproducible measurements. Only the first failed.",
+            "citations": ["Rousseeuw 1987", "Hennig 2015, What are the true clusters?",
+                          "Altman & Royston 2006", "Pott & Lieb 2015"],
+        },
+        "what_it_is_not": {
+            "claim": "Effect sizes are small in absolute terms.",
+            "detail": "The best R-squared against any biology anchor anywhere is "
+                      "0.077, and partial distance correlation shows roughly 80% of "
+                      "the association is mediated by genomic position. Continuous "
+                      "coordinates capture marginally more biology than discrete "
+                      "labels; neither captures much beyond where a gene sits.",
+        },
+        "noise_floor": {
+            "claim": "About half a typical between-gene distance is technical.",
+            "detail": "Gene-to-itself distance 5.36 vs gene-to-other 10.49 across "
+                      "repeat captures, ratio 0.511. This bounds how well anything "
+                      "downstream can perform.",
+        },
+        "atac_is_not_a_feature": {
+            "claim": "ATAC gates membership; it is never a clustering input.",
+            "detail": "Clustering reads only the MCC channel. ATAC still determines "
+                      "results indirectly by gating which genes and which peaks "
+                      "enter, so ATAC-based validation is NOT independent.",
+        },
+    }
+
+    if s_.has("nested_baselines"):
+        nb = s_.table("nested_baselines")
+        out["why_these_features"]["table"] = _clean(nb.to_dict("records"))
+    if s_.has("dimensions"):
+        out["dimensions"] = _clean(s_.table("dimensions").to_dict("records"))
+    if s_.has("external_groups"):
+        out["external_validation"] = _clean(
+            s_.table("external_groups").to_dict("records"))
+
+    out["provenance"] = {
+        "panel": s_.manifest["panel"],
+        "n_genes": len(s_.genes),
+        "built": s_.manifest["built"],
+        "scripts_cleaned_commit": s_.manifest.get("scripts_cleaned_commit"),
+    }
     return _clean(out)
 
 
