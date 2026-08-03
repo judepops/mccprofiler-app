@@ -1,0 +1,30 @@
+# data store — built locally by build_store.py, never committed
+store/
+*.h5
+*.hdf5
+*.parquet
+*.pkl
+*.npy
+*.npz
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# node / frontend
+node_modules/
+dist/
+.vite/
+*.local
+
+# env + editor
+.env
+.env.*
+!.env.example
+.DS_Store
+.idea/
+.vscode/
