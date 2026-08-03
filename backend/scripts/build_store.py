@@ -197,6 +197,74 @@ def add_symbol_key(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def build_embeddings(fm: pd.DataFrame, fnames: list[str], seed: int = 0) -> pd.DataFrame:
+    """Per-gene 2D coordinates: PCA, gcPCA, UMAP, and a UMAP null.
+
+    PCA is the default in the UI because it is linear and preserves distances,
+    so a continuum renders as a continuum.
+
+    UMAP is included because people expect it, but it optimises a local-neighbour
+    objective and is well documented to produce apparent clusters from continuous
+    data. Rather than caveat that in prose, the same UMAP is fitted to a
+    per-feature-permuted copy of the matrix — every marginal preserved exactly,
+    all joint structure destroyed, so there is provably nothing to find. If the
+    null looks similarly clustered, the artefact is self-evident. This mirrors
+    the null used by audit/Archetype_Tests/12_structure_evidence.py.
+    """
+    from sklearn.decomposition import PCA
+
+    X = fm[fnames].to_numpy(dtype=np.float64)
+    gids = fm["gene_id"].astype(str).tolist()
+
+    pca = PCA(n_components=10, random_state=seed).fit(X)
+    scores = pca.transform(X)
+    var = pca.explained_variance_ratio_ * 100
+    log("PCA variance %: " + ", ".join(f"PC{i+1} {v:.2f}" for i, v in enumerate(var[:5])))
+
+    out = pd.DataFrame({"gene_id": gids})
+    for i in range(scores.shape[1]):
+        out[f"pc{i + 1}"] = scores[:, i]
+
+    # gcPCA density-free coordinates, if the audit produced them.
+    try:
+        g = np.load(P.by_key("gcpca_axes").path, allow_pickle=True)
+        gc_ids = [str(s) for s in g["gene_ids"]]
+        order = {gid: i for i, gid in enumerate(gc_ids)}
+        idx = [order.get(gid) for gid in gids]
+        if all(i is not None for i in idx):
+            for key, tag in (("B1_density_explained", "b1"),
+                             ("B2_marginal_within_density", "b2")):
+                arr = g[key][idx]
+                out[f"gcpca_{tag}_1"] = arr[:, 0]
+                out[f"gcpca_{tag}_2"] = arr[:, 1]
+            log("gcPCA density-free axes attached (B1, B2)")
+        else:
+            log("WARNING: gcPCA gene order does not cover the panel; axes skipped")
+    except Exception as e:  # noqa: BLE001 - optional input, never fatal
+        log(f"gcPCA axes unavailable ({e}); skipped")
+
+    import umap
+
+    def fit_umap(mat: np.ndarray, tag: str) -> None:
+        emb = umap.UMAP(n_neighbors=15, min_dist=0.1, n_components=2,
+                        random_state=seed).fit_transform(mat)
+        out[f"{tag}_1"] = emb[:, 0]
+        out[f"{tag}_2"] = emb[:, 1]
+
+    fit_umap(X, "umap")
+    log("UMAP fitted on the real matrix")
+
+    rng = np.random.default_rng(seed)
+    Xn = X.copy()
+    for j in range(Xn.shape[1]):
+        rng.shuffle(Xn[:, j])          # permute each feature independently
+    fit_umap(Xn, "umap_null")
+    log("UMAP fitted on the per-feature-permuted null (marginals kept, joint destroyed)")
+
+    out["symbol_key"] = out["gene_id"].str.upper()
+    return out
+
+
 def build_genes(gene_ids: list[str], source_labels: list[str]) -> pd.DataFrame:
     """Gene index with viewpoint positions loaded from the BED, never parsed
     from viewpoint_id (PLAN.md trap #3)."""
@@ -303,6 +371,9 @@ def build_tables(gene_ids: list[str] | None, source_labels: list[str] | None) ->
     long["symbol_key"] = long["gene_id"].astype(str).str.upper()
     write("features", long, fpath)
     log(f"features: {len(fnames)} features x {fm.shape[0]} genes (long form)")
+
+    # embeddings -------------------------------------------------------------
+    write("embeddings", build_embeddings(fm, fnames))
 
     # cohort view ------------------------------------------------------------
     grp = P.by_key("external_groups").path

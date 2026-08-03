@@ -119,6 +119,29 @@ export interface FeatureSet {
   blocks: FeatureBlock[]
 }
 
+export interface EmbeddingPoint {
+  gene_id: string
+  gene_symbol: string
+  x: number
+  y: number
+  group: string | null
+  max_posterior: number | null
+  is_core: boolean | null
+}
+
+export interface Embedding {
+  x_axis: { key: string; label: string }
+  y_axis: { key: string; label: string }
+  axes_available: { key: string; label: string }[]
+  highlight: string | null
+  is_umap: boolean
+  is_null: boolean
+  umap_caveat: string
+  continuum_caveat: string
+  n: number
+  points: EmbeddingPoint[]
+}
+
 async function get<T>(path: string, params?: Record<string, unknown>): Promise<T> {
   const url = new URL(BASE + path)
   for (const [k, v] of Object.entries(params ?? {})) {
@@ -144,6 +167,9 @@ export const api = {
     get<{ n: number; genes: GeneSummary[] }>('/api/genes', { q, limit }),
 
   gene: (gene: string) => get<Gene>(`/api/genes/${encodeURIComponent(gene)}`),
+
+  embedding: (x: string, y: string, highlight?: string) =>
+    get<Embedding>('/api/embedding', { x, y, highlight }),
 
   peaks: (gene: string) => get<PeakSet>(`/api/genes/${encodeURIComponent(gene)}/peaks`),
 

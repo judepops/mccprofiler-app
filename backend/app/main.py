@@ -310,6 +310,57 @@ def get_features(gene: str):
     }
 
 
+@app.get("/api/embedding")
+def embedding(
+    x: str = S.DEFAULT_EMBEDDING_AXES[0],
+    y: str = S.DEFAULT_EMBEDDING_AXES[1],
+    highlight: str | None = None,
+):
+    """All genes as 2D coordinates, for the continuum map.
+
+    Any pair of stored axes can be crossed. PC1 is the amount axis, so PC1 x PC2
+    largely re-sorts genes by signal depth; PC2 x PC3 is the interpretable plane
+    and is the default.
+    """
+    s = store()
+    if not s.has("embeddings"):
+        raise HTTPException(503, "embeddings table not built")
+    emb = s.table("embeddings")
+
+    for ax in (x, y):
+        if ax not in emb.columns:
+            raise HTTPException(
+                400,
+                f"unknown axis {ax!r}; available: "
+                f"{', '.join(c for c in emb.columns if c not in ('gene_id', 'symbol_key'))}",
+            )
+
+    g = s.genes[["gene_id", "gene_symbol", "group", "max_posterior", "is_core"]]
+    df = emb[["gene_id", x, y]].merge(g, on="gene_id", how="left")
+
+    hl = s.resolve(highlight) if highlight else None
+
+    return {
+        "x_axis": {"key": x, "label": S.PC_LABELS.get(x, x)},
+        "y_axis": {"key": y, "label": S.PC_LABELS.get(y, y)},
+        "axes_available": [
+            {"key": c, "label": S.PC_LABELS.get(c, c)}
+            for c in emb.columns if c not in ("gene_id", "symbol_key")
+        ],
+        "highlight": hl,
+        "is_umap": x.startswith("umap") or y.startswith("umap"),
+        "is_null": x.startswith("umap_null") or y.startswith("umap_null"),
+        "umap_caveat": S.UMAP_CAVEAT,
+        "continuum_caveat": S.CONTINUUM_CAVEAT,
+        "n": int(len(df)),
+        "points": _clean(
+            df.rename(columns={x: "x", y: "y"})[
+                ["gene_id", "gene_symbol", "x", "y", "group", "max_posterior", "is_core"]
+            ].to_dict("records")
+        ),
+    }
+
+
 @app.get("/api/archetypes")
 def archetypes():
     """Named regions of the continuum, described by architecture.

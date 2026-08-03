@@ -275,6 +275,49 @@ def feature_block(name: str) -> tuple[str, str]:
 FEATURE_BLOCKS = [(c, BLOCK_DESC[c], ()) for c in ("G1", "G2", "G3", "G4", "G5", "P1", "P2", "P6")]
 
 
+# ---------------------------------------------------------------------------
+# embeddings
+# ---------------------------------------------------------------------------
+
+# PC labels from audit/Archetype_Tests/14_name_dimensions.py. Verified aligned:
+# the store's PCA reproduces dimension_names.tsv's variance shares exactly
+# (15.27 / 9.47 / 8.21 / 6.33 / 5.88), so these are the same components.
+PC_LABELS: dict[str, str] = {
+    "pc1": "amount — richness and reach vs emptiness",
+    "pc2": "local vs long-range",
+    "pc3": "promoter-driven vs enhancer-driven",
+    "pc4": "enhancer vs CTCF composition",
+    "pc5": "concentrated vs dispersed",
+    "pc6": "PC6",
+    "pc7": "PC7",
+    "pc8": "PC8",
+    "pc9": "PC9",
+    "pc10": "PC10",
+    "gcpca_b1_1": "gcPC1 (density-free, B1)",
+    "gcpca_b1_2": "gcPC2 (density-free, B1)",
+    "gcpca_b2_1": "gcPC1 (density-free, B2)",
+    "gcpca_b2_2": "gcPC2 (density-free, B2)",
+    "umap_1": "UMAP 1",
+    "umap_2": "UMAP 2",
+    "umap_null_1": "UMAP 1 (permuted null)",
+    "umap_null_2": "UMAP 2 (permuted null)",
+}
+
+# PC1 is the amount axis, so PC1 x PC2 mostly re-sorts genes by signal depth.
+# PC2 x PC3 is the interpretable plane and is the default.
+DEFAULT_EMBEDDING_AXES = ("pc2", "pc3")
+
+UMAP_CAVEAT = (
+    "UMAP optimises a local-neighbour objective and is well documented to render "
+    "continuous data as apparent clusters. Compare against the permuted null, "
+    "which preserves every feature's marginal distribution exactly while "
+    "destroying all joint structure — there is provably nothing to find in it. "
+    "If the null looks similarly grouped, the grouping is the method, not the "
+    "biology. PCA is the default here because it is linear and preserves "
+    "distances, so a continuum renders as one."
+)
+
+
 # Shown wherever groups are displayed. The groups are regions of a continuum,
 # not discovered clusters, and the UI must not let that fall away.
 CONTINUUM_CAVEAT = (

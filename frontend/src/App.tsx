@@ -4,6 +4,7 @@ import {
   levelForSpan,
   type Gene,
   type GeneSummary,
+  type Embedding,
   type FeatureSet,
   type Health,
   type PeakSet,
@@ -12,6 +13,7 @@ import {
 import { ProfilePlot } from './ProfilePlot'
 import { ArchetypeReadout } from './ArchetypeReadout'
 import { FeatureTable } from './FeatureTable'
+import { ContinuumMap } from './ContinuumMap'
 
 const CHANNEL_LABEL: Record<string, string> = {
   mcc: 'MCC',
@@ -38,6 +40,9 @@ export default function App() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [peaks, setPeaks] = useState<PeakSet | null>(null)
   const [features, setFeatures] = useState<FeatureSet | null>(null)
+  const [embedding, setEmbedding] = useState<Embedding | null>(null)
+  const [axes, setAxes] = useState<[string, string]>(['pc2', 'pc3'])
+  const [peakLimit, setPeakLimit] = useState(25)
   const [loading, setLoading] = useState(false)
 
   const plotWidth = useRef(900)
@@ -102,6 +107,13 @@ export default function App() {
       setErr(String((e as Error).message))
     }
   }
+
+  useEffect(() => {
+    api
+      .embedding(axes[0], axes[1], gene?.gene_symbol)
+      .then(setEmbedding)
+      .catch(() => setEmbedding(null))
+  }, [axes, gene])
 
   // Re-fetch when channel, mode or zoom changes.
   useEffect(() => {
@@ -208,6 +220,24 @@ export default function App() {
                       ))}
                     </select>
 
+                    {channel === 'mcc' && (peaks?.n ?? 0) > 0 && (
+                      <label className="flex items-center gap-1 text-[11px] text-ink-600">
+                        top
+                        <select
+                          value={peakLimit}
+                          onChange={(e) => setPeakLimit(Number(e.target.value))}
+                          className="rounded border border-ink-200 px-1 py-0.5"
+                        >
+                          {[10, 25, 50, 200].map((n) => (
+                            <option key={n} value={n}>
+                              {n >= (peaks?.n ?? 0) ? `all ${peaks?.n}` : n}
+                            </option>
+                          ))}
+                        </select>
+                        peaks
+                      </label>
+                    )}
+
                     <div className="flex overflow-hidden rounded border border-ink-200 text-xs">
                       {(['raw', 'oe'] as const).map((m) => (
                         <button
@@ -227,7 +257,9 @@ export default function App() {
                 {profile && (
                   <ProfilePlot
                     profile={profile}
-                    peaks={channel === 'mcc' ? peaks?.peaks ?? [] : []}
+                    peaks={
+                      channel === 'mcc' ? (peaks?.peaks ?? []).slice(0, peakLimit) : []
+                    }
                     loading={loading}
                     onZoom={setRange}
                   />
@@ -271,16 +303,26 @@ export default function App() {
                   </div>
                 </div>
               )}
-              {features && (
-                <div className="mt-5">
-                  <FeatureTable data={features} />
-                </div>
-              )}
             </section>
 
             <aside className="space-y-5">
               <ArchetypeReadout a={gene.archetype} />
             </aside>
+
+            {/* Position first, then the feature detail that explains it. */}
+            <section className="lg:col-span-3">
+              {embedding && (
+                <ContinuumMap
+                  data={embedding}
+                  onAxisChange={(x, y) => setAxes([x, y])}
+                  onPick={select}
+                />
+              )}
+            </section>
+
+            <section className="lg:col-span-3">
+              {features && <FeatureTable data={features} />}
+            </section>
           </div>
         )}
       </main>

@@ -28,6 +28,8 @@ const BAND_LABEL: Record<string, string> = {
 }
 
 const PAD = { top: 14, right: 16, bottom: 30, left: 56 }
+/** Dedicated lane for peak markers, below the signal area. */
+const PEAK_LANE = 16
 
 interface Props {
   profile: Profile
@@ -69,7 +71,7 @@ export function ProfilePlot({
   }, [])
 
   const plotW = Math.max(width - PAD.left - PAD.right, 10)
-  const plotH = height - PAD.top - PAD.bottom
+  const plotH = height - PAD.top - PAD.bottom - (peaks.length ? PEAK_LANE : 0)
 
   const { values, start_bp, end_bp } = profile
   const spanBp = end_bp - start_bp
@@ -155,23 +157,33 @@ export function ProfilePlot({
       if (h > 0) ctx.fillRect(PAD.left + col, PAD.top + plotH - h, 1, h)
     }
 
-    // ---- peaks -------------------------------------------------------------
-    // Marker radius encodes peak_max on a sqrt scale so area, not radius,
-    // tracks magnitude — a linear radius exaggerates tall peaks ~quadratically.
+    // ---- peaks, in their own lane -------------------------------------------
+    // Drawn under the signal rather than over it. Overlaying 20-40 markers on
+    // the trace hid the data they were annotating, which is the same mistake
+    // the J1 figures make.
     if (peaks.length) {
+      const laneY = PAD.top + plotH + PEAK_LANE / 2
+      ctx.strokeStyle = '#e4edf4'
+      ctx.beginPath()
+      ctx.moveTo(PAD.left, laneY)
+      ctx.lineTo(PAD.left + plotW, laneY)
+      ctx.stroke()
+
       const pmax = Math.max(...peaks.map((p) => p.peak_max), 1)
       for (const pk of peaks) {
         const x = bpToX(pk.offset_bp)
         if (x < PAD.left - 4 || x > PAD.left + plotW + 4) continue
-        const r = 2.5 + 5 * Math.sqrt(pk.peak_max / pmax)
-        const y = PAD.top + plotH - (Math.min(pk.peak_max, yMax) / yMax) * plotH
+        const r = 1.8 + 3.2 * Math.sqrt(pk.peak_max / pmax)
+        // A faint stem ties each marker to the position it annotates.
+        ctx.strokeStyle = (ELEMENT_COLOR[pk.re] ?? '#888') + '44'
         ctx.beginPath()
-        ctx.arc(x, Math.max(y, PAD.top + r), r, 0, Math.PI * 2)
-        ctx.fillStyle = (ELEMENT_COLOR[pk.re] ?? '#888') + 'cc'
-        ctx.fill()
-        ctx.strokeStyle = '#fff'
-        ctx.lineWidth = 1
+        ctx.moveTo(x, PAD.top + plotH)
+        ctx.lineTo(x, laneY - r)
         ctx.stroke()
+        ctx.beginPath()
+        ctx.arc(x, laneY, r, 0, Math.PI * 2)
+        ctx.fillStyle = (ELEMENT_COLOR[pk.re] ?? '#888') + 'dd'
+        ctx.fill()
       }
     }
 
