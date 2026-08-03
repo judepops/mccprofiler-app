@@ -143,7 +143,7 @@ def load_context() -> str:
     return _context_cache
 
 
-def build_prompt(pole_lines: str) -> str:
+def build_prompt(pole_lines: str, feature_reference: str = "") -> str:
     """The system instruction. Identical across providers on purpose."""
     context = load_context()
     glossary = (
@@ -189,6 +189,7 @@ def build_prompt(pole_lines: str) -> str:
         "put that in `unsupported`, in plain words, and build filters only for the "
         "part that IS answerable. An approximation offered silently is worse than "
         "a stated gap.\n"
+        + ("\n\n" + feature_reference if feature_reference else "")
         + glossary +
         "\nReturn only the JSON object."
     )
@@ -312,7 +313,8 @@ def status() -> dict[str, Any]:
     }
 
 
-def translate(question: str, schema: dict, pole_lines: str) -> dict:
+def translate(question: str, schema: dict, pole_lines: str,
+              feature_reference: str = "") -> dict:
     provider = active_provider()
     fn = _PROVIDERS.get(provider)
     if fn is None:
@@ -320,4 +322,5 @@ def translate(question: str, schema: dict, pole_lines: str) -> dict:
             f"unknown LLM_PROVIDER {provider!r}; expected one of "
             f"{', '.join(_PROVIDERS)}"
         )
-    return fn(question, schema, build_prompt(pole_lines), DEFAULT_MODELS[provider])
+    return fn(question, schema, build_prompt(pole_lines, feature_reference),
+              DEFAULT_MODELS[provider])

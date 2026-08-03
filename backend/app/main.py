@@ -11,6 +11,7 @@ Every endpoint returns data, never a rendered image. The frontend draws.
 
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import Literal
 
 import numpy as np
@@ -25,6 +26,7 @@ from . import store_schema as S
 _LOADED_ENV = _env.load()
 from . import translate as _translate
 from .feature_geometry import describe as describe_feature
+from .feature_reference import build as build_feature_reference
 from .query import QueryError, query_schema, run as run_query
 from .store import StoreMissing, get_store
 
@@ -342,6 +344,16 @@ def scree():
                 "marginal distribution intact.",
         "rows": df.to_dict("records"),
     })
+
+
+@lru_cache(maxsize=4)
+def _feature_reference(features: tuple[str, ...]) -> str:
+    """Cached: the feature list is fixed for the life of the store.
+
+    Takes a tuple, not a list. lru_cache hashes its arguments, so a list here
+    raises `unhashable type` on every call.
+    """
+    return build_feature_reference(list(features))
 
 
 def _annotate_cohorts(s_, genes: list[dict]) -> list[dict]:
@@ -709,7 +721,9 @@ def ask(body: dict):
     schema = _translate.flat_schema(v["axes"], [], v["groups"], v["features"])
 
     try:
-        query = _translate.translate(question, schema, pole_lines)
+        query = _translate.translate(
+            question, schema, pole_lines, _feature_reference(tuple(v["features"]))
+        )
     except _translate.TranslationUnavailable as e:
         raise HTTPException(503, str(e)) from None
     except _translate.TranslationFailed as e:
