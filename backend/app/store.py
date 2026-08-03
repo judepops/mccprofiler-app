@@ -70,21 +70,29 @@ class Store:
 
     @staticmethod
     def _merge_checked(left: pd.DataFrame, right: pd.DataFrame, on: str,
-                       what: str, min_coverage: float = 0.5) -> pd.DataFrame:
-        """Left-join, and refuse a join that matched almost nothing.
+                       what: str, min_coverage: float = 1.0) -> pd.DataFrame:
+        """Left-join, and refuse a join that lost rows.
 
-        A mis-keyed merge produces an all-NaN column rather than an error, which
-        is how `confidence` reached the API as NaN for every gene. Coverage is
-        asserted so the failure is loud.
+        Two failures here were caught only because someone counted:
+
+        * a mis-keyed merge returns an all-NaN column rather than raising, which
+          is how `confidence` reached the API as NaN for every gene;
+        * a *partial* mismatch is worse, because it looks fine — the 11
+          `Cxorfnn` genes dropped out on a casing difference and the totals were
+          simply 11 short.
+
+        So the default demands full coverage. Pass a lower bound explicitly, with
+        a reason, when a table genuinely does not cover every gene.
         """
         merged = left.merge(right, on=on, how="left", validate="one_to_one")
         added = [c for c in right.columns if c != on]
         if added:
             coverage = merged[added[0]].notna().mean()
             if coverage < min_coverage:
+                missing = merged.loc[merged[added[0]].isna(), on].head(8).tolist()
                 raise ValueError(
-                    f"{what}: join on {on!r} matched only {coverage:.1%} of rows — "
-                    f"check the key. right columns: {list(right.columns)}"
+                    f"{what}: join on {on!r} covered {coverage:.1%} of rows, "
+                    f"expected >= {min_coverage:.0%}. Unmatched e.g. {missing}"
                 )
         return merged
 
@@ -93,18 +101,20 @@ class Store:
         """One row per gene, joined with labels and posteriors."""
         g = self.table("genes").copy()
 
+        # Join on symbol_key, never gene_symbol — the pipeline uppercases symbols
+        # in its cluster outputs while the pickle preserves original casing.
         if self.has("labels"):
             lab = self.table("labels")
-            cols = [c for c in ("gene_symbol", "archetype", "group", "is_biological")
+            cols = [c for c in ("symbol_key", "archetype", "group", "is_biological")
                     if c in lab.columns]
-            g = self._merge_checked(g, lab[cols], "gene_symbol", "labels")
+            g = self._merge_checked(g, lab[cols], "symbol_key", "labels")
 
         if self.has("posteriors"):
             post = self.table("posteriors")
-            cols = [c for c in ("gene_symbol", "max_posterior", "assignment_entropy",
+            cols = [c for c in ("symbol_key", "max_posterior", "assignment_entropy",
                                 "confidence_class", "is_core", "soft_argmax")
                     if c in post.columns]
-            g = self._merge_checked(g, post[cols], "gene_symbol", "posteriors")
+            g = self._merge_checked(g, post[cols], "symbol_key", "posteriors")
             # A left-join can introduce NaN, which turns a bool column to object
             # and makes `~col` raise. Genes with no posterior are not core.
             if "is_core" in g.columns:
@@ -115,7 +125,7 @@ class Store:
     def posterior_mix(self, gene_symbol: str) -> dict[str, float]:
         """Per-archetype posteriors for one gene — the mixture, not the label."""
         post = self.table("posteriors")
-        row = post.loc[post["gene_symbol"] == gene_symbol]
+        row = post.loc[post["symbol_key"] == str(gene_symbol).upper()]
         if row.empty:
             return {}
         pcols = [c for c in post.columns if c.startswith("p_")]

@@ -179,7 +179,22 @@ def build_profiles(levels: list[int], batch: int) -> dict:
 def read_table(path: Path, **kw) -> pd.DataFrame:
     assert_not_blacklisted(path)
     sep = "\t" if path.suffix in {".tsv", ".txt"} else ","
-    return pd.read_csv(path, sep=sep, **kw)
+    df = pd.read_csv(path, sep=sep, **kw)
+    return add_symbol_key(df)
+
+
+def add_symbol_key(df: pd.DataFrame) -> pd.DataFrame:
+    """Add an uppercase join key alongside gene_symbol.
+
+    The pipeline's cluster outputs uppercase gene symbols while the signal
+    pickle preserves original casing, so the 11 `Cxorfnn` genes — the only
+    symbols with interior lowercase — silently failed to join. Every
+    symbol-keyed merge in the app uses `symbol_key`, never `gene_symbol`.
+    """
+    if "gene_symbol" in df.columns and "symbol_key" not in df.columns:
+        df = df.copy()
+        df["symbol_key"] = df["gene_symbol"].astype(str).str.upper()
+    return df
 
 
 def build_genes(gene_ids: list[str], source_labels: list[str]) -> pd.DataFrame:
@@ -204,7 +219,7 @@ def build_genes(gene_ids: list[str], source_labels: list[str]) -> pd.DataFrame:
                 "viewpoint_pos": pos,
             }
         )
-    return pd.DataFrame(rows)
+    return add_symbol_key(pd.DataFrame(rows))
 
 
 def build_tables(gene_ids: list[str] | None, source_labels: list[str] | None) -> dict:
@@ -281,7 +296,10 @@ def build_tables(gene_ids: list[str] | None, source_labels: list[str] | None) ->
     base = read_table(base_p)
     me = read_table(me_p)
 
-    labels = base.merge(me, on="gene_symbol", how="left", validate="one_to_one")
+    labels = base.merge(
+        me.drop(columns=["gene_symbol"]), on="symbol_key", how="left",
+        validate="one_to_one",
+    )
     labels["group"] = labels["me_subtype"].fillna("").where(
         labels["me_subtype"].notna(), labels["archetype"]
     )

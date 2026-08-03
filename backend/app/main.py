@@ -147,12 +147,18 @@ def get_gene(gene: str):
     # The label is a readout of position, never the primary object (PLAN.md §1).
     # `is_mixture` is surfaced at the top level so a client cannot render a bare
     # badge without also having the caveat to hand.
+    canonical = row.get("group")
+    display = S.ARCHETYPE_DISPLAY.get(canonical, {})
+
     out = {
         "gene_id": gid,
         "gene_symbol": symbol,
         "viewpoint": {"chrom": row.get("viewpoint_chrom"), "pos": row.get("viewpoint_pos")},
         "archetype": {
-            "group": row.get("group"),
+            "group": canonical,
+            "display": display.get("display"),
+            "architecture": display.get("architecture"),
+            "caveat": S.CONTINUUM_CAVEAT,
             "max_posterior": row.get("max_posterior"),
             "confidence_class": row.get("confidence_class"),
             "is_core": bool(row.get("is_core", False)),
@@ -234,6 +240,38 @@ def dimensions():
         "display_rule": "Report max |rho| and r2. No survive/compromised verdicts — "
                         "a threshold-dependent verdict is a claim that has to be "
                         "defended, and PC5's flipped twice on threshold choice.",
+    }
+
+
+@app.get("/api/archetypes")
+def archetypes():
+    """Named regions of the continuum, described by architecture.
+
+    Display names are derived from the top discriminating features and make no
+    functional claim. The pipeline's own labels borrow biological categories
+    they do not track — see ARCHETYPE_DISPLAY for the measurements.
+    """
+    s = store()
+    counts = s.genes["group"].value_counts().to_dict()
+    rows = []
+    for canonical, meta in S.ARCHETYPE_DISPLAY.items():
+        n = int(counts.get(canonical, 0))
+        sub = s.genes[s.genes["group"] == canonical]
+        rows.append({
+            "canonical": canonical,
+            "display": meta["display"],
+            "architecture": meta["architecture"],
+            "top_features": meta["top_features"],
+            "is_qc": meta.get("is_qc", False),
+            "n": n,
+            "n_core": int(sub["is_core"].sum()) if "is_core" in sub else None,
+            "n_mixture": int((~sub["is_core"]).sum()) if "is_core" in sub else None,
+        })
+    return {
+        "caveat": S.CONTINUUM_CAVEAT,
+        "naming_note": "Names describe contact architecture, not gene function. "
+                       "The pipeline's canonical ids are retained for provenance.",
+        "archetypes": _clean(rows),
     }
 
 
