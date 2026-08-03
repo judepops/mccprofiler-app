@@ -106,7 +106,7 @@ ARTEFACTS: list[Artefact] = [
         "ME split for the 720 arch-ME genes only (constitutive 369 / effector 351)",
         phase="P0",
         notes=(
-            "A SUBSET, not a full labelling — it covers only arch-ME. Overlay it on "
+            "A SUBSET, not a full labelling, it covers only arch-ME. Overlay it on "
             "archetype_labels to get the 5 groups. Counts are the post-amount-"
             "correction 369/351; PROJECT_STATUS.md still quotes the stale 377/343."
         ),
@@ -163,7 +163,7 @@ ARTEFACTS: list[Artefact] = [
     Artefact(
         "gene_table",
         MCC / "collaboration/data/gene_table.tsv",
-        "anchor_table superset, 18,802 x 42 — built for the Taipale work",
+        "anchor_table superset, 18,802 x 42, built for the Taipale work",
         phase="P4",
         notes=(
             "Preferred over anchor_table: adds gene_length (the uncontrolled confound "
@@ -265,12 +265,12 @@ ARTEFACTS: list[Artefact] = [
 # scripts_cleaned_legacy/ is dead per CLAUDE.md; anchor_table_v1.tsv is superseded.
 STALE_DUPLICATES: dict[str, str] = {
     str(CD4 / "scripts_cleaned_legacy/benchmark_mcc_only/output/anchor_table.tsv"): (
-        "legacy tree — use scripts_cleaned/public/outputs/anchor_table.tsv"
+        "legacy tree, use scripts_cleaned/public/outputs/anchor_table.tsv"
     ),
 }
 
 # --------------------------------------------------------------------------
-# blacklist — build_store refuses to read these
+# blacklist, build_store refuses to read these
 # --------------------------------------------------------------------------
 
 BLACKLIST: dict[str, str] = {

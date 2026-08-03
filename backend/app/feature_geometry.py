@@ -2,8 +2,8 @@
 
 The feature table can say a gene is at the 99.9th percentile of
 `bait_pileup_fraction` without ever showing what that sums. This module maps a
-feature name to a drawable description — which region of the +/-1 Mb window it
-reads, and how — so the app can shade that region on the gene's own trace and
+feature name to a drawable description, which region of the +/-1 Mb window it
+reads, and how, so the app can shade that region on the gene's own trace and
 alongside a contrasting gene.
 
 Extends the spatial-zones schematic in
@@ -12,7 +12,7 @@ an overlay on actual signal.
 
 **Honesty rule:** a feature that cannot be drawn faithfully gets `kind: None`
 and a reason, rather than a plausible-looking overlay that misrepresents it.
-The topology block is the clearest case — its adjacency is the complete graph
+The topology block is the clearest case, its adjacency is the complete graph
 on active peaks (`topology.py:104`), so an arc diagram would imply measured
 interaction structure that does not exist.
 """
@@ -47,7 +47,7 @@ GEOMETRY: dict[str, dict] = {
     "frac_promoter_proximal": _band(
         "frac_promoter_proximal",
         "Share of all contact signal falling within 10 kb of the viewpoint. High "
-        "means bait-dominated — typical of silenced genes where almost everything "
+        "means bait-dominated, typical of silenced genes where almost everything "
         "sits at the viewpoint itself.",
         "promoter_proximal",
     ),
@@ -59,13 +59,13 @@ GEOMETRY: dict[str, dict] = {
     ),
     "frac_distal": _band(
         "frac_distal",
-        "Share of signal at 50-250 kb — mid-range contact, multi-enhancer "
+        "Share of signal at 50-250 kb, mid-range contact, multi-enhancer "
         "architecture or a moderately extended domain.",
         "distal",
     ),
     "frac_far_distal": _band(
         "frac_far_distal",
-        "Share of signal beyond 250 kb. Long-range contact, or noise — the two are "
+        "Share of signal beyond 250 kb. Long-range contact, or noise, the two are "
         "not distinguished here.",
         "far_distal",
     ),
@@ -80,7 +80,7 @@ GEOMETRY: dict[str, dict] = {
         "regions": [{"start_bp": 50_000, "end_bp": 1_000_000, "label": "distal+",
                      "mirrored": True}],
         "measures": "Mean signal per bin beyond 50 kb, log-compressed. Unlike the "
-                    "band fractions this is a density, not a share — it does not "
+                    "band fractions this is a density, not a share, it does not "
                     "fall when the bait pile-up grows.",
         "reads": "average height across the shaded region",
     },
@@ -101,7 +101,7 @@ GEOMETRY: dict[str, dict] = {
     "total_mcc": {
         "kind": "whole",
         "measures": "Sum of every bin. The crudest amount descriptor, and the one "
-                    "most confounded by capture efficiency — it is log1p'd before "
+                    "most confounded by capture efficiency, it is log1p'd before "
                     "z-scoring and conditioned on downstream.",
         "reads": "the total area under the trace",
     },
@@ -121,7 +121,7 @@ GEOMETRY: dict[str, dict] = {
     "q99_mcc": {
         "kind": "threshold",
         "quantile": 0.99,
-        "measures": "The 99th percentile of bin heights — whether the brightest 1% "
+        "measures": "The 99th percentile of bin heights, whether the brightest 1% "
                     "of the window stands above background.",
         "reads": "the height at which 1% of bins are taller",
     },
@@ -138,7 +138,7 @@ GEOMETRY: dict[str, dict] = {
         "kind": "empty",
         "measures": "Fraction of the window carrying no signal at all. The direct "
                     "complement of reach.",
-        "reads": "the gaps — bins at zero",
+        "reads": "the gaps, bins at zero",
     },
     "frac_signal_in_top_peak": {
         "kind": "top_peak",
@@ -207,7 +207,7 @@ def describe(name: str) -> dict:
             "measures": "Counts over the peak-peak graph.",
             "why_not_drawable":
                 "The adjacency this is computed from connects every pair of active "
-                "peaks unconditionally (topology.py:104) — it is the complete graph, "
+                "peaks unconditionally (topology.py:104), it is the complete graph, "
                 "with no contact or distance criterion. So this reduces to an "
                 "algebraic function of two counts, and drawing it as a network would "
                 "imply interaction structure the data does not measure.",
@@ -220,5 +220,5 @@ def describe(name: str) -> dict:
         "measures": None,
         "why_not_drawable":
             "No unambiguous geometry defined for this feature yet. Rather than draw "
-            "a guess, nothing is shown — see FEATURE_SPEC.md for the definition.",
+            "a guess, nothing is shown, see FEATURE_SPEC.md for the definition.",
     }

@@ -1,5 +1,5 @@
 /**
- * Scree + loadings — the evidence for the axis names.
+ * Scree + loadings, the evidence for the axis names.
  *
  * The continuum map relabels PC1-PC5 with prose ("promoter-driven vs
  * enhancer-driven"). Those readings come from the audit's 14_name_dimensions.py,
@@ -7,7 +7,7 @@
  * them asks the reader to take it on trust. This panel is where the
  * interpretation can be checked and, if it is wrong, seen to be wrong.
  *
- * Panel-level, not gene-level — it describes the coordinate system, not any
+ * Panel-level, not gene-level, it describes the coordinate system, not any
  * particular gene.
  */
 
@@ -32,7 +32,7 @@ export function DimensionPanel() {
   return (
     <div className="rounded-lg border border-ink-200 bg-white p-4">
       <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-500">
-        Coordinate system — components and what they are made of
+        Coordinate system, components and what they are made of
       </h2>
       <p className="mb-4 text-[11px] leading-relaxed text-ink-500">
         Panel-level, not gene-specific. Axis names are readings of the loadings below;
@@ -147,7 +147,7 @@ export function DimensionPanel() {
 
           <p className="mt-2 text-[10px] leading-relaxed text-ink-500">
             Top {load?.loadings.length ?? 0} features by absolute loading, of{' '}
-            {load?.n_features ?? 0}. Sign is arbitrary in PCA — only the *contrast*
+            {load?.n_features ?? 0}. Sign is arbitrary in PCA, only the *contrast*
             between the two ends is meaningful, not which end is positive.
           </p>
         </div>

@@ -241,7 +241,7 @@ export function ContinuumMap({
             <>
               <strong>This is the permuted null.</strong> Every feature keeps its
               marginal distribution; all joint structure is destroyed. There is provably
-              no structure here — so any grouping you see is what UMAP does to
+              no structure here, so any grouping you see is what UMAP does to
               structureless data.
             </>
           ) : (

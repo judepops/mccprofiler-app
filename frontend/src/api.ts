@@ -1,7 +1,7 @@
 /**
  * Client for the local FastAPI backend.
  *
- * The API returns numbers, never images — every figure in this app is drawn
+ * The API returns numbers, never images, every figure in this app is drawn
  * client-side from these payloads. See PLAN.md §1b.
  */
 
@@ -32,7 +32,7 @@ export interface Archetype {
   /** Architecture-derived display name. Makes no functional claim. */
   display: string | null
   architecture: string | null
-  /** Continuum caveat — render it wherever the label is rendered. */
+  /** Continuum caveat, render it wherever the label is rendered. */
   caveat: string | null
   max_posterior: number | null
   confidence_class: string | null

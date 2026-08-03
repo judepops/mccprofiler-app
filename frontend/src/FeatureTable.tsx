@@ -38,7 +38,7 @@ export function FeatureTable({
 }) {
   const [open, setOpen] = useState<Set<string>>(new Set(['G2', 'P1']))
   const [onlyExtreme, setOnlyExtreme] = useState(false)
-  // Clicking a feature name opens "what does this measure?" — the gap the
+  // Clicking a feature name opens "what does this measure?", the gap the
   // percentile bars leave.
   const [explain, setExplain] = useState<string | null>(null)
 

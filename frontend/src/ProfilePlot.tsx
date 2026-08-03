@@ -1,5 +1,5 @@
 /**
- * Viewpoint-aligned contact profile — the app's primary view.
+ * Viewpoint-aligned contact profile, the app's primary view.
  *
  * This is NOT a genome browser. The x-axis is signed distance from the
  * experimental viewpoint, which sits at the window centre, and that alignment

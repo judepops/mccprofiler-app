@@ -1,11 +1,26 @@
+/**
+ * Three pages, with one rule: a page is about a gene, or about the panel, and
+ * never both.
+ *
+ *   Gene   this gene's own data. Profile, position, peaks, features, compare.
+ *   Panel  properties of the coordinate system and the population. Nothing
+ *          here is about any particular gene, and the finding tools live here
+ *          because you use them BEFORE you have one.
+ *   Lab    exploratory and methodological views, not part of the product.
+ *
+ * Previously the panel-level views were repeated underneath the gene detail,
+ * which made it ambiguous whether a number described the gene you had searched
+ * or the panel it sits in. That ambiguity is the thing this split removes.
+ */
+
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   api,
   levelForSpan,
-  type Gene,
-  type GeneSummary,
   type Embedding,
   type FeatureSet,
+  type Gene,
+  type GeneSummary,
   type Health,
   type Peak,
   type PeakSet,
@@ -24,6 +39,14 @@ import { AskPanel } from './AskPanel'
 import { PeakDetail } from './PeakDetail'
 import { GeneCompare } from './GeneCompare'
 
+type Page = 'gene' | 'panel' | 'lab'
+
+const PAGE_LABEL: Record<Page, string> = {
+  gene: 'Gene',
+  panel: 'Panel',
+  lab: 'Lab',
+}
+
 const CHANNEL_LABEL: Record<string, string> = {
   mcc: 'MCC',
   atac: 'ATAC',
@@ -36,7 +59,7 @@ const CHANNEL_LABEL: Record<string, string> = {
 }
 
 export default function App() {
-  const [page, setPage] = useState<'explore' | 'lab'>('explore')
+  const [page, setPage] = useState<Page>('gene')
   const [health, setHealth] = useState<Health | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
@@ -50,14 +73,15 @@ export default function App() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [peaks, setPeaks] = useState<PeakSet | null>(null)
   const [features, setFeatures] = useState<FeatureSet | null>(null)
+  const [peakLimit, setPeakLimit] = useState(25)
+  const [selectedPeak, setSelectedPeak] = useState<Peak | null>(null)
+  const [loading, setLoading] = useState(false)
+
   const [embedding, setEmbedding] = useState<Embedding | null>(null)
   const [axes, setAxes] = useState<[string, string]>(['pc2', 'pc3'])
   const [embLoading, setEmbLoading] = useState(false)
   const [embErr, setEmbErr] = useState<string | null>(null)
   const embReq = useRef(0)
-  const [peakLimit, setPeakLimit] = useState(25)
-  const [selectedPeak, setSelectedPeak] = useState<Peak | null>(null)
-  const [loading, setLoading] = useState(false)
 
   const plotWidth = useRef(900)
 
@@ -65,7 +89,6 @@ export default function App() {
     api.health().then(setHealth).catch((e) => setErr(String(e.message ?? e)))
   }, [])
 
-  // Debounced search.
   useEffect(() => {
     if (query.trim().length < 1) {
       setHits([])
@@ -85,14 +108,15 @@ export default function App() {
       setLoading(true)
       try {
         const span = r ? r.end - r.start : 2_000_000
-        const p = await api.profile(symbol, {
-          channel,
-          mode,
-          level: levelForSpan(span, plotWidth.current),
-          start_bp: r?.start,
-          end_bp: r?.end,
-        })
-        setProfile(p)
+        setProfile(
+          await api.profile(symbol, {
+            channel,
+            mode,
+            level: levelForSpan(span, plotWidth.current),
+            start_bp: r?.start,
+            end_bp: r?.end,
+          }),
+        )
       } catch (e) {
         setErr(String((e as Error).message))
       } finally {
@@ -102,12 +126,14 @@ export default function App() {
     [channel, mode],
   )
 
+  /** Selecting a gene anywhere always lands you on the Gene page. */
   async function select(symbol: string) {
     setQuery('')
     setHits([])
     setRange(null)
     setErr(null)
     setSelectedPeak(null)
+    setPage('gene')
     try {
       const [g, pk, ft] = await Promise.all([
         api.gene(symbol),
@@ -124,51 +150,37 @@ export default function App() {
   }
 
   useEffect(() => {
-    // Token guards against out-of-order responses: changing axes twice quickly
-    // used to let the slower first request overwrite the newer second one.
+    if (gene) loadProfile(gene.gene_symbol, range)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [channel, mode, range])
+
+  // The map is only fetched for the Panel page, and only highlights a gene when
+  // one is selected.
+  useEffect(() => {
+    if (page !== 'panel') return
     const token = ++embReq.current
     setEmbLoading(true)
     setEmbErr(null)
     api
       .embedding(axes[0], axes[1], gene?.gene_symbol)
-      .then((e) => {
-        if (token === embReq.current) setEmbedding(e)
-      })
-      .catch((e) => {
-        // Keep the last good plot rather than blanking the view — a transient
-        // failure should not destroy what the user was looking at.
-        if (token === embReq.current) setEmbErr(String((e as Error).message))
-      })
-      .finally(() => {
-        if (token === embReq.current) setEmbLoading(false)
-      })
-  }, [axes, gene])
-
-  // Re-fetch when channel, mode or zoom changes.
-  useEffect(() => {
-    if (gene) loadProfile(gene.gene_symbol, range)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [channel, mode, range])
+      .then((e) => token === embReq.current && setEmbedding(e))
+      .catch((e) => token === embReq.current && setEmbErr(String((e as Error).message)))
+      .finally(() => token === embReq.current && setEmbLoading(false))
+  }, [axes, gene, page])
 
   return (
     <div className="min-h-screen bg-ink-50 font-sans text-ink-900">
       <header className="border-b border-ink-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3">
           <div>
             <h1 className="text-sm font-semibold tracking-tight">mccprofiler</h1>
             <p className="text-[11px] text-ink-500">
               Gene position in the MCC regulatory continuum · CD4+ T cells
             </p>
           </div>
-          <a
-            href="http://localhost:8000/api/export/panel.csv"
-            className="text-[11px] text-ink-500 underline-offset-2 hover:underline"
-            title="All 1,846 genes with labels and coordinates"
-          >
-            export panel
-          </a>
+
           <nav className="flex gap-1 text-[11px]">
-            {(['explore', 'lab'] as const).map((p) => (
+            {(Object.keys(PAGE_LABEL) as Page[]).map((p) => (
               <button
                 key={p}
                 onClick={() => setPage(p)}
@@ -176,249 +188,267 @@ export default function App() {
                   page === p ? 'bg-ink-600 text-white' : 'text-ink-600 hover:bg-ink-50'
                 }`}
               >
-                {p === 'explore' ? 'Explore' : 'Lab'}
+                {PAGE_LABEL[p]}
               </button>
             ))}
           </nav>
-          {health && (
-            <p className="text-right font-mono text-[10px] leading-4 text-ink-400">
-              {health.panel} · {health.n_genes.toLocaleString()} genes
-              <br />
-              store v{health.store_version} · {health.scripts_cleaned_commit}
-            </p>
-          )}
+
+          <div className="text-right">
+            <a
+              href="http://localhost:8000/api/export/panel.csv"
+              className="text-[11px] text-ink-500 underline-offset-2 hover:underline"
+            >
+              export panel
+            </a>
+            {health && (
+              <p className="font-mono text-[10px] leading-4 text-ink-400">
+                {health.panel} · {health.n_genes.toLocaleString()} genes
+                <br />
+                store v{health.store_version} · {health.scripts_cleaned_commit}
+              </p>
+            )}
+          </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-6">
-        {page === 'lab' && <LabPage />}
-        {page === 'explore' && (
-        <>
         {err && (
           <div className="mb-4 rounded border border-element-enhancer/30 bg-element-enhancer/5 px-3 py-2 text-[13px] text-element-enhancer">
             {err}
             {err.includes('no store') && (
               <span className="ml-1 text-ink-600">
-                — run <code className="font-mono">build_store.py</code> first.
+                run <code className="font-mono">build_store.py</code> first.
               </span>
             )}
           </div>
         )}
 
-        {/* search ---------------------------------------------------------- */}
-        <div className="relative mb-6">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && hits.length) select(hits[0].gene_symbol)
-            }}
-            placeholder="Search a gene — try IL7R, CTCF, EEF1A1…"
-            className="w-full rounded-lg border border-ink-200 bg-white px-4 py-2.5 text-sm outline-none placeholder:text-ink-300 focus:border-ink-400"
-          />
-          {hits.length > 0 && (
-            <ul className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-ink-200 bg-white shadow-lg">
-              {hits.map((h) => (
-                <li key={h.gene_id}>
-                  <button
-                    onClick={() => select(h.gene_symbol)}
-                    className="flex w-full items-baseline justify-between px-4 py-2 text-left text-sm hover:bg-ink-50"
-                  >
-                    <span className="font-medium">{h.gene_symbol}</span>
-                    <span className="font-mono text-[11px] text-ink-400">
-                      {h.viewpoint_chrom}:{h.viewpoint_pos?.toLocaleString()}
-                      {h.max_posterior != null && (
-                        <span className="ml-2 text-ink-300">
-                          p {h.max_posterior.toFixed(2)}
+        {/* ---------------------------------------------------------------- */}
+        {/* GENE: this gene's own data, and nothing else                      */}
+        {/* ---------------------------------------------------------------- */}
+        {page === 'gene' && (
+          <>
+            <div className="relative mb-6">
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && hits.length) select(hits[0].gene_symbol)
+                }}
+                placeholder="Search a gene, try IL7R, CTCF, EEF1A1"
+                className="w-full rounded-lg border border-ink-200 bg-white px-4 py-2.5 text-sm outline-none placeholder:text-ink-300 focus:border-ink-400"
+              />
+              {hits.length > 0 && (
+                <ul className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-ink-200 bg-white shadow-lg">
+                  {hits.map((h) => (
+                    <li key={h.gene_id}>
+                      <button
+                        onClick={() => select(h.gene_symbol)}
+                        className="flex w-full items-baseline justify-between px-4 py-2 text-left text-sm hover:bg-ink-50"
+                      >
+                        <span className="font-medium">{h.gene_symbol}</span>
+                        <span className="font-mono text-[11px] text-ink-400">
+                          {h.viewpoint_chrom}:{h.viewpoint_pos?.toLocaleString()}
                         </span>
-                      )}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
 
-        {!gene && !err && (
-          <div className="space-y-6">
-            <p className="pt-8 text-center text-sm text-ink-400">
-              Search a gene to see its contact architecture — or start from a gene set below.
+            {!gene && !err && (
+              <div className="py-16 text-center">
+                <p className="text-sm text-ink-400">
+                  Search a gene to see its contact architecture.
+                </p>
+                <button
+                  onClick={() => setPage('panel')}
+                  className="mt-2 text-[12px] text-ink-500 underline underline-offset-2 hover:text-ink-800"
+                >
+                  or find one on the Panel page
+                </button>
+              </div>
+            )}
+
+            {gene && (
+              <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+                <section className="lg:col-span-2">
+                  <div className="rounded-lg border border-ink-200 bg-white p-4">
+                    <div className="mb-3 flex items-baseline justify-between gap-3">
+                      <div>
+                        <h2 className="text-lg font-semibold">{gene.gene_symbol}</h2>
+                        <p className="font-mono text-[11px] text-ink-500">
+                          viewpoint {gene.viewpoint.chrom}:
+                          {gene.viewpoint.pos?.toLocaleString()}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <select
+                          value={channel}
+                          onChange={(e) => setChannel(e.target.value)}
+                          className="rounded border border-ink-200 px-2 py-1 text-xs"
+                        >
+                          {(health?.channels ?? ['mcc']).map((c) => (
+                            <option key={c} value={c}>
+                              {CHANNEL_LABEL[c] ?? c}
+                            </option>
+                          ))}
+                        </select>
+
+                        {channel === 'mcc' && (peaks?.n ?? 0) > 0 && (
+                          <label className="flex items-center gap-1 text-[11px] text-ink-600">
+                            top
+                            <select
+                              value={peakLimit}
+                              onChange={(e) => setPeakLimit(Number(e.target.value))}
+                              className="rounded border border-ink-200 px-1 py-0.5"
+                            >
+                              {[10, 25, 50, 200].map((n) => (
+                                <option key={n} value={n}>
+                                  {n >= (peaks?.n ?? 0) ? `all ${peaks?.n}` : n}
+                                </option>
+                              ))}
+                            </select>
+                            peaks
+                          </label>
+                        )}
+
+                        <div className="flex overflow-hidden rounded border border-ink-200 text-xs">
+                          {(['raw', 'oe'] as const).map((m) => (
+                            <button
+                              key={m}
+                              onClick={() => setMode(m)}
+                              className={`px-2.5 py-1 ${
+                                mode === m ? 'bg-ink-600 text-white' : 'bg-white text-ink-600'
+                              }`}
+                            >
+                              {m === 'raw' ? 'raw' : 'O/E'}
+                            </button>
+                          ))}
+                        </div>
+
+                        <a
+                          href={`http://localhost:8000/api/export/${encodeURIComponent(
+                            gene.gene_symbol,
+                          )}.csv`}
+                          className="rounded border border-ink-200 px-2 py-1 text-[11px] text-ink-600 hover:bg-ink-50"
+                        >
+                          export
+                        </a>
+                      </div>
+                    </div>
+
+                    {profile && (
+                      <ProfilePlot
+                        profile={profile}
+                        peaks={
+                          channel === 'mcc' ? (peaks?.peaks ?? []).slice(0, peakLimit) : []
+                        }
+                        loading={loading}
+                        onZoom={setRange}
+                        onPeakClick={setSelectedPeak}
+                      />
+                    )}
+
+                    <p className="mt-3 border-t border-ink-100 pt-2 text-[11px] leading-relaxed text-ink-500">
+                      Distance is signed bp from the <strong>experimental viewpoint</strong>,
+                      not the canonical TSS. For about 2% of genes these differ by hundreds
+                      of kb. Aligning every gene on its viewpoint is what makes profiles
+                      comparable, and is why this is not a genome-browser view. Drag to zoom.
+                      {channel !== 'mcc' && profile?.channel_role && (
+                        <>
+                          {' '}
+                          <strong>{CHANNEL_LABEL[channel]}</strong> is {profile.channel_role}.
+                        </>
+                      )}
+                    </p>
+                  </div>
+
+                  {gene.ps?.alpha_both != null && (
+                    <div className="mt-5 rounded-lg border border-ink-200 bg-white p-4">
+                      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500">
+                        Contact decay P(s) ~ s<sup>−α</sup>
+                      </h2>
+                      <div className="flex flex-wrap gap-8 text-sm">
+                        {(
+                          [
+                            ['α overall', gene.ps.alpha_both],
+                            ['α near (10 to 100 kb)', gene.ps.alpha_near],
+                            ['α far (0.1 to 1 Mb)', gene.ps.alpha_far],
+                            ['fit R²', gene.ps.fit_r2_both],
+                          ] as [string, number | undefined][]
+                        ).map(([label, v]) =>
+                          v == null ? null : (
+                            <div key={label}>
+                              <p className="text-[11px] text-ink-500">{label}</p>
+                              <p className="font-mono text-base">{Number(v).toFixed(3)}</p>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </section>
+
+                <aside className="space-y-5">
+                  <ArchetypeReadout a={gene.archetype} />
+                  {selectedPeak && (
+                    <PeakDetail
+                      peak={selectedPeak}
+                      onClose={() => setSelectedPeak(null)}
+                    />
+                  )}
+                </aside>
+
+                <section className="lg:col-span-3">
+                  {features && <FeatureTable data={features} onPick={select} />}
+                </section>
+
+                <section className="lg:col-span-3">
+                  <GeneCompare primary={gene} primaryFeatures={features} />
+                </section>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ---------------------------------------------------------------- */}
+        {/* PANEL: the coordinate system and the population. No single gene.  */}
+        {/* ---------------------------------------------------------------- */}
+        {page === 'panel' && (
+          <div className="space-y-5">
+            <p className="text-[11px] leading-relaxed text-ink-500">
+              These views describe the panel and the coordinate system, not any one
+              gene. {gene && (
+                <>
+                  <strong>{gene.gene_symbol}</strong> is highlighted on the map for
+                  reference.{' '}
+                </>
+              )}
+              Selecting a gene anywhere here opens it on the Gene page.
             </p>
+
             <AskPanel onPick={select} />
             <RankedLists onPick={select} />
             <CohortView onPick={select} />
+            {embedding && (
+              <ContinuumMap
+                data={embedding}
+                axes={axes}
+                loading={embLoading}
+                error={embErr}
+                onAxisChange={(x, y) => setAxes([x, y])}
+                onPick={select}
+              />
+            )}
             <DimensionPanel />
             <ExplainPanel />
           </div>
         )}
 
-        {gene && (
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-            <section className="lg:col-span-2">
-              <div className="rounded-lg border border-ink-200 bg-white p-4">
-                <div className="mb-3 flex items-baseline justify-between">
-                  <div>
-                    <h2 className="text-lg font-semibold">{gene.gene_symbol}</h2>
-                    <p className="font-mono text-[11px] text-ink-500">
-                      viewpoint {gene.viewpoint.chrom}:
-                      {gene.viewpoint.pos?.toLocaleString()}
-                    </p>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <select
-                      value={channel}
-                      onChange={(e) => setChannel(e.target.value)}
-                      className="rounded border border-ink-200 px-2 py-1 text-xs"
-                    >
-                      {(health?.channels ?? ['mcc']).map((c) => (
-                        <option key={c} value={c}>
-                          {CHANNEL_LABEL[c] ?? c}
-                        </option>
-                      ))}
-                    </select>
-
-                    {channel === 'mcc' && (peaks?.n ?? 0) > 0 && (
-                      <label className="flex items-center gap-1 text-[11px] text-ink-600">
-                        top
-                        <select
-                          value={peakLimit}
-                          onChange={(e) => setPeakLimit(Number(e.target.value))}
-                          className="rounded border border-ink-200 px-1 py-0.5"
-                        >
-                          {[10, 25, 50, 200].map((n) => (
-                            <option key={n} value={n}>
-                              {n >= (peaks?.n ?? 0) ? `all ${peaks?.n}` : n}
-                            </option>
-                          ))}
-                        </select>
-                        peaks
-                      </label>
-                    )}
-
-                    <a
-                      href={`http://localhost:8000/api/export/${encodeURIComponent(
-                        gene.gene_symbol,
-                      )}.csv`}
-                      className="rounded border border-ink-200 px-2 py-1 text-[11px] text-ink-600 hover:bg-ink-50"
-                      title="Features, coordinates and label as CSV"
-                    >
-                      export
-                    </a>
-
-                    <div className="flex overflow-hidden rounded border border-ink-200 text-xs">
-                      {(['raw', 'oe'] as const).map((m) => (
-                        <button
-                          key={m}
-                          onClick={() => setMode(m)}
-                          className={`px-2.5 py-1 ${
-                            mode === m ? 'bg-ink-600 text-white' : 'bg-white text-ink-600'
-                          }`}
-                        >
-                          {m === 'raw' ? 'raw' : 'O/E'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {profile && (
-                  <ProfilePlot
-                    profile={profile}
-                    peaks={
-                      channel === 'mcc' ? (peaks?.peaks ?? []).slice(0, peakLimit) : []
-                    }
-                    loading={loading}
-                    onZoom={setRange}
-                    onPeakClick={setSelectedPeak}
-                  />
-                )}
-
-                <p className="mt-3 border-t border-ink-100 pt-2 text-[11px] leading-relaxed text-ink-500">
-                  Distance is signed bp from the <strong>experimental viewpoint</strong>, not
-                  the canonical TSS — for ~2% of genes these differ by hundreds of kb.
-                  Aligning every gene on its viewpoint is what makes profiles comparable, and
-                  is why this is not a genome-browser view. Drag to zoom.
-                  {channel !== 'mcc' && profile?.channel_role && (
-                    <>
-                      {' '}
-                      <strong>{CHANNEL_LABEL[channel]}</strong> is {profile.channel_role}.
-                    </>
-                  )}
-                </p>
-              </div>
-
-              {gene.ps?.alpha_both != null && (
-                <div className="mt-5 rounded-lg border border-ink-200 bg-white p-4">
-                  <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500">
-                    Contact decay P(s) ~ s<sup>−α</sup>
-                  </h2>
-                  <div className="flex gap-8 text-sm">
-                    {(
-                      [
-                        ['α overall', gene.ps.alpha_both],
-                        ['α near (10–100 kb)', gene.ps.alpha_near],
-                        ['α far (0.1–1 Mb)', gene.ps.alpha_far],
-                        ['fit R²', gene.ps.fit_r2_both],
-                      ] as [string, number | undefined][]
-                    ).map(([label, v]) =>
-                      v == null ? null : (
-                        <div key={label}>
-                          <p className="text-[11px] text-ink-500">{label}</p>
-                          <p className="font-mono text-base">{Number(v).toFixed(3)}</p>
-                        </div>
-                      ),
-                    )}
-                  </div>
-                </div>
-              )}
-            </section>
-
-            <aside className="space-y-5">
-              <ArchetypeReadout a={gene.archetype} />
-              {selectedPeak && (
-                <PeakDetail peak={selectedPeak} onClose={() => setSelectedPeak(null)} />
-              )}
-            </aside>
-
-            {/* Gene-specific detail. */}
-            <section className="lg:col-span-3">
-              {features && <FeatureTable data={features} onPick={select} />}
-            </section>
-
-            <section className="lg:col-span-3">
-              <GeneCompare primary={gene} primaryFeatures={features} />
-            </section>
-
-            {/* Panel-level below: these describe the coordinate system and the
-                population, not this gene. */}
-            <section className="lg:col-span-3 border-t border-ink-200 pt-6">
-              <p className="mb-4 text-[11px] uppercase tracking-wide text-ink-400">
-                Panel-level — the space {gene.gene_symbol} sits in
-              </p>
-              <div className="space-y-5">
-                {embedding && (
-                  <ContinuumMap
-                    data={embedding}
-                    axes={axes}
-                    loading={embLoading}
-                    error={embErr}
-                    onAxisChange={(x, y) => setAxes([x, y])}
-                    onPick={select}
-                  />
-                )}
-                <DimensionPanel />
-                <AskPanel onPick={select} />
-                <RankedLists onPick={select} />
-                <CohortView onPick={select} />
-                <ExplainPanel />
-              </div>
-            </section>
-          </div>
-        )}
-        </>
-        )}
+        {page === 'lab' && <LabPage />}
       </main>
     </div>
   )

@@ -4,7 +4,7 @@
  * Extends the spatial-zones schematic in report.tex from a diagram of the
  * cutoffs to an overlay on actual signal: the panel's highest and lowest gene
  * on the feature, side by side, with the region the feature reads shaded on
- * both. The contrast is what makes it legible — a single median profile shows
+ * both. The contrast is what makes it legible, a single median profile shows
  * nothing.
  *
  * Features with no faithful geometry say so rather than getting a

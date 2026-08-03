@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Re-check the store's invariants after a build.
 
-Every silent-data bug in this project so far — the wrong anchor table, the
+Every silent-data bug in this project so far, the wrong anchor table, the
 all-NaN posterior merge, the case-mismatched `Cxorfnn` joins, the label subset
-that covered 39% of the panel — produced a store that loaded fine and served
+that covered 39% of the panel, produced a store that loaded fine and served
 wrong numbers. None raised. Each was caught only because someone noticed a
 total was off by eleven, or a column was NaN.
 
@@ -71,7 +71,7 @@ def approx(a: float, b: float, tol: float = 0.01) -> bool:
 
 
 def verify(s: Store) -> None:
-    # The store's own join guards raise before verify can inspect anything —
+    # The store's own join guards raise before verify can inspect anything,
     # which is correct (fail at the earliest point), but a traceback is a poor
     # report. Catch it and record it as the failed check it is.
     try:
@@ -228,7 +228,7 @@ def main() -> int:
         print(f"\n{e}\n")
         return 1
 
-    print("\nmccprofiler-app — store verification\n")
+    print("\nmccprofiler-app, store verification\n")
     verify(s)
 
     width = max(len(n) for _, n, _ in _results) + 2
@@ -238,10 +238,10 @@ def main() -> int:
     failed = [n for st, n, _ in _results if st == FAIL]
     print()
     if failed:
-        print(f"  FAIL — {len(failed)} of {len(_results)} checks failed: "
+        print(f"  FAIL, {len(failed)} of {len(_results)} checks failed: "
               f"{', '.join(failed[:6])}")
     else:
-        print(f"  PASS — {len(_results)} checks")
+        print(f"  PASS, {len(_results)} checks")
     print()
     return 1 if failed else 0
 

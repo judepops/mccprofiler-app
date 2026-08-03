@@ -1,6 +1,6 @@
 # mccprofiler-app
 
-Interactive explorer for where a gene sits in the MCC regulatory continuum —
+Interactive explorer for where a gene sits in the MCC regulatory continuum,
 viewpoint-aligned contact profile, named architecture axes, P(s) decay, cohort
 comparison, and a confidence-graded archetype readout.
 
@@ -12,12 +12,12 @@ See [PLAN.md](PLAN.md) for the design, the data traps, and the phase order.
 
 **Position first. The label is a confidence-graded readout of position, never
 the primary object.** The gap statistic returns k=1, HDBSCAN returns one
-cluster, the dip test is unimodal, and 44% of active genes are mixtures — so a
+cluster, the dip test is unimodal, and 44% of active genes are mixtures, so a
 bare category badge would contradict the science it is meant to display. Genes
 render as coordinates with a mixture composition; labels carry their posterior.
 
 Corollary: **every figure is data-backed.** The API serves numbers and the
-frontend draws them. No pre-rendered image is ever served — a static PNG cannot
+frontend draws them. No pre-rendered image is ever served, a static PNG cannot
 be brushed, zoomed, filtered or recoloured, and those interactions are the point.
 
 ## Layout
@@ -25,7 +25,7 @@ be brushed, zoomed, filtered or recoloured, and those interactions are the point
 ```
 backend/
   app/
-    paths.py          absolute path registry — the only place a path is defined
+    paths.py          absolute path registry, the only place a path is defined
     store_schema.py   the store contract (channels, pyramid, tables)
     store.py          read-side access; the server touches nothing else
     main.py           FastAPI
@@ -46,7 +46,7 @@ not know where the science tree lives. Bring-your-own-gene later becomes a
 # 1. check every input resolves (pure stdlib, any python3)
 python3 backend/scripts/00_audit_paths.py
 
-# 2. build the store — reads the clean pickle, ~70 s, writes ~1.6 GB
+# 2. build the store, reads the clean pickle, ~70 s, writes ~1.6 GB
 conda activate cd4env
 python backend/scripts/build_store.py
 
@@ -64,13 +64,13 @@ touch the pipeline environment.
 | | |
 |---|---|
 | Panel | `gw_cd4_1`, 1,846 genes after QC and outlier removal |
-| Channels | 8 — `mcc` is the clustering substrate; `atac` **gates membership and is never a clustering feature**; the rest are validation |
+| Channels | 8, `mcc` is the clustering substrate; `atac` **gates membership and is never a clustering feature**; the rest are validation |
 | Profiles | `profiles.h5`, 3-level pyramid at 50 bp / 250 bp / 1 kb, one gene per chunk, float32, gzip |
 | Tables | parquet, largest is 18,802 × 42 |
 | Provenance | `manifest.json` stamps every input with size, mtime and the `scripts_cleaned` commit |
 
 Genes are anchored on the **experimental viewpoint midpoint, not the canonical
-TSS** — for ~2% of genes these differ by hundreds of kb. Viewpoint positions are
+TSS**, for ~2% of genes these differ by hundreds of kb. Viewpoint positions are
 loaded from the BED, never parsed from `viewpoint_id`.
 
 ## Endpoints

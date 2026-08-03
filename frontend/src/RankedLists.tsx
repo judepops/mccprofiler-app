@@ -1,7 +1,7 @@
 /**
  * Given an axis, which genes sit at its extremes?
  *
- * The inverse of the cohort view — and the answer to "I don't have a gene in
+ * The inverse of the cohort view, and the answer to "I don't have a gene in
  * mind, show me something interesting". Both poles render side by side, named,
  * so the axis reads as a contrast rather than a ranking with a good end and a
  * bad end.
@@ -31,7 +31,7 @@ function Column({
 }) {
   return (
     <div>
-      <h3 className="mb-1.5 text-[11px] font-medium text-ink-700">{pole ?? '—'}</h3>
+      <h3 className="mb-1.5 text-[11px] font-medium text-ink-700">{pole ?? '-'}</h3>
       <div className="space-y-0.5">
         {genes?.map((g) => (
           <button

@@ -5,7 +5,7 @@
  * query renders BEFORE the results, as the filter chain with per-step counts,
  * so a misreading is visible as a wrong query rather than arriving disguised as
  * a gene list. Every filter is editable, and the whole panel works with no API
- * key — the ask box is the only part that needs one.
+ * key, the ask box is the only part that needs one.
  */
 
 import { useEffect, useState } from 'react'
@@ -69,7 +69,7 @@ export function AskPanel({ onPick }: { onPick?: (s: string) => void }) {
     rerun(next)
   }
 
-  const keyMissing = err?.includes('ANTHROPIC_API_KEY')
+  const keyMissing = err?.includes('credentials') || err?.includes('API_KEY')
 
   return (
     <div className="rounded-lg border border-ink-200 bg-white p-4">
@@ -78,7 +78,7 @@ export function AskPanel({ onPick }: { onPick?: (s: string) => void }) {
       </h2>
       <p className="mb-3 text-[11px] leading-relaxed text-ink-500">
         The model turns your sentence into a query and never sees the data. The query
-        is shown below the box — check it before trusting the genes, and edit it if it
+        is shown below the box, check it before trusting the genes, and edit it if it
         misread you.
       </p>
 
@@ -123,7 +123,7 @@ export function AskPanel({ onPick }: { onPick?: (s: string) => void }) {
           {keyMissing && vocab && (
             <span className="mt-1 block text-ink-500">
               {vocab.axes.length} axes, {vocab.cohorts.length} reference sets and{' '}
-              {vocab.features.length} features are queryable directly — only the
+              {vocab.features.length} features are queryable directly. Only the
               plain-English box needs a key.
             </span>
           )}
@@ -183,7 +183,7 @@ export function AskPanel({ onPick }: { onPick?: (s: string) => void }) {
             ))}
           </div>
           <p className="mt-3 border-t border-ink-100 pt-2 text-[11px] leading-relaxed text-ink-500">
-            Retrieval is a deterministic filter over the panel — the same query always
+            Retrieval is a deterministic filter over the panel, the same query always
             returns the same genes. The model only produced the query.
           </p>
         </div>

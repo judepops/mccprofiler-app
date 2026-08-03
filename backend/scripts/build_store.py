@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""P1 — build the app store from the canonical pipeline artefacts.
+"""P1, build the app store from the canonical pipeline artefacts.
 
 Runs in `cd4env` (needs numpy, pandas, h5py, pyarrow). Reads the 4.4 GB clean
 pickle once, writes a purpose-built store, and records provenance for every
@@ -96,7 +96,7 @@ def build_profiles(levels: list[int], batch: int) -> dict:
     pkl = P.by_key("clean_matrix_gw").path
     assert_not_blacklisted(pkl)
 
-    log(f"loading {pkl.name} ({pkl.stat().st_size / 1024**3:.1f} GB) — this takes a few minutes")
+    log(f"loading {pkl.name} ({pkl.stat().st_size / 1024**3:.1f} GB), this takes a few minutes")
     with open(pkl, "rb") as f:
         data = pickle.load(f)
 
@@ -187,8 +187,8 @@ def add_symbol_key(df: pd.DataFrame) -> pd.DataFrame:
     """Add an uppercase join key alongside gene_symbol.
 
     The pipeline's cluster outputs uppercase gene symbols while the signal
-    pickle preserves original casing, so the 11 `Cxorfnn` genes — the only
-    symbols with interior lowercase — silently failed to join. Every
+    pickle preserves original casing, so the 11 `Cxorfnn` genes, the only
+    symbols with interior lowercase, silently failed to join. Every
     symbol-keyed merge in the app uses `symbol_key`, never `gene_symbol`.
     """
     if "gene_symbol" in df.columns and "symbol_key" not in df.columns:
@@ -207,7 +207,7 @@ def build_embeddings(fm: pd.DataFrame, fnames: list[str], seed: int = 0
     UMAP is included because people expect it, but it optimises a local-neighbour
     objective and is well documented to produce apparent clusters from continuous
     data. Rather than caveat that in prose, the same UMAP is fitted to a
-    per-feature-permuted copy of the matrix — every marginal preserved exactly,
+    per-feature-permuted copy of the matrix, every marginal preserved exactly,
     all joint structure destroyed, so there is provably nothing to find. If the
     null looks similarly clustered, the artefact is self-evident. This mirrors
     the null used by audit/Archetype_Tests/12_structure_evidence.py.
@@ -344,7 +344,7 @@ def build_cohorts(fm: pd.DataFrame) -> pd.DataFrame:
 
     Reuses `benchmarking.loaders.build_reference_sets` verbatim rather than
     re-deriving the sets, so the app's cohorts are the same objects the audit
-    scripts test. Membership is restricted to panel genes here — the sets are
+    scripts test. Membership is restricted to panel genes here, the sets are
     genome-wide, and a group with 5,391 members genome-wide may have far fewer
     in a 1,846-gene panel, which is the number that governs whether it is worth
     displaying at all.
@@ -414,7 +414,7 @@ def build_tables(gene_ids: list[str] | None, source_labels: list[str] | None) ->
     if gene_ids is not None:
         write("genes", build_genes(gene_ids, source_labels))
 
-    # named dimensions — the 08-03 reframe, kept in separate namespaces because
+    # named dimensions, the 08-03 reframe, kept in separate namespaces because
     # the two tables are keyed on PC index but computed in different feature
     # spaces (PLAN.md trap #10).
     dim = P.by_key("dimension_names").path
@@ -447,7 +447,7 @@ def build_tables(gene_ids: list[str] | None, source_labels: list[str] | None) ->
         bad = int((delta > 1).sum())
         if bad:
             log(f"WARNING: {bad}/{len(pk)} peaks disagree with distance_to_viewpoint "
-                f"(max {delta.max():.0f} bp) — check the viewpoint join")
+                f"(max {delta.max():.0f} bp), check the viewpoint join")
         else:
             log(f"peak placement verified against unsigned distance for all {len(pk)}")
 
@@ -471,7 +471,7 @@ def build_tables(gene_ids: list[str] | None, source_labels: list[str] | None) ->
     fm = fm.rename(columns={idcol[0]: "gene_id"}) if idcol else fm
     long = fm.melt(id_vars="gene_id", value_vars=fnames,
                    var_name="feature", value_name="z")
-    # Panel percentile per feature — what "where does this gene sit" means.
+    # Panel percentile per feature, what "where does this gene sit" means.
     long["percentile"] = long.groupby("feature")["z"].rank(pct=True) * 100
     long["symbol_key"] = long["gene_id"].astype(str).str.upper()
     write("features", long, fpath)
@@ -495,7 +495,7 @@ def build_tables(gene_ids: list[str] | None, source_labels: list[str] | None) ->
     df_grp["passes_min_n"] = df_grp["n_in_group"] >= S.MIN_GROUP_N
     write("external_groups", df_grp, grp)
 
-    # anchors — gene_table is the 42-col superset, preferred over anchor_table
+    # anchors, gene_table is the 42-col superset, preferred over anchor_table
     anc = P.by_key("gene_table").path
     write("anchors", read_table(anc, low_memory=False), anc)
 
@@ -503,7 +503,7 @@ def build_tables(gene_ids: list[str] | None, source_labels: list[str] | None) ->
     cpr = P.by_key("cross_panel_reproducibility").path
     write("reproducibility", read_table(cpr), cpr)
 
-    # confounds — numbers only, no verdicts (PLAN.md §1b display rule) --------
+    # confounds, numbers only, no verdicts (PLAN.md §1b display rule) --------
     for key, name in (("locus_confounds", "confounds_locus"),
                       ("window_confounds", "confounds_window")):
         art = P.by_key(key)
@@ -526,7 +526,7 @@ def build_tables(gene_ids: list[str] | None, source_labels: list[str] | None) ->
     # Two files compose the final labelling. archetype_labels.tsv covers all
     # 1,846 genes at k=4; me_subtypes_labels.tsv covers ONLY the 720 arch-ME
     # genes. Using the ME file alone would label 39% of the panel and silently
-    # drop the rest — it is a subset, not a labelling.
+    # drop the rest, it is a subset, not a labelling.
     base_p = P.by_key("archetype_labels").path
     me_p = P.by_key("me_subtypes_labels").path
     base = read_table(base_p)
@@ -551,7 +551,7 @@ def build_tables(gene_ids: list[str] | None, source_labels: list[str] | None) ->
     if n_me != (base["archetype"] == "arch-ME").sum():
         raise SystemExit(
             f"ME split covers {n_me} genes but archetype_labels has "
-            f"{(base['archetype'] == 'arch-ME').sum()} arch-ME — merge is wrong"
+            f"{(base['archetype'] == 'arch-ME').sum()} arch-ME, merge is wrong"
         )
     log(f"labels composed: {len(labels)} genes, {n_me} carry an ME subtype")
     log("  " + ", ".join(f"{k} {v}" for k, v in labels["group"].value_counts().items()))
@@ -598,7 +598,7 @@ def main() -> int:
             raise SystemExit(f"unknown level {lvl}; known: {sorted(S.LEVELS)}")
 
     started = datetime.now(timezone.utc)
-    print("\nmccprofiler-app — build store\n")
+    print("\nmccprofiler-app, build store\n")
 
     profiles_meta: dict = {}
     gene_ids = source_labels = None

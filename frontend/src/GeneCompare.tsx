@@ -31,7 +31,7 @@ export function GeneCompare({
   const [err, setErr] = useState<string | null>(null)
 
   useEffect(() => {
-    // Clear when the primary gene changes — a stale comparison is worse than none.
+    // Clear when the primary gene changes, a stale comparison is worse than none.
     setOther(null)
     setOtherFeatures(null)
     setQuery('')

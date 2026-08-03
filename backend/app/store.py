@@ -1,7 +1,7 @@
 """Read-side access to the store.
 
 The server touches nothing else. It does not import mccprofiler, does not open
-the 4.4 GB pickle, and does not know where the science tree lives — everything
+the 4.4 GB pickle, and does not know where the science tree lives, everything
 comes from `store/`, built by backend/scripts/build_store.py.
 
 Tables are small (largest is 18,802 x 42) so they load once at startup. Profiles
@@ -77,7 +77,7 @@ class Store:
 
         * a mis-keyed merge returns an all-NaN column rather than raising, which
           is how `confidence` reached the API as NaN for every gene;
-        * a *partial* mismatch is worse, because it looks fine — the 11
+        * a *partial* mismatch is worse, because it looks fine, the 11
           `Cxorfnn` genes dropped out on a casing difference and the totals were
           simply 11 short.
 
@@ -101,7 +101,7 @@ class Store:
         """One row per gene, joined with labels and posteriors."""
         g = self.table("genes").copy()
 
-        # Join on symbol_key, never gene_symbol — the pipeline uppercases symbols
+        # Join on symbol_key, never gene_symbol, the pipeline uppercases symbols
         # in its cluster outputs while the pickle preserves original casing.
         if self.has("labels"):
             lab = self.table("labels")
@@ -123,7 +123,7 @@ class Store:
         return g
 
     def posterior_mix(self, gene_symbol: str) -> dict[str, float]:
-        """Per-archetype posteriors for one gene — the mixture, not the label."""
+        """Per-archetype posteriors for one gene, the mixture, not the label."""
         post = self.table("posteriors")
         row = post.loc[post["symbol_key"] == str(gene_symbol).upper()]
         if row.empty:

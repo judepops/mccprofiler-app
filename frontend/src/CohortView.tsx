@@ -1,5 +1,5 @@
 /**
- * Cohort view — where does a set of genes sit on each axis?
+ * Cohort view, where does a set of genes sit on each axis?
  *
  * The strongest non-circular evidence in the project. The archetypes are KMeans
  * clusters computed ON these features, so their separation needs a
@@ -50,7 +50,7 @@ export function CohortView({ onPick }: { onPick?: (symbol: string) => void }) {
   return (
     <div className="rounded-lg border border-ink-200 bg-white p-4">
       <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-500">
-        Cohort view — externally-defined gene sets
+        Cohort view, externally-defined gene sets
       </h2>
       <p className="mb-4 text-[11px] leading-relaxed text-ink-500">
         {list?.notes.why_external}
@@ -67,14 +67,14 @@ export function CohortView({ onPick }: { onPick?: (symbol: string) => void }) {
             onChange={(e) => setSelected(e.target.value)}
             className="w-full rounded border border-ink-200 px-2 py-1.5 text-[13px]"
           >
-            <option value="">— pick a set —</option>
+            <option value="">, pick a set,</option>
             {list?.rows
               .filter((r) => r.usable)
               .map((r) => (
                 <option key={r.group} value={r.group}>
                   {r.group} ({r.n_in_panel})
-                  {r.is_positive_control ? ' — positive control' : ''}
-                  {r.is_super_enhancer ? ' — SE, comparison only' : ''}
+                  {r.is_positive_control ? ', positive control' : ''}
+                  {r.is_super_enhancer ? ', SE, comparison only' : ''}
                 </option>
               ))}
           </select>
@@ -120,7 +120,7 @@ export function CohortView({ onPick }: { onPick?: (symbol: string) => void }) {
             </span>
           </div>
 
-          {/* coverage — leads, because it decides whether the rest means anything */}
+          {/* coverage, leads, because it decides whether the rest means anything */}
           {result.coverage && (
             <div className="mb-3 rounded border border-ink-200 bg-ink-50 px-3 py-2 text-[11px] leading-relaxed text-ink-700">
               <strong>

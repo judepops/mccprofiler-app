@@ -1,5 +1,5 @@
 /**
- * Lab — exploratory views, deliberately separate from the main app.
+ * Lab, exploratory views, deliberately separate from the main app.
  *
  * Things worth looking at that are not part of the product: methodological
  * checks, diagnostics, and views whose caveats are too heavy for a page a
@@ -48,7 +48,7 @@ function Scatter({
         </circle>
       ))}
       <text x={W / 2} y={H - 6} textAnchor="middle" className="fill-ink-500 text-[10px]">
-        {feature} — genome-wide capture
+        {feature}, genome-wide capture
       </text>
       <text
         x={11} y={H / 2} textAnchor="middle" className="fill-ink-500 text-[10px]"
@@ -81,7 +81,7 @@ export function LabPage() {
 
       <div className="rounded-lg border border-ink-200 bg-white p-4">
         <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-500">
-          Technical reproducibility — the same gene, captured twice
+          Technical reproducibility, the same gene, captured twice
         </h3>
         <p className="mb-3 text-[11px] leading-relaxed text-ink-500">
           {data?.n_genes} genes appear in both the genome-wide and immune panels. Two
@@ -155,7 +155,7 @@ export function LabPage() {
                   <Scatter points={data.pairs.points} feature={data.pairs.feature} />
                   <p className="mt-1 text-[10px] leading-relaxed text-ink-500">
                     Each point is one gene measured twice. The dashed line is perfect
-                    agreement — spread away from it is measurement noise, and it bounds
+                    agreement, spread away from it is measurement noise, and it bounds
                     how well anything downstream can possibly do.
                   </p>
                 </>

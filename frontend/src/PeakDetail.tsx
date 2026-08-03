@@ -1,5 +1,5 @@
 /**
- * One peak, in detail — the J1 "tallest peak zoom" panel, made selectable.
+ * One peak, in detail, the J1 "tallest peak zoom" panel, made selectable.
  *
  * Everything shown is measured per peak in annotated.tsv. Position is the
  * signed offset computed in the store (peak_midpoint - viewpoint), not the

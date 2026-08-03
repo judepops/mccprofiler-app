@@ -1,4 +1,4 @@
-"""FastAPI app — serves the store, nothing else.
+"""FastAPI app, serves the store, nothing else.
 
 Localhost only by decision (PLAN.md scope table): unpublished MCC never leaves
 the workstation. No auth, because there is no network surface to protect.
@@ -18,7 +18,12 @@ import pandas as pd
 from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 
+from . import env as _env
 from . import store_schema as S
+
+# Before anything reads credentials.
+_LOADED_ENV = _env.load()
+from . import translate as _translate
 from .feature_geometry import describe as describe_feature
 from .query import QueryError, query_schema, run as run_query
 from .store import StoreMissing, get_store
@@ -38,7 +43,7 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# Vite dev server. Localhost only — see module docstring.
+# Vite dev server. Localhost only, see module docstring.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -193,7 +198,7 @@ def get_profile(
     """Viewpoint-aligned contact profile.
 
     Distances are signed bp from the experimental viewpoint at the window
-    centre. This is NOT a genomic-coordinate view — the alignment is what makes
+    centre. This is NOT a genomic-coordinate view, the alignment is what makes
     genes comparable, and no genome browser can reproduce it.
     """
     s = store()
@@ -215,7 +220,7 @@ def get_profile(
 
 
 # ---------------------------------------------------------------------------
-# dimensions — the primary coordinate system (PLAN.md §1b)
+# dimensions, the primary coordinate system (PLAN.md §1b)
 # ---------------------------------------------------------------------------
 
 
@@ -236,10 +241,10 @@ def dimensions():
         "reproducibility": {
             "feature_space": "shared63",
             "note": "Computed in the 63-shared-feature space. Not aligned to the "
-                    "above by index — variance shares differ between spaces.",
+                    "above by index, variance shares differ between spaces.",
             "rows": _clean(rep.to_dict("records")) if rep is not None else [],
         },
-        "display_rule": "Report max |rho| and r2. No survive/compromised verdicts — "
+        "display_rule": "Report max |rho| and r2. No survive/compromised verdicts, "
                         "a threshold-dependent verdict is a claim that has to be "
                         "defended, and PC5's flipped twice on threshold choice.",
     }
@@ -337,7 +342,7 @@ def scree():
 
 @app.get("/api/dimensions/{pc}/loadings")
 def loadings(pc: int, top: int = 15):
-    """Feature loadings for one component — the evidence for its name.
+    """Feature loadings for one component, the evidence for its name.
 
     A named axis is an interpretation of its loadings. Serving the name without
     them would ask the reader to take the interpretation on trust.
@@ -424,7 +429,7 @@ def embedding(
 
 
 # ---------------------------------------------------------------------------
-# lab — exploratory views, not part of the main app
+# lab, exploratory views, not part of the main app
 # ---------------------------------------------------------------------------
 
 
@@ -454,7 +459,7 @@ def lab_reproducibility(feature: str | None = None):
         "median_rho": float(per_feature["spearman_rho"].median()),
         "n_above_0_7": int((per_feature["spearman_rho"] >= 0.7).sum()),
         "n_below_0_3": int((per_feature["spearman_rho"] < 0.3).sum()),
-        "note": "Least reproducible are the asymmetry features — candidates for "
+        "note": "Least reproducible are the asymmetry features, candidates for "
                 "removal, and the reason the profile view treats them cautiously.",
         "per_feature": _clean(per_feature.to_dict("records")),
     }
@@ -496,7 +501,7 @@ def export_panel():
 def export_gene(gene: str):
     """One gene, everything known about it, as CSV.
 
-    The CellProfiler analogy only holds if the output is portable — its
+    The CellProfiler analogy only holds if the output is portable, its
     deliverable IS a feature table. This is the line between a demo and a tool.
     """
     s_ = store()
@@ -537,7 +542,7 @@ def export_gene(gene: str):
 
 
 # ---------------------------------------------------------------------------
-# gene finder — the LLM translates, pandas retrieves
+# gene finder, the LLM translates, pandas retrieves
 # ---------------------------------------------------------------------------
 
 
@@ -582,14 +587,20 @@ def execute_query(query: dict):
         raise HTTPException(400, str(e)) from None
 
 
+@app.get("/api/translate/status")
+def translate_status():
+    """Whether the plain-English box will work, and which model backs it."""
+    return _translate.status()
+
+
 @app.post("/api/ask")
 def ask(body: dict):
     """Translate a question into a query, then run it.
 
-    The model never sees the data — only the question and a schema naming the
-    available axes, cohorts and features. The parsed query is returned
-    alongside the results so the translation can be checked and corrected;
-    a misread question shows up as a wrong query, not a wrong gene list.
+    The model never sees the data, only the question and a schema naming the
+    available axes, cohorts and features. The parsed query comes back with the
+    results so the translation can be checked and corrected: a misread question
+    shows up as a wrong query, not a wrong gene list.
     """
     question = (body or {}).get("question", "").strip()
     if not question:
@@ -598,96 +609,38 @@ def ask(body: dict):
     s_ = store()
     v = _vocabulary(s_)
 
-    try:
-        import anthropic
-    except ImportError:
-        raise HTTPException(
-            503,
-            "the anthropic SDK is not installed — run `pip install anthropic` in the "
-            "mccapp env. Query building still works without it.",
-        ) from None
-
-    # The SDK constructor does not raise on missing credentials — it fails at
-    # call time with a wall of text about header names. Check up front so the
-    # UI can show something a person can act on.
-    import os
-
-    if not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
-        raise HTTPException(
-            503,
-            "No Anthropic credentials. Set ANTHROPIC_API_KEY and restart the server. "
-            "Building queries by hand works without it — the model only translates.",
-        )
-    client = anthropic.Anthropic()
-
-    # The model gets the vocabulary and the axis DIRECTIONS. Without the poles it
-    # would have to guess which end of PC2 is long-range, and it would guess
-    # wrong as often as not — the sign is arbitrary in PCA.
+    # The model is given the axis DIRECTIONS. Without the poles it would have to
+    # guess which end of PC2 is long-range, and PCA sign is arbitrary, so it
+    # would guess wrong about half the time.
     pole_lines = "\n".join(
-        f"  {a}: {S.PC_LABELS.get(a, a)} — low end = {p['neg']}, high end = {p['pos']}"
+        f"  {a}: {S.PC_LABELS.get(a, a)}, low end = {p['neg']}, high end = {p['pos']}"
         for a, p in S.PC_POLES.items() if a in v["axes"]
     )
-    system = (
-        "You translate a biologist's question about gene contact architecture into a "
-        "structured query. You do NOT answer the question or name genes — you only "
-        "build the query; a deterministic filter runs it.\n\n"
-        f"Axes and which end is which:\n{pole_lines}\n\n"
-        "Rules:\n"
-        "- Use the fewest filters that capture the question. Extra filters silently "
-        "shrink the result to a handful.\n"
-        "- Map direction words to the correct POLE, not to 'high'. 'Long-range' is the "
-        "LOW end of PC2, not the high end.\n"
-        "- PC1 is contact amount, not biology. Only use it if the question is about "
-        "how much signal a gene has.\n"
-        "- Prefer a cohort filter for biological categories (immune, housekeeping, "
-        "essential) rather than trying to express them as axis positions.\n"
-        "- Always fill `interpretation` with one plain sentence naming each direction "
-        "explicitly, so the user can spot a misreading."
-    )
+    schema = _translate.flat_schema(v["axes"], v["cohorts"], v["groups"], v["features"])
 
     try:
-        resp = client.messages.create(
-            model="claude-opus-5",
-            max_tokens=2000,
-            system=system,
-            output_config={
-                "effort": "low",  # translation, not reasoning
-                "format": {
-                    "type": "json_schema",
-                    "schema": query_schema(v["axes"], v["cohorts"], v["groups"],
-                                           v["features"]),
-                },
-            },
-            messages=[{"role": "user", "content": question}],
-        )
-    except Exception as e:  # noqa: BLE001
+        query = _translate.translate(question, schema, pole_lines)
+    except _translate.TranslationUnavailable as e:
+        raise HTTPException(503, str(e)) from None
+    except _translate.TranslationFailed as e:
         raise HTTPException(502, f"translation failed: {e}") from None
-
-    if resp.stop_reason == "refusal":
-        raise HTTPException(400, "the question was declined by safety classifiers")
-
-    text = next((b.text for b in resp.content if b.type == "text"), None)
-    if not text:
-        raise HTTPException(502, "translation returned no query")
-
-    import json as _json
-    query = _json.loads(text)
 
     try:
         result = run_query(query, s_)
     except QueryError as e:
-        # A query that cannot execute is still worth showing — it is the
-        # evidence of what the model misread.
+        # A query that cannot execute is still worth showing: it is the evidence
+        # of what the model misread.
         return _clean({"question": question, "query": query, "error": str(e)})
 
     return _clean({
         "question": question,
         "query": query,
         "interpretation": query.get("interpretation"),
+        "provider": _translate.active_provider(),
         **result,
         "disclaimer": "The model translated your question into the query shown. It "
-                      "never saw the data. Check the query — if it misread you, edit "
-                      "it and re-run.",
+                      "never saw the data. Check the query, and if it misread you, "
+                      "edit it and re-run.",
     })
 
 
@@ -696,7 +649,7 @@ def feature_explainer(name: str, level: int = 2):
     """What a feature measures, drawn on two real profiles.
 
     Returns the geometry to overlay plus the panel's highest- and lowest-scoring
-    gene on this feature, with their profiles — so the feature is shown as a
+    gene on this feature, with their profiles, so the feature is shown as a
     contrast between two real traces rather than defined in prose.
     """
     s_ = store()
@@ -744,7 +697,7 @@ def feature_explainer(name: str, level: int = 2):
         },
         "examples": examples,
         "caveat": "These are the panel extremes, chosen to make the geometry "
-                  "visible. Most genes sit between them — the feature is a "
+                  "visible. Most genes sit between them, the feature is a "
                   "continuous quantity, not a two-way split.",
     })
 
@@ -806,7 +759,7 @@ def explain():
     """The argument the app is making, with its numbers.
 
     Leads with the nested-baseline result because that is the justification for
-    the 91-feature substrate existing at all — without it, `n_peaks` would do.
+    the 91-feature substrate existing at all, without it, `n_peaks` would do.
     """
     s_ = store()
     out: dict = {
@@ -834,9 +787,9 @@ def explain():
         "why_name_regions_at_all": {
             "claim": "The groups are not discoverable, but they are reproducible "
                      "once imposed.",
-            "detail": "Using the 116 genes captured in BOTH panels — cluster once on "
+            "detail": "Using the 116 genes captured in BOTH panels, cluster once on "
                       "the pooled matrix, then assign each gene's two independent "
-                      "captures separately — Cohen's kappa peaks at 0.72 for k=3-4. "
+                      "captures separately, Cohen's kappa peaks at 0.72 for k=3-4. "
                       "That separates two claims usually conflated: the groups "
                       "cannot be found from the data's density, but once defined "
                       "they are reproducible measurements. Only the first failed.",
@@ -889,7 +842,7 @@ def archetypes():
 
     Display names are derived from the top discriminating features and make no
     functional claim. The pipeline's own labels borrow biological categories
-    they do not track — see ARCHETYPE_DISPLAY for the measurements.
+    they do not track, see ARCHETYPE_DISPLAY for the measurements.
     """
     s = store()
     counts = s.genes["group"].value_counts().to_dict()
@@ -924,7 +877,7 @@ def cohort_compare(
     """Where does a gene set sit on each axis, against the rest of the panel?
 
     Either a built-in `group`, or a pasted `symbols` list. For a pasted list the
-    response leads with coverage, because the panel is 1,846 of ~20,000 genes —
+    response leads with coverage, because the panel is 1,846 of ~20,000 genes,
     a collaborator's 40 hits may match 4, and plotting 4 points as though they
     were 40 would be the wrong answer delivered confidently.
     """
@@ -963,7 +916,7 @@ def cohort_compare(
         raise HTTPException(400, "pass either group= or symbols=")
 
     if len(member) < S.MIN_GROUP_N:
-        note = (f"Only {len(member)} panel genes — below the {S.MIN_GROUP_N}-gene "
+        note = (f"Only {len(member)} panel genes, below the {S.MIN_GROUP_N}-gene "
                 f"floor. Treat any apparent difference as noise.")
     else:
         note = None
@@ -1001,7 +954,7 @@ def cohort_compare(
 
 @app.get("/api/cohorts")
 def cohorts():
-    """Externally-defined gene groups — the strongest non-circular evidence.
+    """Externally-defined gene groups, the strongest non-circular evidence.
 
     These groups were not defined from the features, so unlike the archetypes
     they need no within/pooled-ratio argument to be interpretable.
@@ -1012,7 +965,7 @@ def cohorts():
 
     counts = s.table("cohort_membership")["group"].value_counts()
 
-    # Stratification statistics exist for only some sets — the seven the audit
+    # Stratification statistics exist for only some sets, the seven the audit
     # ran. Attach them where present rather than restricting the list to them.
     strat: dict[str, dict] = {}
     if s.has("external_groups"):
@@ -1058,7 +1011,7 @@ def cohorts():
                        "not the absolute value.",
             "super_enhancer": "Super-enhancer sets are shown for post-hoc comparison "
                               "ONLY. They are never inputs to the features or the "
-                              "clustering — that would be circular.",
+                              "clustering, that would be circular.",
         },
         "rows": rows,
     })

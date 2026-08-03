@@ -2,7 +2,7 @@
  * The argument the app is making, with its numbers attached.
  *
  * Leads with the nested-baseline result, because that is the justification for
- * the 91-feature substrate existing at all — without it, counting peaks would
+ * the 91-feature substrate existing at all, without it, counting peaks would
  * do the job. What the work is NOT sits at the same level as what it is, not in
  * a footnote: the effect sizes are small, most of the association is
  * position-mediated, and half a typical between-gene distance is noise.

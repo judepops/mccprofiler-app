@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""P0 — resolve and check every input the store builder will read.
+"""P0, resolve and check every input the store builder will read.
 
 Run this before build_store.py. Paths in the registry come from the handoffs and
 have not all been verified; several artefacts moved during the July genome-wide
@@ -30,7 +30,7 @@ from app.paths import (  # noqa: E402
 )
 
 # Deliberately generous. A cap of 5 silently hid the correct location of
-# final_oligo_list.txt behind five sibling panel dirs on the first run — the
+# final_oligo_list.txt behind five sibling panel dirs on the first run, the
 # audit reported "no good candidate" when the answer was there. If a name is
 # ambiguous the operator needs to see all of it, not a truncated sample.
 MAX_SEARCH_HITS = 40
@@ -113,7 +113,7 @@ def render(result: dict) -> None:
     rows = result["artefacts"]
     width = max(len(r["key"]) for r in rows) + 2
 
-    print("\nmccprofiler-app — P0 path audit")
+    print("\nmccprofiler-app, P0 path audit")
     print(f"generated {result['generated']}\n")
 
     current_phase = None
@@ -146,11 +146,11 @@ def render(result: dict) -> None:
     missing = result["missing_required"]
     print()
     if missing:
-        print(f"  FAIL — {len(missing)} required artefact(s) missing: {', '.join(missing)}")
+        print(f"  FAIL, {len(missing)} required artefact(s) missing: {', '.join(missing)}")
     else:
         optional_missing = [r["key"] for r in rows if not r["found"]]
         note = f" ({len(optional_missing)} optional missing)" if optional_missing else ""
-        print(f"  PASS — all required artefacts resolved{note}")
+        print(f"  PASS, all required artefacts resolved{note}")
     print()
 
 

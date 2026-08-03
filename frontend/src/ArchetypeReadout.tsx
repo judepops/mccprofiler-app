@@ -45,7 +45,7 @@ export function ArchetypeReadout({ a }: { a: Archetype }) {
 
       <div className="mb-1 flex items-baseline gap-3">
         <span className="text-2xl font-semibold text-ink-900">
-          {a.display ?? a.group ?? '—'}
+          {a.display ?? a.group ?? '-'}
         </span>
         {a.is_mixture ? (
           <span className="rounded bg-element-enhancer/10 px-2 py-0.5 text-xs font-medium text-element-enhancer">
@@ -68,7 +68,7 @@ export function ArchetypeReadout({ a }: { a: Archetype }) {
         <p className="mb-4 text-[13px] leading-relaxed text-ink-700">{a.architecture}</p>
       )}
 
-      {/* Composition, always shown — including for core genes, so the display
+      {/* Composition, always shown, including for core genes, so the display
           is the same object in both cases rather than a badge that sometimes
           hides its own uncertainty. */}
       <div className="space-y-1.5">

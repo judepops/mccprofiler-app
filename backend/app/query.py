@@ -7,7 +7,7 @@ plain pandas. The same query always returns the same genes.
 That separation is the whole design. The model's only job is to turn a sentence
 into one of these objects; if it misreads the sentence, the result is a
 *visibly wrong query* the user can see and correct, not a plausible gene list
-with no provenance. Everything here works with no API key — the UI can build
+with no provenance. Everything here works with no API key, the UI can build
 and run queries directly.
 """
 
@@ -124,7 +124,7 @@ def describe(f: dict, poles: dict[str, dict[str, str]]) -> str:
         ax, d = f["axis"], f["direction"]
         p = f.get("percentile", 25)
         pole = (poles.get(ax) or {}).get("pos" if d == "high" else "neg")
-        end = f" — {pole}" if pole else ""
+        end = f", {pole}" if pole else ""
         side = f"top {p:g}%" if d == "high" else f"bottom {p:g}%"
         return f"{ax.upper()} in the {side}{end}"
     if t == "cohort":
@@ -212,10 +212,10 @@ def run(query: dict, store) -> dict[str, Any]:
         "steps": steps,
         "genes": hits[cols].head(int(query.get("limit", 50))).to_dict("records"),
         # Small results are the expected outcome of a specific question, not an
-        # error — but they are also where over-reading is easiest, so say so.
+        # error, but they are also where over-reading is easiest, so say so.
         "note": (
             "Fewer than 5 genes match. That is a specific question, not necessarily "
-            "a meaningful group — with 1,846 genes, narrow conjunctions land on "
+            "a meaningful group, with 1,846 genes, narrow conjunctions land on "
             "handfuls by chance."
             if len(hits) < 5 else None
         ),
