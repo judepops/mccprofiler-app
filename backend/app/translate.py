@@ -103,6 +103,33 @@ def flat_schema(axes: list[str], cohorts: list[str], groups: list[str],
                     "required": ["type"],
                 },
             },
+            "rank": {
+                "type": "array",
+                "description": "Rank the genes by a composite of these features and "
+                               "return the top ones. Use this for questions of "
+                               "DEGREE, 'genes with X', 'the most X'. Give every "
+                               "feature that expresses the concept, typically 2 to 5. "
+                               "Ranking is what makes an answer selective: a "
+                               "percentile filter can only ever return a quarter of "
+                               "the panel, a ranking returns the strongest examples.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "feature": {"type": "string", "enum": features},
+                        "direction": {"type": "string", "enum": ["high", "low"]},
+                        "weight": {
+                            "type": "number",
+                            "description": "Relative importance, default 1. Only set "
+                                           "it if one component really matters more.",
+                        },
+                    },
+                    "required": ["feature", "direction"],
+                },
+            },
+            "limit": {
+                "type": "number",
+                "description": "How many genes to return when ranking. Default 25.",
+            },
             "interpretation": {
                 "type": "string",
                 "description": "One plain sentence restating the query, naming each "
@@ -176,13 +203,30 @@ def build_prompt(pole_lines: str, feature_reference: str = "") -> str:
         "only 22 to 35 percent of it, so selecting on a component would quietly "
         "select on several other things at the same time.\n"
         f"{axis_block}\n"
+        "RANK, do not filter, for questions of degree. This is the most important "
+        "rule here. 'Genes with small domains and strong CTCF control' asks for the "
+        "genes that are MOST like that, so put every feature expressing the concept "
+        "in `rank` and return the top 25. A percentile filter answers it badly: one "
+        "cut at the top 25 percent returns 462 of 1,846 genes no matter how specific "
+        "the question was, and stacking cuts to compensate throws away a gene that "
+        "misses one threshold while topping every other. Ranking is selective "
+        "because the question decides the order, not because a threshold decides "
+        "membership.\n"
+        "Use `filters` only for genuine hard constraints, a property a gene must "
+        "have to qualify at all, and use `rank` for everything else. Most questions "
+        "are pure ranking with no filters.\n\n"
         "Rules:\n"
-        "- Use the fewest filters that capture the question. Extra filters silently "
-        "shrink the result to a handful.\n"
+        "- A concept is usually SEVERAL features, and naming all of them makes the "
+        "answer sharper rather than noisier. 'Strong CTCF control' is not "
+        "`n_peaks_ctcf` alone: it is the number of CTCF peaks, the share of signal "
+        "in them, and how strong the strongest one is. Put all three in `rank`. "
+        "Aim for 2 to 5 features per concept; one feature is usually too blunt.\n"
         "- Every clause maps to one or more features. Read the feature reference "
-        "below and pick the feature that measures the thing asked for. If two "
-        "features both fit, pick the more specific one, and use both only if the "
-        "question really has two conditions.\n"
+        "below and pick the features that measure the thing asked for. If two "
+        "features both fit, use both, they reinforce.\n"
+        "- Keep hard `filters` few. Correlated features in `rank` reinforce each "
+        "other, but independent percentile FILTERS multiply and land on handfuls by "
+        "chance, which is a different failure and still worth avoiding.\n"
         "- `direction` is which END of that feature you want, high or low. Read the "
         "reference, which says what HIGH means for every feature. Do not assume the "
         "wanted answer is always 'high': 'local' is `frac_far_distal` LOW just as "
@@ -214,6 +258,17 @@ def build_prompt(pole_lines: str, feature_reference: str = "") -> str:
         "put that in `unsupported`, in plain words, and build filters only for the "
         "part that IS answerable. An approximation offered silently is worse than "
         "a stated gap.\n"
+        "- Two kinds of gap, handled differently. An EXTERNAL GENE SET (immune, "
+        "housekeeping, essential) must never be approximated, because independence "
+        "from those labels is the point of the tool. A DOMAIN-SCALE object (TAD, "
+        "boundary, insulation, called loop) has no direct measurement here either, "
+        "but the contact geometry underneath it does: how far contacts reach, how "
+        "confined they are, how much CTCF is involved. For those you MAY build the "
+        "architectural version, and you must then say in `unsupported` that there "
+        "are no domain calls and name what you used instead. For example 'small "
+        "TAD' has no TAD size to read, but contacts confined to a short reach is "
+        "`max_distance_to_viewpoint_all` low, `frac_local` high, "
+        "`median_contact_distance` low. Build that, and declare it.\n"
         + ("\n\n" + feature_reference if feature_reference else "")
         + glossary +
         "\nReturn only the JSON object."

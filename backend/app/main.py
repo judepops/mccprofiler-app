@@ -732,10 +732,15 @@ def ask(body: dict):
     except _translate.TranslationFailed as e:
         raise HTTPException(502, f"translation failed: {e}") from None
 
-    # A wholly unanswerable question translates to no filters, and no filters
-    # means every gene passes, so the honest "cannot answer" would render as all
-    # 1,846 genes matched. Refuse instead of returning the panel.
-    if not query.get("filters") and (query.get("unsupported") or "").strip():
+    # A wholly unanswerable question translates to nothing executable, and no
+    # filters means every gene passes, so the honest "cannot answer" would
+    # render as all 1,846 genes matched. Refuse instead of returning the panel.
+    #
+    # Must check `rank` as well as `filters`. A ranking with a declared proxy
+    # (no filters, `unsupported` set to say a TAD was approximated by contact
+    # reach) is a perfectly good answer, and testing filters alone threw it away.
+    if (not query.get("filters") and not query.get("rank")
+            and (query.get("unsupported") or "").strip()):
         return _clean({
             "question": question,
             "query": query,

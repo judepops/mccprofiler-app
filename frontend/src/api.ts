@@ -299,6 +299,11 @@ export interface QueryStep {
 
 export interface QueryResult {
   n_matched: number
+  /** True when the answer is the top of a ranking rather than everything past a
+   *  threshold. Changes how n_matched should be read: it is the pool that was
+   *  ranked, not the size of the answer. */
+  ranked?: boolean
+  rank_by?: { feature: string; direction: string; weight: number }[] | null
   steps: QueryStep[]
   genes: {
     gene_id: string
@@ -307,6 +312,8 @@ export interface QueryResult {
     /** External sets this gene belongs to. Annotation on an
      *  architecture-selected list; these sets never drive selection. */
     in_sets?: string[]
+    /** Composite z across the ranked features. Present only when ranked. */
+    score?: number
   }[]
   note: string | null
   query?: Record<string, unknown>

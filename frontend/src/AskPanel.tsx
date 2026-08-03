@@ -248,10 +248,25 @@ export function AskPanel({ onPick }: { onPick?: (s: string) => void }) {
 
       {result && (
         <div className="mt-3">
-          <p className="mb-2 text-[12px] text-ink-700">
-            <strong>{result.n_matched}</strong> gene{result.n_matched === 1 ? '' : 's'}{' '}
-            match
-          </p>
+          {/* A ranking and a filter mean different things by "n_matched", so
+              they must not be worded the same. For a ranking it is the pool
+              that was ordered, not the size of the answer. */}
+          {result.ranked ? (
+            <p className="mb-2 text-[12px] text-ink-700">
+              Top <strong>{result.genes.length}</strong> of{' '}
+              {result.n_matched.toLocaleString()}, strongest first
+              {result.rank_by && (
+                <span className="ml-1 text-ink-500">
+                  by {result.rank_by.map((r) => `${r.feature} ${r.direction}`).join(', ')}
+                </span>
+              )}
+            </p>
+          ) : (
+            <p className="mb-2 text-[12px] text-ink-700">
+              <strong>{result.n_matched}</strong> gene
+              {result.n_matched === 1 ? '' : 's'} match
+            </p>
+          )}
           {result.note && (
             <p className="mb-2 rounded border border-element-enhancer/40 bg-element-enhancer/5 px-2.5 py-1.5 text-[11px] text-ink-700">
               {result.note}
@@ -270,6 +285,12 @@ export function AskPanel({ onPick }: { onPick?: (s: string) => void }) {
                 }
               >
                 {g.gene_symbol}
+                {g.score != null && (
+                  <span className="ml-1 font-mono text-[9px] text-ink-500">
+                    {g.score > 0 ? '+' : ''}
+                    {g.score.toFixed(2)}
+                  </span>
+                )}
                 {g.in_sets && g.in_sets.length > 0 && (
                   <span className="ml-1 font-mono text-[9px] text-ink-400">
                     {g.in_sets.length}

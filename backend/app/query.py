@@ -198,25 +198,73 @@ def run(query: dict, store) -> dict[str, Any]:
 
     hits = genes[keep].copy()
 
+    # ---- ranking ----------------------------------------------------------
+    # "Genes with X" is a question about degree, not membership, and a
+    # percentile cut answers it badly: one cut at the top 25% can only ever
+    # return a quarter of the panel however specific the question was. Ranking
+    # on a composite of the features that express X returns the MOST X, so
+    # selectivity comes from the question rather than from the threshold.
+    #
+    # Features are already z-scored, so a signed mean is a well-posed composite.
+    # Weights are honoured but default to 1: an unweighted mean is the honest
+    # default when nothing justifies saying one component matters more.
+    rank = query.get("rank") or []
+    contributions: list[dict] = []
+    if rank and feats is not None:
+        wide = feats.pivot(index="gene_id", columns="feature", values="z")
+        comp = pd.Series(0.0, index=hits["gene_id"])
+        used = 0.0
+        for r in rank:
+            name = r.get("feature")
+            if name not in wide.columns:
+                raise QueryError(f"unknown feature {name!r}")
+            sign = -1.0 if r.get("direction") == "low" else 1.0
+            w = float(r.get("weight", 1.0))
+            vals = hits["gene_id"].map(wide[name]).fillna(0.0).values
+            comp += sign * w * vals
+            used += abs(w)
+            contributions.append({
+                "feature": name,
+                "direction": r.get("direction", "high"),
+                "weight": w,
+            })
+        if used:
+            comp /= used
+        hits["score"] = comp.values
+        hits = hits.sort_values("score", ascending=False)
+        steps.append({
+            "reads_as": "ranked by " + ", ".join(
+                f"{c['feature']} {c['direction']}" for c in contributions
+            ),
+            "before": int(len(hits)),
+            "after": int(len(hits)),
+        })
+
     sort = query.get("sort")
-    if sort and emb is not None and sort.get("axis") in emb.columns:
+    if not rank and sort and emb is not None and sort.get("axis") in emb.columns:
         hits["_sort"] = hits["gene_id"].map(emb.set_index("gene_id")[sort["axis"]])
         hits = hits.sort_values("_sort", ascending=sort["direction"] == "low")
         hits = hits.drop(columns="_sort")
 
     cols = [c for c in ("gene_id", "gene_symbol", "group", "max_posterior",
-                        "viewpoint_chrom", "viewpoint_pos") if c in hits.columns]
+                        "viewpoint_chrom", "viewpoint_pos", "score")
+            if c in hits.columns]
 
+    limit = int(query.get("limit", 25 if rank else 50))
     return {
         "n_matched": int(len(hits)),
+        "ranked": bool(rank),
+        "rank_by": contributions or None,
+        "genes": hits[cols].head(limit).to_dict("records"),
         "steps": steps,
-        "genes": hits[cols].head(int(query.get("limit", 50))).to_dict("records"),
         # Small results are the expected outcome of a specific question, not an
         # error, but they are also where over-reading is easiest, so say so.
+        # Only for filters: a ranking always returns its top N, so a short list
+        # there means nothing.
         "note": (
             "Fewer than 5 genes match. That is a specific question, not necessarily "
             "a meaningful group, with 1,846 genes, narrow conjunctions land on "
             "handfuls by chance."
-            if len(hits) < 5 else None
+            if not rank and len(hits) < 5 else None
         ),
     }
