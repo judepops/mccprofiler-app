@@ -27,7 +27,7 @@ const GROUP_DISPLAY: Record<string, string> = {
   'arch-off': 'empty (QC)',
 }
 
-const PAD = { top: 12, right: 12, bottom: 42, left: 48 }
+const PAD = { top: 12, right: 12, bottom: 46, left: 62 }
 
 interface Props {
   data: Embedding
@@ -127,15 +127,46 @@ export function ContinuumMap({
       ctx.fillText(hlPoint.gene_symbol, px + (ctx.textAlign === 'right' ? -11 : 11), py + 4)
     }
 
+    // ---- axis labels, with the poles named -------------------------------
+    // The label gives the contrast; the poles say which end you are looking at.
     ctx.font = '10px ui-monospace, monospace'
     ctx.fillStyle = '#5b89ae'
     ctx.textAlign = 'center'
     ctx.fillText(data.x_axis.label, PAD.left + plotW / 2, height - 6)
+
+    const xp = data.x_axis.poles
+    if (xp) {
+      ctx.fillStyle = '#8badc9'
+      ctx.textAlign = 'left'
+      ctx.fillText(`\u2190 ${xp.neg}`, PAD.left + 2, PAD.top + plotH + 15)
+      ctx.textAlign = 'right'
+      ctx.fillText(`${xp.pos} \u2192`, PAD.left + plotW - 2, PAD.top + plotH + 15)
+    }
+
     ctx.save()
     ctx.translate(11, PAD.top + plotH / 2)
     ctx.rotate(-Math.PI / 2)
+    ctx.fillStyle = '#5b89ae'
+    ctx.textAlign = 'center'
     ctx.fillText(data.y_axis.label, 0, 0)
     ctx.restore()
+
+    const yp = data.y_axis.poles
+    if (yp) {
+      ctx.fillStyle = '#8badc9'
+      ctx.save()
+      ctx.translate(PAD.left - 6, PAD.top + plotH)
+      ctx.rotate(-Math.PI / 2)
+      ctx.textAlign = 'left'
+      ctx.fillText(`\u2190 ${yp.neg}`, 0, 0)
+      ctx.restore()
+      ctx.save()
+      ctx.translate(PAD.left - 6, PAD.top)
+      ctx.rotate(-Math.PI / 2)
+      ctx.textAlign = 'right'
+      ctx.fillText(`${yp.pos} \u2192`, 0, 0)
+      ctx.restore()
+    }
   }, [data, width, height, plotW, plotH, dimByConfidence])
 
   function onMove(e: React.MouseEvent) {

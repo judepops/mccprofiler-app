@@ -308,6 +308,31 @@ PC_LABELS: dict[str, str] = {
     "umap_null_2": "UMAP 2 (permuted null)",
 }
 
+# Which END of each axis is which.
+#
+# A label like "local vs long-range" names the contrast but not the direction,
+# and PCA sign is arbitrary — so without this a reader cannot tell which side of
+# the plot is local. Poles below are read off the stored loadings, not assumed:
+#
+#   PC1  + n_high_consensus_peaks +0.21, mean_degree +0.20, n_peaks_all +0.19
+#        - empty_band_fraction -0.16, frac_promoter_proximal -0.14
+#   PC2  + n_peaks_within_100kb +0.25, frac_local +0.18
+#        - frac_far_distal -0.23, oe_distal_mean -0.21
+#   PC3  + promoter_signal_fraction +0.28
+#        - total_mcc -0.23, n_peaks_enhancer -0.22, raw_peak_max_max_ctcf -0.19
+#   PC4  + enhancer_signal_fraction_raw +0.28
+#        - frac_ctcf -0.21, raw_peak_max_max_ctcf -0.20
+#   PC5  + raw_peak_max_mean_all +0.24, mean_peak_gap_bp +0.24,
+#          frac_signal_in_top_peak +0.23
+#        - signal_entropy -0.21
+PC_POLES: dict[str, dict[str, str]] = {
+    "pc1": {"neg": "empty, few contacts", "pos": "rich, many contacts"},
+    "pc2": {"neg": "long-range", "pos": "local"},
+    "pc3": {"neg": "enhancer / CTCF, high amount", "pos": "promoter-driven"},
+    "pc4": {"neg": "CTCF", "pos": "enhancer"},
+    "pc5": {"neg": "dispersed", "pos": "concentrated"},
+}
+
 # PC1 is the amount axis, so PC1 x PC2 mostly re-sorts genes by signal depth.
 # PC2 x PC3 is the interpretable plane and is the default.
 DEFAULT_EMBEDDING_AXES = ("pc2", "pc3")

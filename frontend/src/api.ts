@@ -129,9 +129,17 @@ export interface EmbeddingPoint {
   is_core: boolean | null
 }
 
+export interface Axis {
+  key: string
+  label: string
+  /** Which END is which. PCA sign is arbitrary, so the contrast in the label
+   *  ("local vs long-range") does not say which side of the plot is local. */
+  poles: { neg: string; pos: string } | null
+}
+
 export interface Embedding {
-  x_axis: { key: string; label: string }
-  y_axis: { key: string; label: string }
+  x_axis: Axis
+  y_axis: Axis
   axes_available: { key: string; label: string }[]
   highlight: string | null
   is_umap: boolean

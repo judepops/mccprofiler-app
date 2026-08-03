@@ -399,8 +399,10 @@ def embedding(
     hl = s.resolve(highlight) if highlight else None
 
     return {
-        "x_axis": {"key": x, "label": S.PC_LABELS.get(x, x)},
-        "y_axis": {"key": y, "label": S.PC_LABELS.get(y, y)},
+        "x_axis": {"key": x, "label": S.PC_LABELS.get(x, x),
+                   "poles": S.PC_POLES.get(x)},
+        "y_axis": {"key": y, "label": S.PC_LABELS.get(y, y),
+                   "poles": S.PC_POLES.get(y)},
         "axes_available": [
             {"key": c, "label": S.PC_LABELS.get(c, c)}
             for c in emb.columns if c not in ("gene_id", "symbol_key")
