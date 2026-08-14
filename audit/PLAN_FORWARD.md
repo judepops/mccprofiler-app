@@ -13,21 +13,21 @@ Three aims, and after today all three have an answer rather than a hope.
 |---|---|
 | 1. MCCProfiler is worth building | **Yes, but narrowly.** 91 features beat the 11-feature magnitude basis on 9/9 targets, sign-test p = 0.002. But 6 of 9 margins sit inside one SD. Only LOEUF (4.1 SD) and immune GWAS (3.5 SD) are substantial, and they are the same two that survive amount correction. |
 | 2. The landscape is a continuum | **Established.** HDBSCAN 0 clusters in 16 conditions across two amount definitions and four substrates; dip unimodal throughout; gap rising at k=8. 18-19 components above noise. |
-| 3. External categories are displaced but not separated | **Survives, and now controlled twice.** 17 of 21 displaced after magnitude correction, largest d = 0.73 leaving 71% overlap. Positive controls retain 98-112% under gene-density stratification. Super-enhancers do not separate (p = 0.16 with density controlled). |
+| 3. External categories are displaced but not separated | **Survives, controlled three ways.** 17 of 21 displaced after magnitude correction, largest d = 0.73 leaving 71% overlap. Positive controls retain 84-112% under gene-density stratification. Super-enhancers do not separate (p = 0.18) at n = 158, where the test has 80% power to detect d = 0.35. |
 
 The claim that carries the thesis:
 
-> On a substrate corrected for overall magnitude, and retained under gene-density
-> stratification, chromatin-state-defined categories separate in contact
-> architecture (ChromHMM bivalent d = -0.58, 112% retained; Roadmap silenced
-> d = -0.73, 98% retained; both p = 0.0005). Super-enhancer genes do not separate
-> (p = 0.16, 94% overlap), despite being defined as a distinct class of
-> regulatory element.
+> Lambert transcription factors (n = 156, mechanism-defined by DNA-binding
+> domain) separate at d = +0.46, p = 0.001. Super-enhancer genes (n = 158, within
+> two genes of the same size, same substrate, same test) do not separate:
+> d = -0.16, p = 0.18, 94% overlap. The super-enhancer test has 80% power to
+> detect d = 0.35 at that size, so the null is informative rather than a failure
+> to look. Chromatin-state categories corroborate (bivalent d = -0.58, silenced
+> d = -0.73, both p = 0.0005, 98-112% retained under density stratification).
 
-That is a null against a positive control on the same test and substrate,
-controlled for the two confounders that have broken every earlier version of
-this analysis: overall magnitude and genomic context. Pott and Lieb argued it
-from thresholding logic; this measures it.
+A null against a mechanism-defined positive control of matched size, on the same
+test and substrate, controlled for magnitude, genomic context, and power. Pott
+and Lieb argued it from thresholding logic; this measures it.
 
 ---
 
@@ -57,6 +57,17 @@ one. Switch to the corrected substrate.
 **0.4 Reconcile 116 vs 119 twice-captured genes.** The store has 116, the review
 feedback has 119. The median rho 0.752 is quoted widely and needs one number.
 *One hour.*
+
+---
+
+### Closed on 2026-08-14, no further work needed
+
+Three review objections were tested rather than argued and are now settled:
+magnitude confounding (Addendum 2, re-run on `MAG_OVERALL`), genomic-context
+confounding (Addendum 4, positive controls retain 84-112% under density
+stratification), and statistical power (`diagnose_external_power.py`: the
+super-enhancer test is the **best** powered set in the table at 80% power for
+d = 0.35, which inverts the worry that the positive controls were the small ones).
 
 ---
 
@@ -144,7 +155,7 @@ compress against the deadline.
 | 3 | The continuum: gap, HDBSCAN, dip, silhouette vs null across 16 conditions | `experiment_cluster_search.py` |
 | 4 | The dimensions: scree, noise ceiling, loadings, trust weighting | `diagnose_dimension_trust.py` |
 | 5 | External sets displaced but not separated, corrected substrate | `diagnose_external_structure_corrected.py` |
-| 6 | The super-enhancer null against its positive controls, density-stratified | `diagnose_external_density_stratified.py` |
+| 6 | The super-enhancer null: matched-n against Lambert_TF, density-stratified, with the power curve | `diagnose_external_density_stratified.py`, `diagnose_external_power.py` |
 | 7 | Resolution: 14 bp summits, sub-resolution collapse | `summit_precision.tsv` |
 
 *Two weeks, in parallel with early writing but after Phase 0.*

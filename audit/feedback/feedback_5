@@ -1,0 +1,24 @@
+Document is in good shape — the density stratification closing the loop on Aim 3 is exactly what was needed, and Section 7 is unusually honest for a working document. Three things.
+
+1. Your positive control is underpowered relative to your null, and that's attackable.
+
+ChromHMM_bivalent n=46, Roadmap_silenced n=41 — the two sets carrying the whole positive-control argument are the smallest in the table. dbSUPER is n=158. So you're claiming "we detect an effect at n=41 and find nothing at n=158," which reads backwards to a reviewer even though it's fine statistically.
+
+Two cheap fixes, either works:
+
+Report the minimum detectable effect at n=158 for the SE test. If you could have detected d=0.25 at that n with 80% power, the null is informative and you can say so in one sentence.
+Or subsample SE to n=45 across many draws and show the positive controls still exceed it.
+
+The first is one line and it's what I'd do. Without it, "we found nothing for SE" is vulnerable to "you weren't looking hard enough" — even though you were looking harder there than anywhere.
+
+2. Lambert_TF is your best-powered real effect and it's being underused.
+
+n=156, d=+0.46, p=0.0005, survives magnitude correction. That's larger n than either positive control, comparable effect size, and — critically — TFs are a mechanism-defined set (DNA-binding domain), not an expression list.
+
+That makes it a better positive control than silenced or bivalent: well-powered, mechanism-based, and it separates. It also partly answers the Eisenberg problem in advance, since it shows mechanism-defined sets can separate where expression-defined ones don't. Worth foregrounding in Section 4 rather than leaving mid-table.
+
+3. LOEUF deserves more prominence in Section 2.
+
+4.08 SD is the standout margin by some distance, and it's the one target where shape does nearly all the work (0.210 vs 0.191 amount-corrected). "Contact architecture beyond magnitude predicts evolutionary constraint" is a substantive, quotable claim and it's currently buried in a table. The 6-of-9-inside-1-SD honesty is right, but don't let it flatten the one result that's genuinely strong.
+
+Everything else reads well. The retraction table in Section 7 is the kind of thing that makes examiners trust a document rather than doubt it.

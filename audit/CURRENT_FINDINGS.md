@@ -56,6 +56,20 @@ The defensible claim is therefore specific rather than sweeping:
 Those two are also the only targets that survive amount correction in the
 shape-corrected analysis, so two independent analyses converge on the same pair.
 
+### The strongest single result in Aim 1: constraint
+
+Do not let the honesty about the other seven flatten this one.
+
+> **Evolutionary constraint is predicted almost entirely by contact shape, not by
+> contact amount.** LOEUF: counting peaks gives r = 0.031, the 11-feature
+> magnitude basis gives 0.082, the full 91 features give **0.210**, and the
+> amount-corrected shape substrate alone still gives **0.191**. So 91% of the
+> full-model performance survives removing magnitude entirely.
+
+That is a 4.08 SD margin, by some distance the largest in the table, and it is
+the one target where the architecture claim is doing real work rather than
+riding on signal level. It is quotable as it stands.
+
 ---
 
 ## 3. Aim 2: the landscape is continuous, not categorical
@@ -106,18 +120,39 @@ above 90%.
 
 ### The headline claim
 
-> On a substrate corrected for overall magnitude, and retained under gene-density
-> stratification, chromatin-state-defined categories separate in contact
-> architecture: ChromHMM bivalent d = -0.58 (112% retained under density
-> stratification), Roadmap silenced d = -0.73 (98% retained), both p = 0.0005.
-> **Super-enhancer genes do not separate** (p = 0.16 with density controlled,
-> 94% overlap), despite super-enhancers being defined as a distinct class of
-> regulatory element.
+Lead with the matched-size comparison, because it forecloses the obvious
+objection before it is raised.
 
-That is a null measured against a positive control on the same test and the same
-substrate, controlled for the two confounders that broke every earlier version
-of this analysis: overall magnitude and genomic context. Pott and Lieb (2015)
-argued the point from thresholding logic; this measures it.
+> **Lambert transcription factors** (n = 156, defined by DNA-binding domain, so
+> mechanism-defined rather than an expression list) separate in contact
+> architecture at d = +0.46, p = 0.001, retaining 84% under gene-density
+> stratification. **Super-enhancer genes** (n = 158, within two genes of the same
+> set size, same substrate, same test) **do not separate**: d = -0.16, p = 0.18,
+> 94% overlap. Chromatin-state categories separate in the same direction of
+> evidence (ChromHMM bivalent d = -0.58, 112% retained; Roadmap silenced
+> d = -0.73, 98% retained; both p = 0.0005).
+
+**The null is informative, not merely a failure to look.** Simulation on this
+substrate gives the super-enhancer test **80% power to detect a displacement of
+d = 0.35** at n = 158. The observed effect is 0.16. The positive controls show
+0.46 to 0.73, all above that threshold. So an effect of the size seen elsewhere
+in the table would have been found had it existed.
+
+Note this **inverts** the natural worry that the positive controls are small
+(n = 41, 46) while the null is large (n = 158). The super-enhancer test is the
+**best** powered in the table; the chromatin-state sets need d > 0.50 for 80%
+power and clear it only because their true effects are large.
+
+That is a null measured against a mechanism-defined positive control of matched
+size, on the same test and substrate, controlled for the two confounders that
+broke every earlier version of this analysis: overall magnitude and genomic
+context. Pott and Lieb (2015) argued the point from thresholding logic; this
+measures it.
+
+Lambert_TF is the positive control to foreground for a second reason: it is
+mechanism-defined, so it establishes in advance that mechanism-defined sets can
+separate in this space where expression-defined ones (Eisenberg-HK) do not.
+That is the same distinction Phase 1.1 sets out to test directly.
 
 ### The full table, corrected substrate
 
@@ -239,6 +274,7 @@ current representation demonstrably does not use.
 | 3 caveat | `backend/scripts/diagnose_dimension_trust.py` |
 | 4 | `backend/scripts/diagnose_external_structure_corrected.py` |
 | 4 density | `backend/scripts/diagnose_external_density_stratified.py` |
+| 4 power | `backend/scripts/diagnose_external_power.py` |
 | 5 resolution | `audit/continuous_methods/summit_precision.tsv`, `subresolution_collapse.tsv` |
 | 7 (PC naming) | `backend/scripts/diagnose_pc_names.py`, `experiment_rotate_axes.py` |
 | store invariants | `backend/scripts/verify_store.py`, 38 checks |
