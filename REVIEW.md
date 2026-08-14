@@ -10,9 +10,13 @@ The short version, stated first because it is the thing that matters:
 > features will turn it into clusters if the biology is continuous. But the
 > current 91-feature representation is also genuinely underpowered in ways that
 > are measurable and fixable, and most of its predictive power comes from
-> **how much** signal a gene has rather than from the **shape** of its contacts.
-> Those are two different problems and they need separating before choosing a
-> direction.
+> **how many elements a gene contacts** rather than from the **shape** of its
+> contacts. Those are two different problems and they need separating before
+> choosing a direction.
+>
+> **See Addendum 2 before quoting Part 2.3 or Part 4.3: the claim "PC1 is not
+> amount" is retracted, and amount must be corrected against `MAG_OVERALL`, not
+> `total_mcc`.**
 
 ---
 
@@ -626,3 +630,156 @@ independent of amount.
    immune GWAS (2.4), and reproduce across the 116 twice-captured genes (2.6).
    If the profile contains partitional structure, the summaries provably do not
    hold it, and learning from the raw profile is the only untried route.
+
+---
+
+# Addendum 2, 2026-08-14: response to review feedback
+
+Feedback received on the document above. I checked its three load-bearing
+claims. **Two are correct and one is not, and the one that is correct is right
+for a different reason than the one given.** Corrections below are ordered by
+how much they change the conclusions.
+
+## B1. "PC1 is not amount" was WRONG. Retracted.
+
+The feedback is right. Tested against `MAG_OVERALL`, the canonical 11-feature
+magnitude basis in `audit/GW/scripts/_shape.py` (all 11 present in our 91):
+
+| PC | r with `total_mcc` | r with MAG_OVERALL amount |
+|---|---|---|
+| PC1 | 0.033 | **0.623** |
+| PC2 | 0.150 | 0.382 |
+| PC3 | **-0.621** | -0.451 |
+
+**PC1 is the amount axis.** Section 2.3's headline was an artefact of using
+`total_mcc` alone as the proxy, and every downstream statement resting on it is
+withdrawn. The PC3 contamination survives, attenuated from -0.62 to -0.45.
+
+**But not for the reason given.** The feedback attributes it to `total_mcc`
+being nearly constant by construction (CV 0.216). That does not hold up.
+`signal_entropy` has CV **0.052**, four times less variable, and is PC1's top
+correlate at 0.793 once the degenerate features are removed. `total_mcc` spans a
+10.9-fold range and correlates 0.653 with the proper amount basis, so it is a
+partial proxy, not a constant. A variable cannot correlate -0.62 with PC3 while
+being uninformative.
+
+The actual mechanism is that **amount is multi-faceted**. `total_mcc` captures
+the signal-level facet; PC1 captures the count, height and connectivity facets;
+those are only weakly related to each other. My own observation that
+`r(total_mcc, n_high_consensus_peaks) = -0.127` was pointing straight at this,
+and I drew the wrong conclusion from it. The correct statement is not "amount is
+two things" as a curiosity but "amount is not measurable by one feature, so use
+the basis".
+
+**Also unreconciled:** the feedback's premise that the bigWigs are depth
+normalised to ~20,000 per viewpoint is not what this codebase documents.
+`process/scripts/mcc.py:433` says "per-gene raw bigWigs (MCC is not
+ZEN-normalised)" and `process/scripts/features.py:16` says "All output matrices
+are RAW signal (no normalisation applied here)". If normalisation happens
+upstream of these bigWigs it is not recorded here, and the two accounts should
+be reconciled before either is quoted.
+
+## B2. The clustering conclusion was re-run on the correct basis. It holds, and it cost me a finding.
+
+A3 de-amounted against `total_mcc`, which B1 shows is the wrong basis, so the
+whole experiment was repeated with `MAG_OVERALL` residualisation (the real
+`corrected_shape` procedure: regress every feature on the full 11-feature basis,
+drop the basis features) and with strata cut on the proper amount axis.
+
+| condition | best k | silhouette | HDBSCAN | dip min p |
+|---|---|---|---|---|
+| all 91, MAG-corrected shape (80) | 3 | 0.085 | **0** | 0.81 |
+| trusted-clean, MAG-corrected (33) | 2 | 0.096 | **0** | 0.96 |
+| low amount (MAG), corrected | 6 | 0.107 | **0** | 0.88 |
+| mid amount (MAG), corrected | 2 | 0.104 | **0** | 0.81 |
+| high amount (MAG), corrected | 2 | 0.099 | **0** | 0.84 |
+
+**The negative result holds and is now stronger**, having survived the correct
+amount definition as well as the wrong one. HDBSCAN returns zero clusters in
+every condition tested, sixteen in total across both runs.
+
+**But the k=2 finding in A3 is weakened and partly retracted.** Its silhouette
+falls from 0.134 under `total_mcc` correction to **0.096** under proper
+`MAG_OVERALL` correction. So a material part of the dispersed-versus-focal split
+was amount that my correction failed to remove. It remains the widest cut in the
+continuum, but it is less independent of amount than A3 claimed.
+
+## B3. The asymmetry mechanism: accepted, and it improves the fix
+
+A1 concluded correctly that orientation is not the cause, and the feedback
+agrees on the same evidence. But its explanation is better than mine. I said
+mean-aggregation cancels a signed third moment toward zero. The feedback points
+to **support size**: the median peak is ~11 bins, 41.7% span fewer than 10 bins,
+and a median non-zero 50 bp bin holds 1-2 reads, so a third or fourth central
+moment estimated from six bins carrying 0-2 counts has enormous sampling
+variance whatever the orientation.
+
+The decisive evidence is one I already had and under-used:
+**`contact_asymmetry`, the same statistic computed over the whole plus or minus
+1 Mb profile, reproduces at 0.900**, while the per-peak version sits at
+0.28-0.42. Same concept, different support.
+
+This changes the intervention for the better. A1 said drop the families. The
+support explanation says they can be **re-supported** instead: compute the
+moments on stacked peaks per gene, or on the whole profile where they demonstrably
+work. That repairs the eight weak components without discarding the concept.
+
+## B4. "Most of the signal is amount, not shape" is over-stated. Corrected.
+
+Accepted. `corrected_shape` residualises every feature on the magnitude basis
+and drops the basis features. If amount is partly a *consequence* of
+architecture, more elements contacted giving more contacts, then residualising
+removes real architecture along with the confound, and the drops in that column
+are consistent with over-correction as well as with weak shape signal.
+
+The defensible claim is **"amount is sufficient for most targets"**, not "shape
+carries little". Related omission, also fair: the review's table dropped the
+`magnitude (11)` column that was present in the underlying data, which is the
+canonical amount baseline. Against it the 91 features still win on all nine
+targets, and that is the fair form of the comparison rather than the win over
+`n_peaks`.
+
+The summary sentence is corrected accordingly: most predictive power comes from
+**how many elements a gene contacts**, not from how much total signal it has.
+
+## B5. The resolution work: accepted, and it promotes 4.6
+
+Verified on disk, and it is a stronger asset than anything in Part 4:
+
+- `summit_precision.tsv`: 2,439 pairs, **median summit agreement 14.0 bp** across
+  the two panels against a null median of 895.3 bp, so **64x tighter**;
+  76.8% within 50 bp against 3.3% for the null.
+- `subresolution_collapse.tsv`: at 5 kb bins, 18.7% of peaks merge away and 90%
+  of genes lose at least one; at 25 kb, 45.8% and 97%.
+
+This converts 3.1.1 from an argument about compression into a measurement.
+The 91 features use nothing below roughly 1 kb, while the data localises
+contacts to ~14 bp. **4.6, the peak-level unit of analysis, is promoted:** it is
+the only route in Part 4 with a measured asset behind it rather than an
+inference.
+
+## B6. Minor
+
+Shared-gene count: the built store has **116**, the feedback has 119. Likely a
+QC-stage difference and not reconciled. Anything quoting the reproducibility
+median should say which.
+
+`amount_vs_shape_partition` was corrected on 2026-08-03; no number in this
+review derives from it, but that should be checked for anything that does.
+
+## B7. Revised ranking, incorporating all of the above
+
+1. **Drop the four degenerate topology features** (A2). Unchanged, exact,
+   confirmed at 1842/1842, and it makes PC1 nameable.
+2. **Re-support the per-peak moment families** rather than dropping them (B3).
+   Cheaper than A1 proposed and now correctly diagnosed.
+3. **Amount-correct against `MAG_OVERALL`**, never `total_mcc` (B1). Already
+   done for the clustering test; must also be done before the archetype names
+   are re-derived.
+4. **Peak-level unit of analysis** (4.6), promoted to the top research bet on
+   the strength of the 14 bp summit reproducibility and the sub-resolution
+   collapse figures.
+5. **Stop searching for clusters in the feature space.** Sixteen conditions
+   across two amount definitions, HDBSCAN zero every time.
+6. **The continuum plus "displaced but not separated"** remains the strongest
+   honest framing, and the feedback agrees it is the best articulation available.
