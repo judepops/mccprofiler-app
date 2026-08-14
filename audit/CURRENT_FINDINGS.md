@@ -1,0 +1,244 @@
+# Current findings, as of 2026-08-14
+
+**This is the document to write from.** Every number here has survived the
+corrections and controls applied on 2026-08-14 and is the version to quote.
+`REVIEW.md` is the provenance record: it shows how each number was arrived at
+and, importantly, which earlier versions were wrong. Do not quote `REVIEW.md`
+Parts 1 to 5 directly; several of its headline numbers were superseded the same
+day, and Section 7 below lists exactly which.
+
+Panel `gw_cd4_1`, human CD4+ T cells, 1,846 genes after QC and outlier removal,
+91 features, store built 2026-08-03 at pipeline commit `96e13e4`.
+
+---
+
+## 1. The question
+
+Is regulatory architecture, measured by base-pair-resolution contact profiles,
+**categorical or continuous**?
+
+Not "what are the archetypes". That framing presupposes the answer, and the
+answer turns out to be no.
+
+---
+
+## 2. Aim 1: the feature substrate is worth building, narrowly
+
+91 position-invariant features from viewpoint-anchored MCC profiles, nested and
+cross-validated against two baselines.
+
+**Against counting peaks:** wins on 9 of 9 targets, median gain 0.153.
+
+**Against the 11-feature overall-magnitude basis** (`MAG_OVERALL`), which is the
+fair comparison because it asks whether *shape* adds anything over *amount*:
+wins on 9 of 9, **sign-test p = 0.002**.
+
+But state the margins, because they are the honest part:
+
+| target | 91 features | magnitude (11) | margin | margin / SD |
+|---|---|---|---|---|
+| gnomad_loeuf | 0.210 | 0.082 | +0.127 | **4.08** |
+| GWAS_immune_hot | 0.746 | 0.695 | +0.051 | **3.47** |
+| phastcons_2kb | 0.187 | 0.140 | +0.047 | 1.02 |
+| blood TPM (log) | 0.380 | 0.359 | +0.021 | 0.94 |
+| gtex_tau | 0.276 | 0.257 | +0.020 | 0.80 |
+| cd4_rna_top_quartile | 0.707 | 0.697 | +0.009 | 0.44 |
+| Lambert_TF | 0.661 | 0.647 | +0.014 | 0.36 |
+| Eisenberg_HK | 0.637 | 0.628 | +0.009 | 0.24 |
+| DepMap_curated_essential | 0.700 | 0.691 | +0.009 | 0.14 |
+
+**Six of nine margins sit inside one standard deviation.** Only two clear 2 SD.
+The defensible claim is therefore specific rather than sweeping:
+
+> Contact architecture beyond overall magnitude predicts evolutionary constraint
+> and immune-disease association, and little else.
+
+Those two are also the only targets that survive amount correction in the
+shape-corrected analysis, so two independent analyses converge on the same pair.
+
+---
+
+## 3. Aim 2: the landscape is continuous, not categorical
+
+Tested under **sixteen conditions**: four substrates (all 91 features; the 40
+that reproduce at rho > 0.7; each with amount regressed out) across the whole
+panel and within amount tertiles, under two different definitions of amount.
+
+| test | result across all sixteen |
+|---|---|
+| HDBSCAN (min_cluster_size 25) | **0 clusters, 100% unassigned, every condition** |
+| Hartigan dip test | **unimodal everywhere**, minimum p 0.42 |
+| Gap statistic | **still rising at k=8 everywhere**, so k=1 never excluded |
+| Silhouette | peaks at k=2, excess over permuted null +0.086 to +0.153 |
+
+Cleaning the substrate did not help. Removing amount did not help. Conditioning
+on amount did not help.
+
+**Structure exists but is dimensional, not partitional.** 18 to 19 components
+sit above a parallel-analysis noise ceiling, together 78% of variance, against 8
+for permuted data. Effective rank 17.6 against 86.6 for noise. SigClust
+z = -11.86 (trimmed).
+
+**Caveat to state:** only **67%** of that retained structure rests on features
+that reproduce across independent captures. Eight components, 14.9% of variance,
+fall below 50% trusted and are all dominated by the `oe_asymmetry` and
+`oe_tailedness` families, which reproduce at rho 0.27 to 0.42.
+
+**The widest cut in the continuum**, if a binary description is wanted: k=2
+splits 771 against 1075 on dispersed-and-long-range versus focal-and-local
+(`signal_entropy` +1.38, `distal_signal_density` +1.12 against
+`empty_band_fraction` -1.19, `frac_promoter_proximal` -1.12). Silhouette 0.096
+under proper amount correction, so it is a cut through a continuum at its widest
+point, not two clusters.
+
+---
+
+## 4. Aim 3: categories are directions, not regions
+
+External reference sets, tested on a substrate corrected for overall magnitude
+(11-feature `MAG_OVERALL` basis, basis features dropped, four degenerate
+topology features dropped, 78 features, 18 components above a recomputed noise
+ceiling), then checked against gene density.
+
+**17 of 21 sets remain displaced** from the panel centroid after correction.
+**None separates.** Largest effect d = 0.73 leaves **71% overlap**; most sets sit
+above 90%.
+
+### The headline claim
+
+> On a substrate corrected for overall magnitude, and retained under gene-density
+> stratification, chromatin-state-defined categories separate in contact
+> architecture: ChromHMM bivalent d = -0.58 (112% retained under density
+> stratification), Roadmap silenced d = -0.73 (98% retained), both p = 0.0005.
+> **Super-enhancer genes do not separate** (p = 0.16 with density controlled,
+> 94% overlap), despite super-enhancers being defined as a distinct class of
+> regulatory element.
+
+That is a null measured against a positive control on the same test and the same
+substrate, controlled for the two confounders that broke every earlier version
+of this analysis: overall magnitude and genomic context. Pott and Lieb (2015)
+argued the point from thresholding logic; this measures it.
+
+### The full table, corrected substrate
+
+| set | n | z | p | d | overlap |
+|---|---|---|---|---|---|
+| gene_desert_bottomQ_density | 456 | 20.8 | 0.0005 | -0.71 | 72% |
+| ChromHMM_bivalent | 46 | 7.1 | 0.0005 | -0.58 | 77% |
+| Lambert_TF | 156 | 5.4 | 0.0005 | +0.46 | 82% |
+| Roadmap_silenced | 41 | 3.9 | 0.0005 | -0.73 | 71% |
+| GWAS_immune_hot | 130 | 3.7 | 0.0005 | +0.32 | 87% |
+| GWAS_immune_any | 733 | 3.6 | 0.0010 | +0.20 | 92% |
+| Eisenberg_HK | 633 | 2.0 | 0.034 | +0.11 | 96% |
+| DepMap_inferred_essential | 328 | 1.0 | 0.171 | -0.14 | 94% |
+| dbSUPER_CD4_SE | 158 | 0.9 | 0.177 | -0.16 | 94% |
+| DepMap_curated_essential | 254 | 0.5 | 0.295 | +0.12 | 95% |
+
+### Three things that must travel with this table
+
+**`gene_desert` is the density positive control, not a finding.** It is the
+largest displacement in the table and it survives amount correction, so genomic
+context is a real and separate confound. Its effect is by construction.
+
+**Essentiality was amount.** Both DepMap sets fall to non-significance after
+correction, having looked like real signal at d = 0.46 to 0.52 on raw
+components. Nothing should be claimed about essentiality and architecture.
+
+**Eisenberg housekeeping has no architectural signature** once magnitude and
+density are both controlled (p = 0.034 -> 0.076). Whether that is because the
+label is an expression list rather than an architecture list is **untested**: the
+mechanism-based check could not run, only 19 ribosomal protein genes clear the
+25-gene panel floor. This is the single most important open question.
+
+---
+
+## 5. Supporting results
+
+**Reproducibility.** 116 genes captured in both panels, 63 shared features,
+median rho **0.752**, 40 of 63 above 0.7, 1 below 0.3. Most reproducible are the
+distance compositions (`frac_local` 0.984, `frac_far_distal` 0.977). Least are
+the per-peak moments (`oe_asymmetry_mean_all` 0.274).
+*(An external count of 119 genes exists and is unreconciled; the store has 116.)*
+
+**Archetype label stability.** Cohen's kappa 0.72 at k=3-4 across independent
+captures. State this as *the imposed partition is stable*, which licenses using
+it as a descriptive device. It is **not** evidence that groups exist.
+
+**Resolution.** Contact summits reproduce at **median 14.0 bp** across
+independent captures against a null median of 895.3 bp, **64x tighter**; 76.8%
+within 50 bp against 3.3% for the null. Sub-resolution collapse: at 5 kb
+binning, 18.7% of peaks merge away and 90% of genes lose at least one; at 25 kb,
+45.8% and 97%.
+
+**The representation does not exploit that resolution.** The 91 features use
+nothing below roughly 1 kb. The assay resolves contacts two orders of magnitude
+finer than the features read them. This is the measured basis for the
+peak-level research programme.
+
+---
+
+## 6. What the architecture groups are called, and the caveat
+
+| canonical | display | top discriminating features |
+|---|---|---|
+| `arch-HK` | dispersed | signal_entropy +1.25, empty_band_fraction -1.17, frac_far_distal +1.09 |
+| `arch-ME-constitutive` | promoter-local | promoter_signal_fraction_raw +1.13, n_peaks_promoter +0.93 |
+| `arch-ME-effector` | enhancer-focal | raw_peak_max_max_enhancer +1.03, signal_entropy -0.97 |
+| `arch-sparse` | sparse | n_high_consensus_peaks_075 -1.62, n_peaks_all -1.57 |
+| `arch-off` | empty (QC) | all CTCF descriptors at floor |
+
+Sizes 844 / 369 / 351 / 261 / 21. Core (posterior >= 0.8): 1,040 of 1,846; mean
+max posterior 0.793; 44% of active genes are mixtures.
+
+**`arch-HK` is not the housekeeping group**: Eisenberg-HK fraction 38.2% against
+`arch-ME-constitutive`'s 40.2%, and it has the lowest median blood expression of
+the three active groups (4.5 TPM vs 11.8 and 9.9).
+
+**These names are provisional.** They were derived from *unadjusted* group means,
+and amount is now known to dominate the geometry. They must be re-derived on the
+amount-corrected substrate before use (Phase 0.2 in `PLAN_FORWARD.md`).
+
+---
+
+## 7. Retracted, do not quote
+
+Listed explicitly because all of these appear in `REVIEW.md` Parts 1 to 5 and in
+earlier handoffs.
+
+| claim | status |
+|---|---|
+| "PC1 is not amount" (r = 0.033 with `total_mcc`) | **Retracted.** Against the `MAG_OVERALL` basis, PC1 correlates at **0.623**. PC1 is the amount axis. The error was using one feature as the amount proxy. |
+| "Amount is not one quantity" | **Reframed.** Amount is multi-faceted, so it must be measured with the 11-feature basis, not with `total_mcc`. |
+| "Regress `total_mcc` out before PCA" | **Superseded.** Use `MAG_OVERALL` via `_shape.corrected_shape`. |
+| "Super-enhancers are the weakest of 21" | **Withdrawn as over-precise.** d = 0.29 and 0.37 are indistinguishable. Replaced by the null-against-positive-control statement in Section 4. |
+| "The asymmetry family is a strand/orientation bug" | **Refuted.** `|value|` reproduces worse, and strand-relative asymmetry is d = -0.045. It is a support-size problem: median peak ~11 bins at 1-2 reads per bin. |
+| "Most of the signal is amount, not shape" | **Softened.** Correct statement is *amount is sufficient for most targets*; residualisation can strip real architecture if amount is downstream of it. |
+| Varimax rotation should be adopted | **Withdrawn.** It nearly doubles nameability for free, but its most concentrated factors are the `oe_asymmetry` families at rho 0.27-0.42. Do not adopt without weighting by reproducibility. |
+| Displacement figures from the raw components (largest d = 1.61, 21 of 21) | **Superseded** by the corrected substrate in Section 4 (largest d = 0.73, 17 of 21). |
+| The app's `/api/enrichment/grid` numbers | **Uncorrected.** Still computed on raw components. Phase 0.3. |
+
+---
+
+## 8. Where to go next
+
+See `PLAN_FORWARD.md`. In short: four corrections that change the report
+(Phase 0), the mechanism-versus-annotation housekeeping test (Phase 1.1, now the
+highest-value open question), figures as their own scoped phase (2a), then
+writing. The research programme afterwards is led by the peak-level unit of
+analysis, because the 14 bp summit reproducibility is a measured asset that the
+current representation demonstrably does not use.
+
+---
+
+## Reproducing every number here
+
+| section | script |
+|---|---|
+| 2 | `audit/continuous_methods/nested_baselines.tsv` |
+| 3 | `backend/scripts/experiment_cluster_search.py` |
+| 3 caveat | `backend/scripts/diagnose_dimension_trust.py` |
+| 4 | `backend/scripts/diagnose_external_structure_corrected.py` |
+| 4 density | `backend/scripts/diagnose_external_density_stratified.py` |
+| 5 resolution | `audit/continuous_methods/summit_precision.tsv`, `subresolution_collapse.tsv` |
+| 7 (PC naming) | `backend/scripts/diagnose_pc_names.py`, `experiment_rotate_axes.py` |
+| store invariants | `backend/scripts/verify_store.py`, 38 checks |

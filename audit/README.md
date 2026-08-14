@@ -1,0 +1,55 @@
+# audit/
+
+Review documents, feedback, and the correction record for the MCCProfiler
+analysis. Nothing in here is read by the application at runtime.
+
+## Read this first
+
+**[CURRENT_FINDINGS.md](CURRENT_FINDINGS.md)** is the document to write from.
+Every number in it has survived the corrections applied on 2026-08-14 and is the
+version to quote. Section 7 lists what was retracted, which matters because
+several superseded numbers still appear in the files below and in older
+handoffs.
+
+**[PLAN_FORWARD.md](PLAN_FORWARD.md)** is what to do next, in order, with the
+corrections that must land before writing separated from the research programme
+that follows.
+
+## The provenance record
+
+**[REVIEW.md](REVIEW.md)** is the full audit trail, kept deliberately. Its base
+document (Parts 1 to 5) is the state on the morning of 2026-08-14; four addenda
+record what happened when its recommendations were acted on:
+
+| section | what it records |
+|---|---|
+| Parts 1-5 | initial review. **Several headline numbers here were superseded the same day.** |
+| Addendum 1 | acting on the plan: orientation hypothesis refuted, topology degeneracy confirmed exactly, clustering tested under ten conditions |
+| Addendum 2 | response to feedback: "PC1 is not amount" retracted, everything re-run on the `MAG_OVERALL` basis |
+| Addendum 3 | Aim 3 re-tested on the amount-corrected substrate; it survives, restated |
+| Addendum 4 | Aim 3 positive controls survive gene-density stratification; Eisenberg-HK drops out |
+
+Keeping the retracted versions visible is the point. Five claims were overturned
+in a day, each caught by a control built before the result was trusted, and that
+record is what makes the surviving numbers worth believing. It is also the
+basis for the methods paragraph on self-correction that the transfer report
+should carry.
+
+## feedback/
+
+External review, in the order received. Each prompted a correction recorded in
+one of the addenda above.
+
+| file | what it argued |
+|---|---|
+| `feedback_0_app_scope.md` | scope of the app itself, before the analysis review |
+| `feedback_1_continuum_framing.md` | first pass on the continuum result |
+| `feedback_2_transfer_framing.md` | frame the negative as the finding, not a failure |
+| `feedback_3_amount_confound.md` | the displacement analysis was measuring amount; Aim 3 untested |
+| `feedback_4_density_and_scope.md` | gene density uncontrolled; promote the mechanism test; scope figures |
+
+## Not in this folder
+
+`CONTEXT.md` and `PLAN.md` remain at the repository root. `CONTEXT.md` is loaded
+at runtime by `backend/app/translate.py`, and `PLAN.md` is referenced by path in
+code comments throughout `backend/`.

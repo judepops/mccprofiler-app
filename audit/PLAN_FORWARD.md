@@ -1,6 +1,8 @@
 # Forward plan, 2026-08-14
 
-Written after the Aim 3 re-test (REVIEW.md Addendum 3). Transfer of Status
+Written after the Aim 3 re-test (REVIEW.md Addendum 3) and updated after the
+gene-density check (Addendum 4). Current surviving numbers are in
+CURRENT_FINDINGS.md. Transfer of Status
 target is HT Year 2, roughly Jan to Mar 2027, 5,000 words.
 
 ## Where things actually stand

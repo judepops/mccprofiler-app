@@ -7,6 +7,9 @@ comparison, and a confidence-graded archetype readout.
 Human CD4+ T cells, Micro Capture-C. Jude Popham, Davies + Yau labs, WIMM Oxford.
 
 See [PLAN.md](PLAN.md) for the design, the data traps, and the phase order.
+See [audit/](audit/) for the analysis review, the correction record, and what
+the results currently support: start at
+[audit/CURRENT_FINDINGS.md](audit/CURRENT_FINDINGS.md).
 
 ## The one rule
 
