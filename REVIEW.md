@@ -484,3 +484,145 @@ cannot hold.
 
 All five diagnostic scripts run in `mccapp` except `experiment_rotate_axes.py`,
 which needs sklearn and therefore `cd4env`.
+
+---
+
+# Addendum, 2026-08-14 (later): results of acting on Part 5
+
+The Tier 1 items were executed the same day. Two of the three closed as negative
+results, one confirmed exactly, and the decisive clustering test was run. Written
+as an addendum rather than an edit so the original reasoning and its correction
+are both visible.
+
+## A1. The orientation hypothesis was wrong, and so was the instrument
+
+4.1 predicted that the asymmetry family's low reproducibility was a strand or
+orientation bug. **It is not, and the reasoning behind the prediction was
+faulty.**
+
+Two features share the name. `contact_asymmetry` (global) is signed
+`(right - left)/(right + left)` across the viewpoint, documented as "positive
+means more signal downstream", which is *genomic* direction, not gene direction.
+`oe_asymmetry` (per peak) is the 3rd moment of a single peak's O/E shape,
+averaged across peaks. The unreproducible family is the second one.
+
+Test 1, does `|value|` reproduce better than the signed value? If a sign flip
+were the cause it should. It is **worse for every asymmetry feature**:
+`oe_asymmetry_mean_all` 0.274 signed against 0.115 absolute,
+`oe_asymmetry_max_promoter` 0.642 against 0.142.
+
+Test 2, and this is the decisive one: **`contact_asymmetry`, the feature that
+genuinely is strand-dependent by construction, reproduces at 0.902**, among the
+best in the set.
+
+The logical error is now obvious. **A systematic orientation error is perfectly
+reproducible**: both panels compute the same wrong thing for the same gene, so
+cross-panel rho cannot detect it. Reproducibility was the wrong instrument for
+the question I asked of it.
+
+Test 3, orientation measured directly, using promoter RNA strand from
+`gene_table.tsv` (1,807 genes with a call). If gene-relative biology were being
+recorded in genome coordinates, plus and minus strand genes would show opposite
+mean asymmetry of similar size. They are opposite in sign as predicted, and
+negligible in size: plus -0.0143, minus +0.0305, **Cohen's d = -0.045**.
+
+**Conclusion.** There is a genuine but negligible orientation inconsistency, and
+correcting it would recover nothing. The asymmetry family is not repairable by a
+fix: mean-aggregating a signed 3rd moment across peaks cancels toward zero and
+leaves noise, which is why the `mean` aggregations are so much worse than the
+`max` ones. **These features should be dropped or re-specified, not corrected.**
+
+## A2. The topology degeneracy is confirmed exactly
+
+Verified on `topology_raw/topology_raw.tsv` against raw peak counts, 1,842
+genes. My first attempt at this used a linear fit in z-scored space and got
+R2 0.60, which looked like a refutation; that was the wrong test, since the
+relation is nonlinear in raw units and z-scoring is affine per feature.
+
+Done properly:
+
+| identity | max abs diff | exact |
+|---|---|---|
+| `mean_degree_raw == n_active(n_active-1)/n_peaks` | 3.6e-15 | 1842/1842 |
+| `frac_active_pairs == C(n_active,2)/C(n_peaks,2)` | 1.1e-16 | 1842/1842 |
+| `n_isolates_raw == n_peaks - n_active` | 1.0 | 1840/1842 |
+
+So four shipped features (`mean_degree`, `mean_degree_raw`,
+`frac_active_pairs`, `n_isolates_raw`) carry **zero information beyond two
+counts**, and `mean_degree` is PC1's second-strongest correlate at 0.763.
+
+**Removing them improves PC1 materially.** Recomputed on the trusted set minus
+these four (38 features), PC1 rises from 15.27% to **18.41%** of variance and
+becomes cleanly interpretable:
+
+    signal_entropy        +0.793
+    oe_distal_mean        +0.745
+    distal_signal_density +0.722
+    empty_band_fraction   -0.686
+    frac_far_distal       +0.659
+
+That is a nameable axis, "dispersed distal contact versus emptiness", and it is
+a considerable improvement on the old PC1 whose top correlate was a
+count-derived artefact. **This is a real gain and should go upstream.**
+
+## A3. The clustering question, answered under the most favourable conditions
+
+`scripts/experiment_cluster_search.py`. Four substrates (all 91; trusted only,
+rho > 0.7, 40 features; each with amount regressed out) times the whole panel
+plus amount tertiles, so ten conditions in all. Four tests each, chosen so no
+one method's failure mode decides it.
+
+**HDBSCAN returned 0 clusters with 100% of genes unassigned in every one of the
+ten conditions.** The dip test was unimodal everywhere (minimum p across all
+conditions 0.42). The gap statistic was still rising at k=8 everywhere, so k=1
+is never excluded. Silhouette peaked at k=2 in all ten, with an excess over its
+permuted null of +0.086 to +0.153.
+
+Cleaning the substrate did not help. Removing amount did not help. Conditioning
+on amount did not help. **This is a much stronger negative result than the
+previous one, because it survives the conditions most favourable to finding
+clusters.**
+
+### The one positive signal, and what it is
+
+The k=2 silhouette excess is consistent and survives amount removal, so it is
+worth naming. On the trusted, amount-free substrate it splits 771 against 1075
+and is essentially **dispersed/long-range versus focal/local**:
+
+    signal_entropy        +1.38      empty_band_fraction    -1.19
+    mean_degree           +1.16      frac_promoter_proximal -1.12
+    distal_signal_density +1.12      local_to_distal_ratio  -0.89
+
+It is amount-free (r with `total_mcc` = -0.017) and it recovers `arch-HK`
+almost exactly (819 of 844). So the natural binary partition of this data is not
+housekeeping versus developmental, or promoter versus enhancer. It is
+**dispersed versus focal contact architecture**, and it is the same contrast
+that PC1 becomes once the degenerate features are removed (A2).
+
+Read honestly: silhouette 0.13 with HDBSCAN finding nothing and every dip test
+unimodal means this is a continuum cut at its widest point, not two clusters.
+But it is the most defensible two-group statement the data supports, it is
+reproducible in the sense that it survives four substrates, and it is
+independent of amount.
+
+## A4. Revised priorities
+
+1. **Drop the four degenerate topology features upstream and re-derive.** The
+   only unambiguous win available. PC1 becomes nameable and gains 3 points of
+   variance. Not a research question.
+2. **Re-specify or drop the asymmetry and tailedness aggregations.** Eight
+   components rest on them and A1 shows they cannot be repaired by orientation.
+   If a per-peak shape statistic is wanted, `max` aggregation is far more
+   reproducible than `mean`, and the reason is now understood.
+3. **Stop looking for clusters in this feature space.** A3 tested the ten most
+   favourable settings and found nothing in any of them. Further search here has
+   a poor expected return.
+4. **The continuum plus the dispersed/focal axis is the finding.** Combined with
+   the external-set result in 2.5 (21 of 21 displaced, none separated,
+   super-enhancers weakest), this is a coherent and defensible position, and it
+   is now supported by a much more thorough negative than it was this morning.
+5. **Representation learning becomes the main hope for new structure**, and its
+   bar is now explicit: it must beat the amount-only baseline on LOEUF and
+   immune GWAS (2.4), and reproduce across the 116 twice-captured genes (2.6).
+   If the profile contains partitional structure, the summaries provably do not
+   hold it, and learning from the raw profile is the only untried route.
