@@ -54,6 +54,14 @@ raw components, so every displacement it shows is the uncorrected, overstated
 one. Switch to the corrected substrate.
 *Two hours.*
 
+**0.5 Naive-versus-stimulated super-enhancer sensitivity check.** The SE set is
+already state-matched (dbSUPER `CD4p CD25- Il17- PMAstim Th`, 867 regions), so
+the cell-state objection is answered. But the naive list (`CD4 Naive Primary
+8pool`, 571 regions) is on disk and a `build_naive_reference_sets` loader
+already exists, so running the displacement test with it costs an hour and
+converts "state-matched" from an assertion into a demonstration. Report both.
+*One hour.*
+
 **0.4 Reconcile 116 vs 119 twice-captured genes.** The store has 116, the review
 feedback has 119. The median rho 0.752 is quoted widely and needs one number.
 *One hour.*
@@ -155,7 +163,7 @@ compress against the deadline.
 | 3 | The continuum: gap, HDBSCAN, dip, silhouette vs null across 16 conditions | `experiment_cluster_search.py` |
 | 4 | The dimensions: scree, noise ceiling, loadings, trust weighting | `diagnose_dimension_trust.py` |
 | 5 | External sets displaced but not separated, corrected substrate | `diagnose_external_structure_corrected.py` |
-| 6 | The super-enhancer null: matched-n against Lambert_TF, density-stratified, with the power curve | `diagnose_external_density_stratified.py`, `diagnose_external_power.py` |
+| 6 | The super-enhancer null: matched-n against Lambert_TF, density-stratified, with the power curve, and the naive-vs-stimulated sensitivity | `diagnose_external_density_stratified.py`, `diagnose_external_power.py` |
 | 7 | Resolution: 14 bp summits, sub-resolution collapse | `summit_precision.tsv` |
 
 *Two weeks, in parallel with early writing but after Phase 0.*

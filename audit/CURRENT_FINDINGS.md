@@ -105,6 +105,15 @@ splits 771 against 1075 on dispersed-and-long-range versus focal-and-local
 under proper amount correction, so it is a cut through a continuum at its widest
 point, not two clusters.
 
+**That cut recovers `arch-HK` almost exactly: 819 of its 844 genes.** So the
+imposed four-way partition in Section 6 is, geometrically, a two-way split
+(dispersed versus focal) with the focal side subdivided into promoter-local,
+enhancer-focal and sparse. That is a more honest description of what the geometry
+contains than "four archetypes", it explains why `arch-HK` is the largest group
+by some margin, and it is the same contrast PC1 becomes once the degenerate
+topology features are removed. Sections 3 and 6 are describing one structure,
+not two.
+
 ---
 
 ## 4. Aim 3: categories are directions, not regions
@@ -126,11 +135,45 @@ objection before it is raised.
 > **Lambert transcription factors** (n = 156, defined by DNA-binding domain, so
 > mechanism-defined rather than an expression list) separate in contact
 > architecture at d = +0.46, p = 0.001, retaining 84% under gene-density
-> stratification. **Super-enhancer genes** (n = 158, within two genes of the same
-> set size, same substrate, same test) **do not separate**: d = -0.16, p = 0.18,
-> 94% overlap. Chromatin-state categories separate in the same direction of
-> evidence (ChromHMM bivalent d = -0.58, 112% retained; Roadmap silenced
-> d = -0.73, 98% retained; both p = 0.0005).
+> stratification. They are displaced along an interpretable and well-measured
+> axis: shape-PC1, 11.1% of corrected variance, 74% of it carried by features
+> that reproduce across captures, loading **+promoter_signal_fraction against
+> -CTCF signal, distance and consensus**. TFs are promoter-driven and CTCF-poor.
+> **Super-enhancer genes** (n = 158, within two genes of the same set size, same
+> substrate, same test) **do not separate**: d = -0.16, p = 0.18, 94% overlap.
+
+**The super-enhancer list is state-matched.** It is derived by the primary
+reference-set builder from dbSUPER `CD4p CD25- Il17- PMAstim Th` (867
+super-enhancer regions, TSS +/- 50 kb), i.e. **stimulated** CD4, not naive. A
+naive list (`CD4 Naive Primary 8pool`, 571 regions) exists in the same directory
+but is used only by a comparison-only builder for a naive-versus-activated
+sensitivity figure. So the null cannot be dismissed as a cell-state mismatch.
+Running the naive list as a sensitivity check is still worth an hour
+(`PLAN_FORWARD.md` Phase 0.5).
+
+### Which positive control to lead with, and which to qualify
+
+The controls do not separate on equally trustworthy axes, and this matters more
+than their effect sizes:
+
+| set | separates on | variance | loading mass on reproducible features |
+|---|---|---|---|
+| Lambert_TF | shape-PC1 | 11.1% | **74%** |
+| Roadmap_silenced | shape-PC3 | 7.8% | **74%** |
+| ChromHMM_bivalent | shape-PC4 | 5.5% | **15%** |
+| dbSUPER SE | shape-PC12 | 2.7% | 43% |
+
+**Lead with Lambert_TF and Roadmap_silenced.** Both separate on well-measured
+components, and Lambert_TF additionally on an interpretable one.
+
+**Qualify ChromHMM_bivalent.** Its d = -0.58 sits on the `oe_asymmetry`
+component, the feature family that reproduces at rho 0.27 to 0.42 (Section 3
+caveat). It is a real displacement of a set, but it rests on the least
+reproducible thing we measure and should not carry the argument alone.
+
+Worth noting for completeness: the super-enhancer set's own non-significant
+tendency lies on shape-PC12, a 2.7% component that is itself only 43% trusted.
+Even the direction it leans is uninterpretable.
 
 **The null is informative, not merely a failure to look.** Simulation on this
 substrate gives the super-enhancer test **80% power to detect a displacement of
@@ -224,6 +267,10 @@ peak-level research programme.
 
 Sizes 844 / 369 / 351 / 261 / 21. Core (posterior >= 0.8): 1,040 of 1,846; mean
 max posterior 0.793; 44% of active genes are mixtures.
+
+`arch-HK` is one side of the dispersed-versus-focal cut described in Section 3
+(819 of its 844 genes), and the other three active groups subdivide the focal
+side.
 
 **`arch-HK` is not the housekeeping group**: Eisenberg-HK fraction 38.2% against
 `arch-ME-constitutive`'s 40.2%, and it has the lowest median blood expression of
