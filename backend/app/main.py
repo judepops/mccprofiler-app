@@ -377,6 +377,18 @@ def _annotate_cohorts(s_, genes: list[dict]) -> list[dict]:
     return out
 
 
+def _overlap(d: float) -> float:
+    """Overlapping coefficient of two equal-variance normals separated by d.
+
+    The number that matters for reading these panels. Every external set clears
+    significance against 1,846 genes, so a p-value says almost nothing; how much
+    the two distributions actually overlap says whether you could ever see the
+    difference by looking.
+    """
+    from math import erf, sqrt
+    return 2.0 * (1.0 - 0.5 * (1.0 + erf(abs(d) / (2.0 * sqrt(2.0)))))
+
+
 @app.get("/api/enrichment/grid")
 def enrichment_grid(
     x: str = "pc2",
@@ -466,6 +478,19 @@ def enrichment_grid(
     n_genes = len(genes)
     panels = []
 
+    # All dimensions above the noise ceiling, per-dimension z-scored so each
+    # weighs equally in the centroid distance. Used for the displacement test.
+    D, dim_cols = None, []
+    if s_.has("pc_scree"):
+        sc = s_.table("pc_scree")
+        dim_cols = [f"pc{int(r.pc)}" for r in sc.itertuples()
+                    if r.above_noise and f"pc{int(r.pc)}" in emb.columns]
+        if dim_cols:
+            full = s_.genes[["gene_id"]].merge(
+                emb[["gene_id"] + dim_cols], on="gene_id", how="left"
+            ).set_index("gene_id").loc[genes["gene_id"]].to_numpy(float)
+            D = (full - full.mean(0)) / full.std(0)
+
     for g in usable:
         members = set(cm.loc[cm["group"] == g, "symbol_key"])
         hit = np.fromiter((s in members for s in sym), bool, n_genes)
@@ -504,11 +529,43 @@ def enrichment_grid(
             sd = vals.std()
             shift[key] = round(float((a.mean() - b.mean()) / sd), 3) if sd else 0.0
 
+        # Displacement in the FULL space, not just the two axes on screen. A set
+        # can be flat on this plane and strongly positioned on PC7, and the
+        # patch and gradient numbers would both miss it. This is the honest
+        # single answer to "is this set positioned at all".
+        #
+        # Reported next to an overlap percentage on purpose. With 1,846 genes
+        # every set clears significance, so the p-value is not the interesting
+        # part; how much the two distributions actually overlap is.
+        disp = None
+        if D is not None:
+            obs = np.linalg.norm(D[hit].mean(0))
+            null = np.empty(min(n_perm, 200) or 1)
+            for b in range(len(null)):
+                null[b] = np.linalg.norm(D[rng.choice(n_genes, size=k, replace=False)].mean(0))
+            sd = null.std()
+            best_j = int(np.abs(D[hit].mean(0)).argmax())
+            a_, b_ = D[hit, best_j], D[~hit, best_j]
+            sp = np.sqrt(((k - 1) * a_.var(ddof=1)
+                          + (n_genes - k - 1) * b_.var(ddof=1)) / (n_genes - 2))
+            cd = float((a_.mean() - b_.mean()) / sp) if sp else 0.0
+            disp = {
+                "z": round(float((obs - null.mean()) / sd), 1) if sd else None,
+                "p": round(float((np.sum(null >= obs) + 1) / (len(null) + 1)), 4),
+                "strongest_dim": dim_cols[best_j],
+                "cohens_d": round(cd, 2),
+                "overlap_pct": round(float(_overlap(cd) * 100), 1),
+            }
+
         finite = log2[np.isfinite(log2)]
         panels.append({
             "group": g,
             "n": int(k),
             "axis_shift": shift,
+            # Displacement in the full above-noise space, with the overlap that
+            # displacement actually corresponds to. Both, always: every set
+            # clears significance here, so the effect size is the honest number.
+            "displacement": disp,
             # Indices into `points`, so each tile can draw the real scatter with
             # this set highlighted instead of an abstract heatmap. The picture
             # is the thing people read; the statistics go on top of it.

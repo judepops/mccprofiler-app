@@ -177,6 +177,17 @@ export interface EnrichmentPanel {
   /** Standardised shift of members along each axis. Catches smooth gradients,
    *  which cell-wise testing cannot see. */
   axis_shift: Record<string, number>
+  /** Displacement of the set's centroid in the FULL above-noise space, not just
+   *  the two axes on screen, plus the overlap that displacement corresponds to.
+   *  Every set clears significance against 1,846 genes, so `overlap_pct` is the
+   *  number that says whether you could ever see the difference. */
+  displacement: {
+    z: number | null
+    p: number
+    strongest_dim: string
+    cohens_d: number
+    overlap_pct: number
+  } | null
   /** Indices into `points` for this set's members. */
   members: number[]
   is_super_enhancer: boolean

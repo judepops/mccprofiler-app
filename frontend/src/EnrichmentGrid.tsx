@@ -150,7 +150,23 @@ function Panel({
       <canvas ref={ref} style={{ width: size, height: size }} className="block" />
 
       <div className="mt-1 space-y-0.5 text-[9px] leading-tight">
-        <div className={notable ? 'text-ink-700' : 'text-ink-400'}>
+        {/* The headline number. Displacement across ALL above-noise dimensions,
+            paired with the overlap it implies, because every set here clears
+            significance and only the overlap says whether it is visible. */}
+        {p.displacement && (
+          <div className="text-ink-700">
+            <span className="font-mono">
+              d {p.displacement.cohens_d >= 0 ? '+' : ''}
+              {p.displacement.cohens_d.toFixed(2)}
+            </span>{' '}
+            on {p.displacement.strongest_dim}
+            {', '}
+            <span className={p.displacement.overlap_pct > 80 ? 'text-ink-400' : 'text-ink-700'}>
+              {p.displacement.overlap_pct.toFixed(0)}% overlap
+            </span>
+          </div>
+        )}
+        <div className={notable ? 'text-ink-500' : 'text-ink-400'}>
           {p.n_above_null ?? 0} patch{(p.n_above_null ?? 0) === 1 ? '' : 'es'}
           {' · '}
           <span className="font-mono">
