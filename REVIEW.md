@@ -783,3 +783,87 @@ review derives from it, but that should be checked for anything that does.
    across two amount definitions, HDBSCAN zero every time.
 6. **The continuum plus "displaced but not separated"** remains the strongest
    honest framing, and the feedback agrees it is the best articulation available.
+
+---
+
+# Addendum 3, 2026-08-14: Aim 3 re-tested on the amount-corrected substrate
+
+The objection was correct and decisive: `diagnose_external_structure.py` ran on
+the raw components, PC1 is the amount axis (B1), so "Roadmap_silenced is
+displaced" reduced to "silenced genes have less signal" and said nothing about
+architecture. Aim 3 was untested, not established.
+
+Re-run (`scripts/diagnose_external_structure_corrected.py`) on the substrate
+used by the clustering test: every feature residualised on the full 11-feature
+`MAG_OVERALL` basis, basis features dropped, the four degenerate topology
+features dropped, 78 features remaining, 18 components above a parallel-analysis
+ceiling recomputed on that substrate.
+
+**The outcome is neither of the two anticipated.** It is not "nothing survives",
+and it is not "everything survives unchanged".
+
+| set | n | z | p | d | overlap |
+|---|---|---|---|---|---|
+| gene_desert_bottomQ_density | 456 | 20.8 | 0.0005 | -0.71 | 72% |
+| ChromHMM_bivalent | 46 | 7.1 | 0.0005 | -0.58 | 77% |
+| Lambert_TF | 156 | 5.4 | 0.0005 | +0.46 | 82% |
+| Roadmap_silenced | 41 | 3.9 | 0.0005 | -0.73 | 71% |
+| GWAS_immune_hot | 130 | 3.7 | 0.0005 | +0.32 | 87% |
+| Eisenberg_HK | 633 | 2.0 | 0.034 | +0.11 | 96% |
+| **dbSUPER_CD4_SE** | **158** | **0.9** | **0.177** | **-0.16** | **94%** |
+| DepMap_curated_essential | 254 | 0.5 | 0.295 | +0.12 | 95% |
+
+**17 of 21 sets remain displaced**, down from 21 of 21, and effect sizes roughly
+halve: largest |d| falls from 1.61 to **0.73**.
+
+## What this changes
+
+**1. The trivial-explanation objection is answered.** `Roadmap_silenced` no
+longer separates on the amount axis. After amount is removed it separates on a
+shape component at d = -0.73, the largest effect in the table. So silenced genes
+differ in contact *architecture*, not only in how much signal they have. That is
+a real positive control rather than a sanity check that the assay detects
+transcription.
+
+**2. Aim 3 survives, restated.** "Displaced but not separated" holds with
+corrected numbers: 17 of 21 displaced, largest effect leaving 71% overlap, most
+above 90%.
+
+**3. The super-enhancer claim gets stronger, and stops depending on a ranking.**
+Previously it was "weakest of 21", which was over-precise since d = 0.29 and
+0.37 are indistinguishable. Now:
+
+> On the amount-corrected substrate, chromatin-state-defined categories separate
+> in contact architecture (ChromHMM bivalent z = 7.1, d = -0.58, p = 0.0005;
+> Roadmap silenced z = 3.9, d = -0.73, p = 0.0005). Super-enhancer genes do not
+> separate at all (z = 0.9, **p = 0.18**, 94% overlap), despite super-enhancers
+> being defined as a distinct class of regulatory element.
+
+That is a null against a demonstrated positive control on the same substrate and
+the same test, which is exactly the structure the claim needed and did not have.
+
+**4. Essentiality was amount.** `DepMap_curated_essential` and
+`DepMap_inferred_essential` both drop to non-significance (p = 0.29, 0.17) after
+correction, having looked like real signal at d = 0.46 to 0.52 on the raw PCs.
+Anything previously said about essentiality and architecture rested on amount.
+
+**5. The density confound is NOT an amount confound.** `gene_desert` remains the
+largest displacement at z = 20.8 after amount correction, so it survives on
+shape. It is a genomic-context confound and must still be reported as the
+positive control for that, separately from amount.
+
+## Not tested
+
+The mechanism-based housekeeping check could not run: only **19** ribosomal
+protein genes are in the panel, below the 25-gene floor. The objection that
+Eisenberg-HK is an expression list rather than an architecture list therefore
+remains untested. A larger mechanism-defined set (Hwang promoter-assembly genes)
+would be needed, and it is worth doing, since Eisenberg-HK now sits at d = 0.11
+with 96% overlap and that is the single result most likely to be a label
+problem rather than a biology problem.
+
+## Consequence for the app
+
+`/api/enrichment/grid` still computes on raw components. Its displacement
+numbers are therefore the uncorrected ones and overstate every set. It should be
+switched to the corrected substrate, or labelled.
