@@ -162,6 +162,45 @@ export interface PlaneLoadings {
   note?: string
 }
 
+/** One external set's footprint on the map. Post-hoc: these sets never entered
+ *  the coordinates. */
+export interface EnrichmentPanel {
+  group: string
+  n: number
+  /** Row-major nx by ny, log2(observed rate / base rate). null below `min_n`. */
+  cells: (number | null)[]
+  max_abs: number
+  /** Cells beating the label-permutation null. Zero is a real answer: the set is
+   *  spread across the map rather than pooled in one place. */
+  n_above_null: number | null
+  null_threshold: number | null
+  /** Standardised shift of members along each axis. Catches smooth gradients,
+   *  which cell-wise testing cannot see. */
+  axis_shift: Record<string, number>
+  is_super_enhancer: boolean
+  is_positive_control: boolean
+  stratification: {
+    stratifier: string
+    pct_retained: number
+    signal_over_random: number
+  } | null
+}
+
+export interface EnrichmentGrid {
+  x_axis: Axis
+  y_axis: Axis
+  nx: number
+  ny: number
+  min_n: number
+  n_perm: number
+  n_genes: number
+  cell_totals: number[]
+  is_umap: boolean
+  is_null: boolean
+  panels: EnrichmentPanel[]
+  caveats: Record<string, string>
+}
+
 export interface CohortRow {
   group: string
   n_in_panel: number
@@ -433,6 +472,9 @@ export const api = {
 
   planeLoadings: (x: string, y: string, top = 8) =>
     get<PlaneLoadings>('/api/embedding/loadings', { x, y, top }),
+
+  enrichmentGrid: (x: string, y: string, bins = 12, n_perm = 200) =>
+    get<EnrichmentGrid>('/api/enrichment/grid', { x, y, bins, n_perm }),
 
   peaks: (gene: string) => get<PeakSet>(`/api/genes/${encodeURIComponent(gene)}/peaks`),
 

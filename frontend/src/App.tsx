@@ -30,6 +30,7 @@ import { ProfilePlot } from './ProfilePlot'
 import { ArchetypeReadout } from './ArchetypeReadout'
 import { FeatureTable } from './FeatureTable'
 import { ContinuumMap } from './ContinuumMap'
+import { EnrichmentGrid } from './EnrichmentGrid'
 import { CohortView } from './CohortView'
 import { DimensionPanel } from './DimensionPanel'
 import { LabPage } from './LabPage'
@@ -484,6 +485,7 @@ export default function App() {
                 onPick={select}
               />
             )}
+            <EnrichmentGrid />
             <DimensionPanel />
             <ExplainPanel />
           </div>

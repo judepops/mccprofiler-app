@@ -377,6 +377,182 @@ def _annotate_cohorts(s_, genes: list[dict]) -> list[dict]:
     return out
 
 
+@app.get("/api/enrichment/grid")
+def enrichment_grid(
+    x: str = "pc2",
+    y: str = "pc3",
+    bins: int = Query(14, ge=6, le=30),
+    min_n: int = Query(8, ge=3),
+    n_perm: int = Query(200, ge=0, le=1000),
+):
+    """Where each external reference set sits on the map, as small multiples.
+
+    Post-hoc by construction and therefore legitimate: the embedding is built
+    from MCC features alone, and these sets are painted on afterwards. They
+    never entered the coordinates. That is the same licence the super-enhancer
+    comparison has, and the opposite of selecting genes by a label and then
+    describing their architecture.
+
+    Three things make the difference between a figure and a misleading figure,
+    all of them here.
+
+    `min_n` floors the count per cell. A 2D embedding is dense in the middle and
+    sparse at the edges, so without a floor the strongest apparent enrichments
+    are cells holding two genes.
+
+    `n_perm` builds a LABEL-permutation null, which is the control this figure
+    actually needs. The UMAP null already in the app asks whether the embedding
+    has structure; it says nothing about whether an enrichment is real. Shuffling
+    set membership across genes, keeping the set size fixed, gives the enrichment
+    magnitude that arises by chance on this exact grid. `threshold` is the 95th
+    percentile of the per-permutation maximum |log2|, so it is corrected for
+    scanning many cells rather than being a per-cell p-value.
+
+    Enrichment is log2(observed rate / panel base rate), with a half-count added
+    so an empty cell is a finite number rather than negative infinity.
+    """
+    s_ = store()
+    if not s_.has("embeddings") or not s_.has("cohort_membership"):
+        raise HTTPException(503, "embeddings or cohort_membership not built")
+
+    emb = s_.table("embeddings")
+    if x not in emb.columns or y not in emb.columns:
+        raise HTTPException(404, f"unknown axes {x!r} or {y!r}")
+
+    genes = s_.genes[["gene_id", "symbol_key"]].merge(
+        emb[["gene_id", x, y]], on="gene_id", how="left"
+    ).dropna(subset=[x, y])
+
+    xs = genes[x].to_numpy(float)
+    ys = genes[y].to_numpy(float)
+    # Percentile edges, not linear: PCA scores are heavy-tailed, and equal-width
+    # bins put almost every gene in the middle few cells.
+    xe = np.unique(np.quantile(xs, np.linspace(0, 1, bins + 1)))
+    ye = np.unique(np.quantile(ys, np.linspace(0, 1, bins + 1)))
+    ix = np.clip(np.digitize(xs, xe[1:-1]), 0, len(xe) - 2)
+    iy = np.clip(np.digitize(ys, ye[1:-1]), 0, len(ye) - 2)
+    nx, ny = len(xe) - 1, len(ye) - 1
+    cell = ix * ny + iy
+    total = np.bincount(cell, minlength=nx * ny).astype(float)
+
+    cm = s_.table("cohort_membership")
+    sizes = cm.groupby("group").size()
+    usable = sorted(sizes[sizes >= S.MIN_GROUP_N].index)
+
+    strat = {}
+    if s_.has("external_groups"):
+        eg = s_.table("external_groups")
+        for g, sub in eg.groupby("group"):
+            r = sub.sort_values("pct_retained").iloc[0]
+            strat[g] = {"stratifier": r["stratifier"],
+                        "pct_retained": float(r["pct_retained"]),
+                        "signal_over_random": float(r["signal_over_random"])}
+
+    sym = genes["symbol_key"].to_numpy()
+    rng = np.random.default_rng(0)
+    n_genes = len(genes)
+    panels = []
+
+    for g in usable:
+        members = set(cm.loc[cm["group"] == g, "symbol_key"])
+        hit = np.fromiter((s in members for s in sym), bool, n_genes)
+        k = hit.sum()
+        if k < S.MIN_GROUP_N:
+            continue
+        base = k / n_genes
+        obs = np.bincount(cell[hit], minlength=nx * ny).astype(float)
+
+        with np.errstate(divide="ignore", invalid="ignore"):
+            rate = (obs + 0.5) / (total + 1.0)
+            log2 = np.log2(rate / base)
+        log2[total < min_n] = np.nan
+
+        # Label-permutation null, corrected for scanning the whole grid.
+        threshold = None
+        if n_perm:
+            maxima = np.empty(n_perm)
+            for b in range(n_perm):
+                pick = rng.choice(n_genes, size=k, replace=False)
+                o = np.bincount(cell[pick], minlength=nx * ny).astype(float)
+                r = (o + 0.5) / (total + 1.0)
+                l = np.abs(np.log2(r / base))
+                l[total < min_n] = np.nan
+                maxima[b] = np.nanmax(l) if np.isfinite(l).any() else 0.0
+            threshold = float(np.quantile(maxima, 0.95))
+
+        # Cell-wise testing only sees PATCHES. A set that varies smoothly across
+        # the map spreads its signal over many cells, each below threshold, and
+        # would be reported as "nothing" when it is in fact strongly positioned.
+        # So also measure the simplest gradient: how far the members sit along
+        # each axis relative to everyone else, as a standardised difference.
+        shift = {}
+        for key, vals in ((x, xs), (y, ys)):
+            a, b = vals[hit], vals[~hit]
+            sd = vals.std()
+            shift[key] = round(float((a.mean() - b.mean()) / sd), 3) if sd else 0.0
+
+        finite = log2[np.isfinite(log2)]
+        panels.append({
+            "group": g,
+            "n": int(k),
+            "axis_shift": shift,
+            "cells": [None if not np.isfinite(v) else round(float(v), 3)
+                      for v in log2],
+            "max_abs": float(np.abs(finite).max()) if finite.size else 0.0,
+            # How many cells clear the permutation threshold. Zero is a real and
+            # useful answer: it says this set is spread across the map.
+            "n_above_null": (int((np.abs(finite) > threshold).sum())
+                             if threshold is not None else None),
+            "null_threshold": threshold,
+            "is_super_enhancer": g == "dbSUPER_CD4_SE_TSS_pm50kb",
+            "is_positive_control": g == "gene_desert_bottomQ_density",
+            "stratification": strat.get(g),
+        })
+
+    # Sorted by the larger of the two signals, patch or gradient, so a set that
+    # is strongly positioned but smoothly so is not buried at the bottom.
+    def strength(p):
+        sh = max(abs(v) for v in p["axis_shift"].values()) if p["axis_shift"] else 0
+        return -(max((p["n_above_null"] or 0) / 10.0, sh))
+
+    panels.sort(key=strength)
+
+    return _clean({
+        "x_axis": {"key": x, "label": S.PC_LABELS.get(x, x), "poles": S.PC_POLES.get(x)},
+        "y_axis": {"key": y, "label": S.PC_LABELS.get(y, y), "poles": S.PC_POLES.get(y)},
+        "nx": nx, "ny": ny, "min_n": min_n, "n_perm": n_perm,
+        "n_genes": int(n_genes),
+        "cell_totals": [int(v) for v in total],
+        "is_umap": x.startswith("umap") or y.startswith("umap"),
+        "is_null": x.startswith("umap_null") or y.startswith("umap_null"),
+        "panels": panels,
+        "caveats": {
+            "post_hoc": "The embedding is built from MCC features alone. These sets "
+                        "were painted on afterwards and never entered the "
+                        "coordinates, which is what makes the overlap worth reading.",
+            "null": "Colour is log2 of the observed rate over the panel base rate. "
+                    "The outlined cells are the ones exceeding a label-permutation "
+                    "null, membership shuffled across genes at fixed set size, taken "
+                    "at the 95th percentile of the per-shuffle MAXIMUM so it is "
+                    "corrected for scanning every cell. Sets with no outlined cells "
+                    "are spread across the map, which is a result, not a failure.",
+            "gradient": "Cell-wise testing only finds patches. A set that varies "
+                        "smoothly across the map spreads its signal thinly and can "
+                        "clear no single cell while still being strongly positioned, "
+                        "so each panel also reports the standardised shift of its "
+                        "members along each axis. Read both: patches and gradients "
+                        "are different claims and this figure can show either.",
+            "atac": "ATAC gates which genes and peaks exist at all, so sets derived "
+                    "from accessibility are not independent of the coordinates.",
+            "density": "gene_desert_bottomQ_density is the positive control for the "
+                       "gene-density confound: it retains only 11% of its effect "
+                       "under density stratification while insulation-based effects "
+                       "survive. Read every panel with its stratification figure.",
+            "umap": S.UMAP_CAVEAT,
+        },
+    })
+
+
 @app.get("/api/embedding/loadings")
 def plane_loadings(x: str = "pc2", y: str = "pc3", top: int = 8):
     """Loading vectors for the two displayed axes, for a biplot overlay.
