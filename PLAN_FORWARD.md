@@ -11,17 +11,21 @@ Three aims, and after today all three have an answer rather than a hope.
 |---|---|
 | 1. MCCProfiler is worth building | **Yes, but narrowly.** 91 features beat the 11-feature magnitude basis on 9/9 targets, sign-test p = 0.002. But 6 of 9 margins sit inside one SD. Only LOEUF (4.1 SD) and immune GWAS (3.5 SD) are substantial, and they are the same two that survive amount correction. |
 | 2. The landscape is a continuum | **Established.** HDBSCAN 0 clusters in 16 conditions across two amount definitions and four substrates; dip unimodal throughout; gap rising at k=8. 18-19 components above noise. |
-| 3. External categories are displaced but not separated | **Survives, restated.** 17 of 21 displaced after proper amount correction, largest d = 0.73 leaving 71% overlap. Super-enhancers do not separate at all (p = 0.18). |
+| 3. External categories are displaced but not separated | **Survives, and now controlled twice.** 17 of 21 displaced after magnitude correction, largest d = 0.73 leaving 71% overlap. Positive controls retain 98-112% under gene-density stratification. Super-enhancers do not separate (p = 0.16 with density controlled). |
 
 The claim that carries the thesis:
 
-> On an amount-corrected substrate, chromatin-state-defined categories separate
-> in contact architecture (bivalent d = -0.58, silenced d = -0.73, both
-> p = 0.0005), while super-enhancer genes do not separate at all (p = 0.18, 94%
-> overlap), despite being defined as a distinct class of regulatory element.
+> On a substrate corrected for overall magnitude, and retained under gene-density
+> stratification, chromatin-state-defined categories separate in contact
+> architecture (ChromHMM bivalent d = -0.58, 112% retained; Roadmap silenced
+> d = -0.73, 98% retained; both p = 0.0005). Super-enhancer genes do not separate
+> (p = 0.16, 94% overlap), despite being defined as a distinct class of
+> regulatory element.
 
-That is a null against a positive control on the same test and substrate. Pott
-and Lieb argued it from thresholding logic; this measures it.
+That is a null against a positive control on the same test and substrate,
+controlled for the two confounders that have broken every earlier version of
+this analysis: overall magnitude and genomic context. Pott and Lieb argued it
+from thresholding logic; this measures it.
 
 ---
 
@@ -67,7 +71,13 @@ genes, a broader ribosomal and translation-machinery set, or CpG-island-plus-
 broad-promoter genes. If a mechanism-defined set separates where the expression
 -defined list does not, that is a *positive* result and it strengthens Aim 1
 considerably: it would show the features track mechanism rather than annotation.
-*One day. High value, could add a positive finding.*
+*One day. **Highest-value item in Phase 1**, promoted above 1.2. It does two
+jobs: it could add a positive finding, and it pre-empts the objection any
+chromatin biologist will raise, that housekeeping genes form promoter assemblies
+so they ought to separate. Addendum 4 makes it more urgent still: Eisenberg-HK
+now fails entirely (p = 0.076) once density is controlled, so a mechanism-defined
+set is the only remaining route to saying anything about housekeeping
+architecture.*
 
 **1.2 Re-support the per-peak moment families.**
 Eight components rest on `oe_asymmetry` and `oe_tailedness` at rho 0.27 to 0.42.
@@ -75,7 +85,8 @@ Diagnosed as a support-size problem: median peak ~11 bins, 42% under 10 bins,
 1-2 reads per non-zero bin. `contact_asymmetry`, the same statistic on the whole
 profile, reproduces at 0.900. So compute the moments on aggregated support
 (stacked peaks per gene, or per element class) rather than per peak.
-*Two days. Could recover ~15% of variance currently indistinguishable from noise.*
+*Two days. Deliberately second: it recovers variance in components that are not
+load-bearing for any current claim.*
 
 ---
 
@@ -105,9 +116,36 @@ Two things to state explicitly rather than hide:
 - We cannot exclude that a better representation would partition. We can exclude
   that these 91 features do, under sixteen conditions.
 - `gene_desert` remains the largest displacement even after amount correction,
-  so genomic-context confounding is real and separate from amount.
+  so genomic-context confounding is real and separate from amount. The positive
+  controls were separately shown to survive density stratification
+  (Addendum 4).
+- **That the analysis was redone.** The first pass ran on uncorrected components
+  and overstated every displacement; the reported numbers come from a substrate
+  corrected for magnitude, then checked against gene density. Saying so is
+  stronger than presenting only final numbers, it is the same logic as the
+  self-correction methods paragraph, and an examiner who finds the earlier
+  version in a handoff will respect it.
 
-*Three to four weeks of writing, after Phase 0 and 1.*
+*Three to four weeks of writing, after Phase 0, 1 and 2a.*
+
+### Phase 2a. Figure production, scoped separately
+
+Figures are not a by-product of writing and should not be assumed to fall out of
+it. Every one needs the corrected substrate from Phase 0, so none can start
+earlier, and seven composite figures is substantial work that will otherwise
+compress against the deadline.
+
+| # | figure | source |
+|---|---|---|
+| 1 | The assay and the pipeline | schematic |
+| 2 | Feature substrate and nested baselines | `nested_baselines.tsv` |
+| 3 | The continuum: gap, HDBSCAN, dip, silhouette vs null across 16 conditions | `experiment_cluster_search.py` |
+| 4 | The dimensions: scree, noise ceiling, loadings, trust weighting | `diagnose_dimension_trust.py` |
+| 5 | External sets displaced but not separated, corrected substrate | `diagnose_external_structure_corrected.py` |
+| 6 | The super-enhancer null against its positive controls, density-stratified | `diagnose_external_density_stratified.py` |
+| 7 | Resolution: 14 bp summits, sub-resolution collapse | `summit_precision.tsv` |
+
+*Two weeks, in parallel with early writing but after Phase 0.*
 
 ---
 

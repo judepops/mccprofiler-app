@@ -867,3 +867,60 @@ problem rather than a biology problem.
 `/api/enrichment/grid` still computes on raw components. Its displacement
 numbers are therefore the uncorrected ones and overstate every set. It should be
 switched to the corrected substrate, or labelled.
+
+---
+
+# Addendum 4, 2026-08-14: the Aim 3 positive control survives gene density
+
+The last thing that could have undermined the headline. `gene_desert` remained
+the largest displacement after amount correction, so genomic context was
+uncorrected and dominant, and silenced genes are enriched in gene-poor regions.
+"Silenced genes separate on shape" could therefore have been "silenced genes
+live in gene deserts", the amount trap one level over.
+
+Tested two ways (`scripts/diagnose_external_density_stratified.py`), because
+residualisation assumes linearity and stratification does not:
+
+| set | d (amount-corrected) | d (stratified by density decile) | retained | p, amt -> amt+density |
+|---|---|---|---|---|
+| ChromHMM_bivalent | -0.58 | -0.65 | **112%** | 0.0005 -> 0.0005 |
+| Roadmap_silenced | -0.73 | -0.72 | **98%** | 0.0005 -> 0.0005 |
+| Lambert_TF | +0.46 | +0.39 | 84% | 0.0005 -> 0.0005 |
+| GWAS_immune_hot | +0.32 | +0.27 | 85% | 0.0005 -> 0.0035 |
+| Eisenberg_HK | +0.11 | +0.10 | 92% | 0.034 -> **0.076** |
+| dbSUPER_CD4_SE | -0.16 | -0.18 | 110% | 0.177 -> 0.160 |
+
+**The positive controls hold.** Bivalent retains 112% and silenced 98% of their
+effect under density stratification, and both keep p = 0.0005 when gene density
+is added to the confounder basis alongside the magnitude basis. So the
+separation is contact architecture, not genomic neighbourhood.
+
+**The super-enhancer null holds too**, at p = 0.160 with density controlled.
+
+**Aim 3 stands.** The headline claim is now:
+
+> On a substrate corrected for overall magnitude, and retained under
+> gene-density stratification, chromatin-state-defined categories separate in
+> contact architecture (ChromHMM bivalent d = -0.58, 112% retained; Roadmap
+> silenced d = -0.73, 98% retained; both p = 0.0005). Super-enhancer genes do
+> not separate (p = 0.16, 94% overlap), despite being defined as a distinct
+> class of regulatory element.
+
+## Two things that changed
+
+**Eisenberg_HK drops out entirely** (p 0.034 -> 0.076). Its marginal
+significance was partly gene density. So the expression-defined housekeeping
+list has no detectable architectural signature once magnitude and genomic
+context are both controlled. That makes the mechanism-versus-annotation test
+(Phase 1.1) more important, not less: it is now the only route to saying
+anything about housekeeping architecture.
+
+**Note on the sign flips** in the density-residualised column: adding a
+confounder changes which component is strongest, and PCA sign is arbitrary, so
+the sign there is not a reversal. The stratified column, computed on the same
+component as the amount-corrected estimate, is the like-for-like comparison and
+is the one quoted.
+
+`gene_desert_bottomQ_density` returns NaN under stratification, correctly: it is
+defined as a density quantile, so there is no within-stratum variation left. A
+useful check that the stratification is doing what it claims.
