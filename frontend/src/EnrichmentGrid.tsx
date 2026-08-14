@@ -42,6 +42,9 @@ function Panel({
   xKey,
   yKey,
   size,
+  points,
+  extent,
+  showHeat,
 }: {
   p: EnrichmentPanel
   nx: number
@@ -49,6 +52,9 @@ function Panel({
   xKey: string
   yKey: string
   size: number
+  points: [number, number][]
+  extent: { x0: number; x1: number; y0: number; y1: number }
+  showHeat: boolean
 }) {
   const ref = useRef<HTMLCanvasElement>(null)
 
@@ -63,30 +69,60 @@ function Panel({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, size, size)
 
+    const { x0, x1, y0, y1 } = extent
+    const sx = (v: number) => ((v - x0) / (x1 - x0 || 1)) * size
+    // Screen y is inverted relative to data y.
+    const sy = (v: number) => size - ((v - y0) / (y1 - y0 || 1)) * size
+
     const w = size / nx
     const h = size / ny
-    // Fixed colour scale across panels would make small sets invisible, and a
-    // per-panel scale would make them look equally strong. Scale to the null
-    // threshold instead, so colour means "relative to what chance produces
-    // for a set of THIS size", which is comparable across panels.
+    // Scaled to this set's own null threshold, so colour means "relative to
+    // what chance produces for a set of THIS size" and panels stay comparable.
     const scale = p.null_threshold || p.max_abs || 1
 
-    for (let i = 0; i < nx; i++) {
-      for (let j = 0; j < ny; j++) {
-        const v = p.cells[i * ny + j]
-        // Screen y is inverted relative to data y.
-        const px = i * w
-        const py = size - (j + 1) * h
-        ctx.fillStyle = colour(v, scale)
-        ctx.fillRect(px, py, Math.ceil(w), Math.ceil(h))
-        if (v != null && p.null_threshold != null && Math.abs(v) > p.null_threshold) {
-          ctx.strokeStyle = '#0f1e2e'
-          ctx.lineWidth = 1.25
-          ctx.strokeRect(px + 0.5, py + 0.5, w - 1, h - 1)
+    if (showHeat) {
+      for (let i = 0; i < nx; i++) {
+        for (let j = 0; j < ny; j++) {
+          const v = p.cells[i * ny + j]
+          if (v == null) continue
+          ctx.fillStyle = colour(v, scale)
+          ctx.fillRect(i * w, size - (j + 1) * h, Math.ceil(w), Math.ceil(h))
         }
       }
     }
-  }, [p, nx, ny, size])
+
+    // The map itself. Every gene faint, this set's members on top, so the tile
+    // is recognisably the same cloud as the continuum map rather than an
+    // abstraction of it.
+    ctx.fillStyle = 'rgba(150, 170, 190, 0.30)'
+    for (const [px, py] of points) {
+      ctx.beginPath()
+      ctx.arc(sx(px), sy(py), 0.9, 0, Math.PI * 2)
+      ctx.fill()
+    }
+    ctx.fillStyle = '#c2703d'
+    for (const idx of p.members) {
+      const q = points[idx]
+      if (!q) continue
+      ctx.beginPath()
+      ctx.arc(sx(q[0]), sy(q[1]), 1.5, 0, Math.PI * 2)
+      ctx.fill()
+    }
+
+    // Cells beating the permutation null, outlined over the points. The
+    // statistics annotate the picture; they do not replace it.
+    if (p.null_threshold != null) {
+      ctx.strokeStyle = '#0f1e2e'
+      ctx.lineWidth = 1.25
+      for (let i = 0; i < nx; i++) {
+        for (let j = 0; j < ny; j++) {
+          const v = p.cells[i * ny + j]
+          if (v == null || Math.abs(v) <= p.null_threshold) continue
+          ctx.strokeRect(i * w + 0.5, size - (j + 1) * h + 0.5, w - 1, h - 1)
+        }
+      }
+    }
+  }, [p, nx, ny, size, points, extent, showHeat])
 
   const sx = p.axis_shift?.[xKey] ?? 0
   const sy = p.axis_shift?.[yKey] ?? 0
@@ -146,6 +182,10 @@ export function EnrichmentGrid() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
+  // Off by default. The points are what makes a tile recognisable as the map;
+  // the heat shading is a summary of them and, drawn underneath, it competes
+  // with the thing it is summarising.
+  const [showHeat, setShowHeat] = useState(false)
   const req = useRef(0)
 
   useEffect(() => {
@@ -228,13 +268,32 @@ export function EnrichmentGrid() {
 
           {data && (
             <>
-              <p className="mt-3 text-[11px] leading-relaxed text-ink-600">
-                Colour is log2 of the observed rate over the panel base rate, scaled to
-                each set's own permutation threshold so panels are comparable.
-                Outlined cells beat that threshold. Ochre is enriched, steel depleted,
-                pale means fewer than {data.min_n} genes in the cell.{' '}
-                <strong>Sorted by strength, patch or gradient, whichever is larger.</strong>
-              </p>
+              <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2">
+                <p className="max-w-3xl text-[11px] leading-relaxed text-ink-600">
+                  <strong>Every tile is the same {data.x_axis.label} by{' '}
+                  {data.y_axis.label} scatter as the map above</strong>, all{' '}
+                  {data.n_genes.toLocaleString()} genes in pale grey, with that set's
+                  members in ochre on top. Boxes mark cells where the local rate beats
+                  the label-permutation null. Sorted by strength, patch or gradient,
+                  whichever is larger.
+                </p>
+                <label className="flex shrink-0 items-center gap-1.5 text-[11px] text-ink-600">
+                  <input
+                    type="checkbox"
+                    checked={showHeat}
+                    onChange={(e) => setShowHeat(e.target.checked)}
+                  />
+                  shade cells by enrichment
+                </label>
+              </div>
+              {showHeat && (
+                <p className="mt-1 text-[10px] leading-relaxed text-ink-500">
+                  Shading is log2 of the observed rate over the panel base rate,
+                  scaled to each set's own permutation threshold so tiles stay
+                  comparable. Ochre enriched, steel depleted, unshaded means fewer
+                  than {data.min_n} genes in that cell.
+                </p>
+              )}
 
               <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
                 {data.panels.map((p) => (
@@ -246,6 +305,9 @@ export function EnrichmentGrid() {
                     xKey={data.x_axis.key}
                     yKey={data.y_axis.key}
                     size={112}
+                    points={data.points}
+                    extent={data.extent}
+                    showHeat={showHeat}
                   />
                 ))}
               </div>
@@ -255,6 +317,12 @@ export function EnrichmentGrid() {
                   <strong className="text-ink-700">Two different claims.</strong>{' '}
                   {data.caveats.gradient}
                 </p>
+                {data.caveats.robustness && (
+                  <p>
+                    <strong className="text-ink-700">Which number to trust.</strong>{' '}
+                    {data.caveats.robustness}
+                  </p>
+                )}
                 <p>{data.caveats.null}</p>
                 <p>
                   <strong className="text-ink-700">Not independent.</strong>{' '}

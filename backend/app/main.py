@@ -425,10 +425,23 @@ def enrichment_grid(
 
     xs = genes[x].to_numpy(float)
     ys = genes[y].to_numpy(float)
-    # Percentile edges, not linear: PCA scores are heavy-tailed, and equal-width
-    # bins put almost every gene in the middle few cells.
-    xe = np.unique(np.quantile(xs, np.linspace(0, 1, bins + 1)))
-    ye = np.unique(np.quantile(ys, np.linspace(0, 1, bins + 1)))
+
+    # EQUAL-WIDTH edges over the robust range, deliberately not percentile edges.
+    # Percentile edges give every cell the same gene count, which is better
+    # behaved statistically but renders the plot in rank space: the shape of the
+    # cloud is destroyed by construction and the picture no longer looks like
+    # the map it claims to describe. Since the grid is drawn on top of the real
+    # scatter, the cells must correspond to real coordinates. The 1st to 99th
+    # percentile range keeps a handful of extreme genes from stretching the grid
+    # to the point where everything lands in one cell.
+    def edges(v: np.ndarray) -> np.ndarray:
+        lo, hi = np.percentile(v, [1, 99])
+        if hi <= lo:
+            lo, hi = v.min(), max(v.max(), v.min() + 1e-9)
+        return np.linspace(lo, hi, bins + 1)
+
+    xe = edges(xs)
+    ye = edges(ys)
     ix = np.clip(np.digitize(xs, xe[1:-1]), 0, len(xe) - 2)
     iy = np.clip(np.digitize(ys, ye[1:-1]), 0, len(ye) - 2)
     nx, ny = len(xe) - 1, len(ye) - 1
@@ -496,6 +509,10 @@ def enrichment_grid(
             "group": g,
             "n": int(k),
             "axis_shift": shift,
+            # Indices into `points`, so each tile can draw the real scatter with
+            # this set highlighted instead of an abstract heatmap. The picture
+            # is the thing people read; the statistics go on top of it.
+            "members": [int(i) for i in np.flatnonzero(hit)],
             "cells": [None if not np.isfinite(v) else round(float(v), 3)
                       for v in log2],
             "max_abs": float(np.abs(finite).max()) if finite.size else 0.0,
@@ -523,6 +540,13 @@ def enrichment_grid(
         "nx": nx, "ny": ny, "min_n": min_n, "n_perm": n_perm,
         "n_genes": int(n_genes),
         "cell_totals": [int(v) for v in total],
+        # The shared point cloud, in real axis units, drawn faintly on every
+        # tile so each small multiple IS the map rather than an abstraction of
+        # it. Rounded to 3dp: this is 1,846 pairs and full float precision
+        # would triple the payload for no visible difference.
+        "points": [[round(float(a), 3), round(float(b), 3)] for a, b in zip(xs, ys)],
+        "extent": {"x0": float(xe[0]), "x1": float(xe[-1]),
+                   "y0": float(ye[0]), "y1": float(ye[-1])},
         "is_umap": x.startswith("umap") or y.startswith("umap"),
         "is_null": x.startswith("umap_null") or y.startswith("umap_null"),
         "panels": panels,
@@ -536,6 +560,11 @@ def enrichment_grid(
                     "at the 95th percentile of the per-shuffle MAXIMUM so it is "
                     "corrected for scanning every cell. Sets with no outlined cells "
                     "are spread across the map, which is a result, not a failure.",
+            "robustness": "Trust the gradient over the patch count. Patch counts "
+                          "depend on where the cell boundaries fall, and moving from "
+                          "percentile to equal-width edges changed several of them "
+                          "by a cell or two, while every gradient stayed identical "
+                          "because it does not use the grid at all.",
             "gradient": "Cell-wise testing only finds patches. A set that varies "
                         "smoothly across the map spreads its signal thinly and can "
                         "clear no single cell while still being strongly positioned, "

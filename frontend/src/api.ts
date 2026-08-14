@@ -177,6 +177,8 @@ export interface EnrichmentPanel {
   /** Standardised shift of members along each axis. Catches smooth gradients,
    *  which cell-wise testing cannot see. */
   axis_shift: Record<string, number>
+  /** Indices into `points` for this set's members. */
+  members: number[]
   is_super_enhancer: boolean
   is_positive_control: boolean
   stratification: {
@@ -197,6 +199,10 @@ export interface EnrichmentGrid {
   cell_totals: number[]
   is_umap: boolean
   is_null: boolean
+  /** Every gene's [x, y] in real axis units, so each tile can draw the actual
+   *  scatter rather than an abstraction of it. */
+  points: [number, number][]
+  extent: { x0: number; x1: number; y0: number; y1: number }
   panels: EnrichmentPanel[]
   caveats: Record<string, string>
 }
