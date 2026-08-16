@@ -1,9 +1,192 @@
-# Forward plan, 2026-08-14
+# Forward plan
 
-Written after the Aim 3 re-test (REVIEW.md Addendum 3) and updated after the
-gene-density check (Addendum 4). Current surviving numbers are in
-CURRENT_FINDINGS.md. Transfer of Status
-target is HT Year 2, roughly Jan to Mar 2027, 5,000 words.
+Consolidated 2026-08-16, replacing the running edits of the previous two days.
+Transfer of Status target is HT Year 2, roughly Jan to Mar 2027, 5,000 words.
+
+## The rule for this phase
+
+**One more test, then stop auditing and write.**
+
+The audit has done its job. The central claim has now survived five independent
+attacks: overall magnitude, gene density, cell-state matching, statistical
+power, and chromosome. Nine claims were retracted along the way and every one
+fell to a control built before the result was trusted, not to a reviewer after
+submission. Further checking will keep finding confounds, because there are
+always more confounds; that is true of every paper ever published. The marginal
+return has turned negative.
+
+The one remaining test is the core-promoter sequence classes (S1 below), because
+it is not an audit but the second independent positive control, and the argument
+currently rests on one.
+
+---
+
+## S1. The last test: core-promoter sequence classes
+
+TATA-box, Initiator and DPE-containing promoters, by JASPAR motif scan on the
+hg38 already on disk (the same reference the capture probes were designed
+against). Sequence-defined and therefore chromatin-independent, which is the
+property the argument is short of.
+
+It also answers the housekeeping question in its proper framing. TATA-containing
+is the classic sharp, developmental class and CpG-island-broad the housekeeping
+class, which is the Haberle and Stark distinction. Eisenberg-HK, an expression
+list, has no architectural signature once magnitude and density are controlled.
+Whether a *mechanism*-defined housekeeping class does is untested and is the
+single most interesting open question.
+
+Check the chr19 share and the panel coverage of every set built, before trusting
+any effect size. Both bit this week.
+
+*One to two days. Then stop.*
+
+Fallbacks if the motif scan is unusable: MSigDB translation machinery
+(ribosomal proteins give only 19, below the floor, but adding initiation and
+elongation factors and aminoacyl-tRNA synthetases should clear 50), CORUM
+protein-complex membership, or other Pfam families as further Lambert-style
+controls.
+
+---
+
+## S2. Corrections, before any figure or sentence is final
+
+None is a research question. Nothing has been applied upstream yet.
+
+**S2.1 Drop the four degenerate topology features** (`mean_degree`,
+`mean_degree_raw`, `frac_active_pairs`, `n_isolates_raw`) and re-derive.
+Confirmed algebraic at 1842/1842. PC1 goes 15.27% to 18.41% and becomes
+nameable: dispersed distal contact versus emptiness. *Half a day, unblocks
+everything.*
+
+**S2.2 Re-derive the archetype display names** on the `MAG_OVERALL`-corrected
+substrate. Current names come from unadjusted group means. *Half a day.*
+
+**S2.3 Rebuild the store, re-run the nine diagnostic scripts, regenerate the six
+figures.** All are written; this is mechanical. *One hour.*
+
+**S2.4 Fix the app.** `/api/enrichment/grid` still computes on raw components
+and shows displacements we have retracted, and `MAX_GROUP_COVERAGE` is honoured
+by the scripts but not by the cohort list or the grid. *Three hours.*
+
+**S2.5 Reconcile 116 versus 119 twice-captured genes.** The median rho 0.752 is
+quoted widely and needs one number. *One hour.*
+
+**S2.6 Update `PROJECT_STATUS.md`**, or point it at `audit/CURRENT_FINDINGS.md`.
+It is collaborator-facing, last modified 3 August, and still describes arch-HK
+as housekeeping, which was measured false that same day. *One hour, and it is
+the highest outward-facing risk.*
+
+---
+
+## S3. Figures, before writing
+
+Moved ahead of writing on evidence: drawing figure 6 falsified a claim four
+rounds of written review had missed, and figure 3 exposed an arithmetic error in
+an overlap statistic. **Figures are a control, not a presentation step.**
+
+Six drafts exist in `audit/figures/` and must be regenerated after S2.1. The
+seventh, on resolution, is not yet drawn.
+
+| # | figure | source |
+|---|---|---|
+| 1 | the assay and the pipeline | schematic |
+| 2 | feature substrate and nested baselines | `nested_baselines.tsv` |
+| 3 | the continuum across 16 conditions | `experiment_cluster_search.py` |
+| 4 | dimensions: scree, noise ceiling, trust weighting | `diagnose_dimension_trust.py` |
+| 5 | external sets displaced but not separated | `diagnose_external_structure_corrected.py` |
+| 6 | the super-enhancer null with all five controls | `diagnose_external_*` |
+| 7 | resolution: 14 bp summits, sub-resolution collapse | `summit_precision.tsv` |
+
+*Two weeks.*
+
+---
+
+## S4. Write
+
+Order for Aim 3, decided 2026-08-16: strongest claim first, supporting
+observation second.
+
+1. **Frame.** Displaced but not separated. 17 of 21 displaced, none separated,
+   overlaps 71 to 96%. Categories are directions, not regions.
+2. **Super-enhancers.** Null under every treatment, against positive controls on
+   the same substrate and test, with 80% power to detect d = 0.35. Carried by
+   the literature asymmetry: a null here contradicts a live claim, where the
+   housekeeping null contradicts nothing. State the 38th-percentile number in
+   the same breath.
+3. **The definition-type pattern**, as supporting observation, with the post-hoc
+   caveat and the RANK_SINGLE n = 1 limit in the same paragraph.
+
+State explicitly rather than hide: that the analysis was redone on a corrected
+basis after an uncorrected first pass overstated every displacement; that we
+cannot exclude a better representation partitioning, only that these 91 features
+do not under sixteen conditions; that three of four separating sets are
+ChIP-derived and therefore partly two assays measuring one thing; and the
+self-correction record itself, which is an asset.
+
+*Three to four weeks.*
+
+---
+
+## S5. Research programme, after transfer
+
+Ranked by measured justification, not appeal.
+
+**A. Peak-level unit of analysis. The main bet.** Summits reproduce at 14 bp
+median, 64x tighter than a jitter null, and CTCF summits sit 9 bp from the motif
+centre at 4.48x a centrality-matched null with an enhancer negative control at
+1.01x. The 91 features use nothing below roughly 1 kb and lose 18.7% of peaks at
+5 kb binning. The assay resolves two orders of magnitude finer than the
+representation reads. Requires a real adjacency first, which S2.1 begins.
+
+**B. Constraint as the biological result.** LOEUF is the one place architecture
+does genuine work: 0.031 from peak counting, 0.210 from all features, **0.191
+surviving complete magnitude removal**, so 91% is shape. Which architectural
+features carry it, and why, is a positive mechanistic question of the kind the
+project currently lacks. Most likely to succeed; A has the higher ceiling.
+
+**C. Learned representations.** The MAE arm, plus a contrastive objective using
+the twice-captured genes as positive pairs, which targets the measured
+reproducibility weakness rather than a hypothetical one. Bar, pre-registered:
+beat the amount-only baseline on LOEUF and immune GWAS, and reproduce across the
+twice-captured genes.
+
+**D. Genome-scale expansion.** The 20k panel. Two independent arguments this
+week: n = 1,846 is thin for representation learning, and the coverage-ceiling
+problem is partly a small-panel artefact, since three reference sets cover over
+80% of this panel and would not genome-wide.
+
+A and B in parallel; B is analysis on existing data, A needs the adjacency fix.
+C follows once A establishes whether peak-level structure exists. D is a
+wet-lab timing question.
+
+---
+
+## Publication expectation
+
+Specialist tier is realistic now: Genome Biology, Genome Research, NAR. A
+validated tool, a rigorous negative, and a quantitative challenge to the
+super-enhancer concept.
+
+High-impact needs a mechanistic positive, which does not exist yet. The
+candidates are A and B, and both rest on numbers already measured.
+
+For the transfer none of this matters. It needs rigorous science and a
+defensible programme, and both are in hand.
+
+---
+
+## What not to do
+
+- More clustering in this feature space. Sixteen conditions, HDBSCAN zero every
+  time.
+- More external-set enrichment. Twenty-one sets, five confounders controlled.
+- More hand-crafted features in the summary-statistic paradigm. 91 features
+  collapse to about 18 effective dimensions.
+- More auditing after S1. See the rule at the top.
+
+---
+
+## Appendix: the state as of 2026-08-14, kept for reference
 
 ## Where things actually stand
 

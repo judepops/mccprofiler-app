@@ -224,14 +224,32 @@ Two tests, answering different questions, both reported:
 | dbSUPER SE | 0.16, p 0.18 | 0.18, p 0.36 | 0.20, p 0.14 | 6% |
 | gene_desert | 0.71, p 0.0005 | 0.68, p 0.0005 | 0.60, p 0.0005 | 0% |
 
-**Lambert_TF is demoted.** A quarter of it is chr19 and it does not separate
-among genes elsewhere in the genome (|d| 0.20, p = 0.16 at n = 117, where the
-test has ample power). It survives as a within-chromosome effect (0.39), so it
-is displaced relative to its own neighbours, but its headline displacement is
-substantially locus-driven. It can no longer serve as the clean matched-n
-comparator against super-enhancers.
+**But chr19 is gene density wearing a chromosome label**, which partly reverses
+this. chr19 is the most gene-dense chromosome in the genome and it is so in this
+panel: median density 29.0 against 11.0 elsewhere, Cohen's d = +1.24. Its
+displacement collapses under the density control already in use:
 
-**`GWAS_immune_hot` becomes the primary chromatin-independent positive control.**
+| chr19 membership | \|d\| |
+|---|---|
+| magnitude only | 0.63 |
+| magnitude + density controlled | 0.28 |
+| density-decile stratified | **0.10, retaining 16%** |
+
+So chromosome is not a new confound class. It is the existing density confound
+concentrated on one chromosome, and density is already controlled everywhere it
+matters.
+
+**Lambert_TF is therefore qualified rather than demoted.** With density
+controlled it holds at **|d| 0.39, p = 0.0005**, meaning transcription factors
+differ from equally-dense non-TFs. What it does not do is separate among
+non-chr19 genes alone (0.20, p = 0.16). Those two facts are consistent: the TF
+effect is real after density adjustment but is concentrated in the dense,
+largely chr19 part of the set. Excluding chr19 removes a quarter of the set
+including its densest members, which over-corrects. Report the density-adjusted
+number and state the concentration.
+
+**`GWAS_immune_hot` is nonetheless the cleanest positive control and should
+lead.**
 It is 7% chr19, unchanged by exclusion (0.32 to 0.33) and stronger with
 chromosome controlled (0.40). It is variant-defined, so it touches no chromatin
 assay, which is the property Lambert_TF was being relied on for. Set size 130
@@ -530,7 +548,7 @@ earlier handoffs.
 | Varimax rotation should be adopted | **Withdrawn.** It nearly doubles nameability for free, but its most concentrated factors are the `oe_asymmetry` families at rho 0.27-0.42. Do not adopt without weighting by reproducibility. |
 | Displacement figures from the raw components (largest d = 1.61, 21 of 21) | **Superseded** by the corrected substrate in Section 4 (largest d = 0.73, 17 of 21). |
 | The app's `/api/enrichment/grid` numbers | **Uncorrected.** Still computed on raw components. Phase 0.3. |
-| "Lambert_TF is the primary positive control, matched-n against SE" | **Demoted 2026-08-16.** 25% of the set is chr19, and it does not separate among non-chr19 genes (\|d\| 0.20, p = 0.16). GWAS_immune_hot replaces it. |
+| "Lambert_TF is the primary positive control, matched-n against SE" | **Qualified 2026-08-16, not withdrawn.** 25% of the set is chr19 and it does not separate among non-chr19 genes alone (\|d\| 0.20, p = 0.16), but chr19 is density and Lambert survives density control at 0.39, p = 0.0005. GWAS_immune_hot leads instead because it is unaffected by every treatment. |
 | "The TF signature is promoter-driven and CTCF-poor" | **Narrowed.** The effect is C2H2 zinc fingers only (non-C2H2 TFs p = 0.52), and the C2H2 effect does not survive chr19 exclusion. |
 | "The k=2 cut recovers arch-HK almost exactly, 819 of 844" | **Retracted 2026-08-16.** On the correct `MAG_OVERALL` substrate it is 476 of 844 against 456 expected, 1.04x. The 819 figure came from the superseded `total_mcc` correction. |
 

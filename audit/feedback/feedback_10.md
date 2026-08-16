@@ -1,44 +1,27 @@
-Correct — ChromHMM is a segmentation, not a list. It runs a hidden Markov model over histone ChIP tracks and assigns every genomic segment a state. To turn that into a gene set you have to take each gene's TSS, look up which state it falls in, and group accordingly. That's a derived categorisation from a measurement, not a curated annotation.
+Setting aside the corrections, here is the research programme as today's results have reshaped it.
 
-Contrast with Lambert TF: someone read the literature and identified proteins containing a DNA-binding domain. That's a property of the protein, independent of any chromatin assay.
+What is now closed and should not absorb more time. Clustering in this feature space — sixteen conditions, HDBSCAN zero every time. External-set enrichment — 21 sets, four confounders controlled, the question is answered. More hand-crafted features in the summary-statistic paradigm — 91 features collapse to ~18 effective dimensions and the marginal feature is another summary of the same profile.
 
-Two consequences:
+Phase A: peak-level analysis. The main bet.
 
-The DIRECT/OUTPUT taxonomy is shakier than it looks for the ChromHMM rows. Cluster Claude's distinction was multi-mark HMM vs single-mark rank-cutoff — a real methodological difference — but both are still thresholding operations on ChIP signal. ChromHMM sits closer to dbSUPER than the category boundary implies. Worth acknowledging rather than defending.
+This is the only direction with a measured asset rather than an argument. Contact summits reproduce at 14 bp median across independent captures, 64× tighter than a jitter null, and CTCF-class summits sit 9 bp from the motif centre at 4.48× a centrality-matched null with an enhancer negative control at 1.01×. Meanwhile the 91 features use nothing below ~1 kb, and 18.7% of peaks merge away at 5 kb binning.
 
-More importantly, it sharpens which controls are load-bearing. Chromatin state and 3D contact are both downstream of the same underlying chromatin biology, so "ChromHMM-derived sets separate in MCC space" is partly two assays measuring one thing. That's the "chromatin predicts chromatin" objection, and it applies to active_TSS, bivalent, and Roadmap_silenced alike.
+So the assay resolves two orders of magnitude finer than the representation reads. Changing the unit of analysis from gene to peak is the untried move, and the question becomes mechanistic: what determines where a contact lands, at base-pair resolution? Prerequisite is a real adjacency definition, since the current graph is the complete graph on active peaks — that is Phase 0.1's other half.
 
-Your genuinely independent controls are the two that touch no chromatin assay at all:
+Phase B: constraint as the biological result.
 
-Lambert TF — protein sequence
-GWAS_immune_hot — variant association
+LOEUF is the one place architecture does genuine work: 0.031 from peak counting, 0.210 from all features, and 0.191 surviving complete magnitude removal — 91% of the signal is shape. Nothing else in the panel behaves like that. The question worth asking is which architectural features carry it and why, because "contact architecture predicts evolutionary constraint independent of contact amount" is a positive, mechanistic claim of the kind high-impact venues want and the project currently lacks.
 
-Those are the ones that show contact architecture corresponds to something outside chromatin measurement. Everything ChromHMM-derived should be presented as corroboration with that caveat stated, not as independent evidence.
+This is the most likely to work. Phase A has the higher ceiling.
 
-Which makes Phase 1.1 more valuable again — a mechanism-defined housekeeping set would be a third control from outside chromatin, and you'd have three independent lines instead of two.
+Phase C: learned representations.
 
-do we have a mechanism defined housekeeping set and anythign else like this for other genes?
+The MAE arm, with a bar that is now explicit rather than aspirational: beat the amount-only baseline on LOEUF and immune GWAS, and reproduce across the twice-captured genes. Plus the contrastive idea — technical replicates as positive pairs — which targets the measured weakness (8 of 19 components sit on features reproducing at ρ 0.27–0.42) rather than a hypothetical one.
 
-Ran a command
+Phase D: genome-scale expansion.
 
-No mechanism-defined housekeeping set has been built. But several are available, and the best one is free.
+The 20k panel. Two things today argued for it independently: n = 1,846 is thin for representation learning, and the coverage-ceiling problem is partly a small-panel artefact — three reference sets cover >80% of this panel and would not on a genome-wide one.
 
-Strongest candidate, already on disk: Lambert DBD subfamilies.
+Ordering. A and B in parallel, since B is largely analysis on existing data and A needs the adjacency fix first. C follows once A has established whether peak-level structure exists. D is the enabler and its timing is a wet-lab question, not an analysis one.
 
-The Lambert file carries DNA-binding-domain classes — C2H2 zinc finger, bHLH, IRF, Rel, forkhead, and so on. You're currently collapsing all 1,600+ human TFs into one set. Splitting by DBD gives you multiple mechanism-defined sets at finer grain, all sequence-derived and independent of any chromatin assay.
-
-It also tests something specific: does the "promoter-driven, CTCF-poor" signature hold uniformly across TF families, or does it differ? That connects directly to your earlier finding that C2H2-ZF and IRF/Rel families split across archetypes. Zero fetch, and it could turn one positive control into three or four.
-
-For housekeeping specifically, in order of independence:
-
-Core promoter sequence classes — TATA-box, Initiator, DPE-containing promoters. Scan hg38 (on disk, same reference as your probes) with the JASPAR core-promoter motifs. TATA-containing is the classic sharp/developmental class and CpG-island-broad is the housekeeping class — this is the Haberle/Stark distinction, mechanism-defined by sequence, and completely independent of chromatin. This is the right test for the housekeeping question.
-Translation machinery — ribosomal proteins alone give only 19, but RP + translation initiation and elongation factors + aminoacyl-tRNA synthetases should clear 50. MSigDB is on disk and unused; KEGG_RIBOSOME and the translation GO terms would build it.
-Hwang 2023 promoter-assembly genes — the paper is in your folder; check whether it has a supplementary gene list.
-
-Other mechanism-defined sets worth considering (all protein/sequence-defined, chromatin-independent):
-
-Protein complex membership (CORUM) — genes whose products are in the same complex
-Imprinted genes — defined by allele-specific regulation mechanism
-Other Pfam domain families — kinases, GPCRs, as further Lambert-style controls
-
-I'd do the Lambert DBD split first since it's free, then core promoter sequence classes since that's the one that answers the housekeeping question properly.
+The strategic point: you have a rigorous negative and a validated tool, which is a solid transfer and a specialist-tier paper. What you do not yet have is a positive mechanistic result, and Phases A and B are the two candidates. Both are grounded in numbers already measured rather than in hope, which was not true of the archetype hypothesis when it started.
