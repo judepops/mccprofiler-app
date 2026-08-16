@@ -1,0 +1,119 @@
+1846 genes x 73 features, 19 components
+
+====================================================================================
+basis                           top5 mass    best  salient  max|r|amt  mean|r|amt
+====================================================================================
+A  PCA                             39.9%     84%     18.4      0.618       0.145
+B  PCA + varimax                   67.5%     96%     12.5      0.797       0.136
+C  amount-removed PCA              39.6%     65%     16.7      0.000       0.000
+D  amount-removed + varimax        67.7%     97%     12.1      0.000       0.000
+
+variance retained by the 19-dim subspace:
+  A: 84.3%
+  B: 84.3%
+  C: 84.4%
+  D: 84.4%
+
+====================================================================================
+PCA + VARIMAX: the six most concentrated factors, and what loads on them
+====================================================================================
+
+  factor 16   top-5 mass 96%   r(amount) +0.02
+      +0.981  contact_asymmetry
+      +0.110  corr_oe_distance
+      -0.080  signal_entropy_distal
+      +0.055  n_high_consensus_peaks_075
+      +0.048  consensus_fraction_mean_all
+      +0.043  oe_max_max_all
+
+  factor 12   top-5 mass 86%   r(amount) +0.09
+      +0.882  signal_profile_kurtosis
+      +0.792  max_mcc
+      +0.341  oe_proximal_max
+      +0.299  bait_pileup_fraction
+      -0.239  signal_entropy
+      +0.157  raw_peak_max_max_ctcf
+
+  factor 10   top-5 mass 82%   r(amount) +0.05
+      +0.926  oe_distance_kurtosis
+      -0.872  std_contact_distance
+      -0.309  median_contact_distance
+      +0.302  frac_far_distal
+      +0.260  corr_oe_distance
+      +0.246  bimodality_score
+
+  factor 7   top-5 mass 78%   r(amount) -0.06
+      +0.861  oe_max_cv
+      +0.847  peak_dominance_index
+      +0.791  frac_signal_in_top_peak
+      +0.611  oe_max_max_all
+      +0.347  corr_raw_distance
+      +0.273  oe_max_max_ctcf
+
+  factor 8   top-5 mass 76%   r(amount) -0.07
+      +0.866  oe_local_enrichment_max_all
+      +0.793  oe_local_enrichment_mean_all
+      +0.655  oe_local_enrichment_max_ctcf
+      +0.310  oe_local_enrichment_max_enhancer
+      +0.239  oe_local_enrichment_max_promoter
+      +0.224  mean_peak_gap_bp
+
+  factor 3   top-5 mass 71%   r(amount) -0.08
+      -0.829  enhancer_signal_fraction_raw
+      +0.737  promoter_signal_fraction_raw
+      -0.673  raw_peak_max_max_enhancer
+      +0.502  raw_peak_max_max_promoter
+      -0.453  raw_log2_enrichment_max_enhancer
+      -0.431  n_peaks_enhancer
+
+====================================================================================
+AMOUNT-REMOVED + VARIMAX: the six most concentrated factors, and what loads on them
+====================================================================================
+
+  factor 16   top-5 mass 97%   r(amount) +0.00
+      +0.980  contact_asymmetry
+      +0.107  corr_oe_distance
+      -0.082  signal_entropy_distal
+      +0.058  n_high_consensus_peaks_075
+      +0.057  consensus_fraction_mean_all
+      -0.055  q90_mcc
+
+  factor 7   top-5 mass 92%   r(amount) +0.00
+      -0.944  signal_profile_kurtosis
+      -0.796  max_mcc
+      -0.445  oe_proximal_max
+      -0.330  bait_pileup_fraction
+      +0.246  signal_entropy
+      -0.169  raw_peak_max_max_all
+
+  factor 9   top-5 mass 84%   r(amount) -0.00
+      +0.927  oe_distance_kurtosis
+      -0.870  std_contact_distance
+      +0.303  frac_far_distal
+      -0.300  median_contact_distance
+      +0.251  bimodality_score
+      +0.237  corr_oe_distance
+
+  factor 4   top-5 mass 80%   r(amount) +0.00
+      +0.894  peak_dominance_index
+      +0.837  oe_max_cv
+      +0.820  frac_signal_in_top_peak
+      +0.594  oe_max_max_all
+      +0.274  corr_raw_distance
+      +0.248  mean_peak_gap_bp
+
+  factor 8   top-5 mass 75%   r(amount) +0.00
+      +0.875  oe_local_enrichment_max_all
+      +0.802  oe_local_enrichment_mean_all
+      +0.658  oe_local_enrichment_max_ctcf
+      +0.315  oe_local_enrichment_max_enhancer
+      +0.243  oe_local_enrichment_max_promoter
+      +0.238  max_distance_to_viewpoint_all
+
+  factor 6   top-5 mass 72%   r(amount) -0.00
+      -0.922  local_to_distal_ratio
+      -0.831  frac_local
+      +0.633  frac_distal
+      +0.500  distal_signal_density
+      +0.347  corr_raw_distance
+      +0.301  corr_oe_distance

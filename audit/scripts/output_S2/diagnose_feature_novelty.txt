@@ -1,0 +1,43 @@
+1738 of 1846 genes have all three properties
+
+==============================================================================
+VARIANCE OF THE 91 FEATURES EXPLAINED BY LENGTH, EXPRESSION AND CpG
+==============================================================================
+  mean R2 across features      0.029   (2.9%)
+  median R2                    0.018
+  total variance explained     0.029   (2.9%)
+  features above R2 0.10       3 of 73
+  features above R2 0.25       0 of 73
+
+  most explained by gene properties:
+     0.181  n_peaks_promoter
+     0.133  n_peaks_within_100kb
+     0.110  enhancer_signal_fraction_raw
+     0.094  promoter_signal_fraction_raw
+     0.074  mean_peak_gap_bp
+     0.070  frac_far_distal
+  least explained:
+     0.000  oe_distance_kurtosis
+     0.000  max_mcc
+     0.000  distance_to_nearest_peak_bp
+     0.000  contact_asymmetry
+
+  for scale, the 11-feature magnitude basis explains 31.4% of the non-magnitude features
+
+==============================================================================
+THE SAME, ON THE RETAINED COMPONENTS (magnitude-corrected substrate)
+==============================================================================
+  shape-PC1   R2 0.035  ###
+  shape-PC2   R2 0.050  ####
+  shape-PC3   R2 0.000  
+  shape-PC4   R2 0.010  #
+  shape-PC5   R2 0.003  
+  shape-PC6   R2 0.000  
+  shape-PC7   R2 0.002  
+  shape-PC8   R2 0.000  
+  mean over 18 components      0.008   (0.8%)
+  components above R2 0.10     0 of 18
+
+==============================================================================
+HEADLINE: gene length, expression and CpG density explain 3% of the feature space
+==============================================================================

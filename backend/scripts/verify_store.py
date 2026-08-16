@@ -37,7 +37,7 @@ from app.store import Store, StoreMissing  # noqa: E402
 # both are worth stopping for.
 EXPECTED = {
     "n_genes": 1846,
-    "n_features": 91,
+    "n_features": 73,      # 91 before S2.1/S2.1b, 2026-08-16
     "label_counts": {
         "arch-HK": 844,
         "arch-ME-constitutive": 369,
@@ -49,8 +49,14 @@ EXPECTED = {
     "repro_genes": 116,              # genes captured in both panels
     "repro_features": 63,            # shared features
     "repro_median_rho": 0.752,       # 2026-07-31 handoff
-    "pca_variance_top5": [15.27, 9.47, 8.21, 6.33, 5.88],  # dimension_names.tsv
-    "n_real_dimensions": 19,         # structure_vs_noise.tsv
+    # Re-baselined 2026-08-16 after removing 4 degenerate topology features and
+    # 16 unreproducible per-peak moments, and protecting n_active_peaks.
+    # NOTE: these no longer match audit/continuous_methods/dimension_names.tsv,
+    # which was computed on the 91-feature substrate and is now STALE. The check
+    # below compares against these constants, not against that file. Regenerate
+    # dimension_names.tsv upstream before quoting it anywhere.
+    "pca_variance_top5": [17.23, 10.92, 9.34, 7.36, 7.06],  # was 15.27/9.47/8.21/6.33/5.88
+    "n_real_dimensions": 14,         # was 19; structure_vs_noise.tsv also stale
     "usable_cohorts": 21,            # of 23 reference sets, >= 25 panel genes
 }
 

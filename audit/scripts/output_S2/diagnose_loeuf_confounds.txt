@@ -1,0 +1,27 @@
+1686 of 1846 genes have LOEUF and all three confounders
+
+How much do the confounders relate to LOEUF and to each other?
+   r(LOEUF, log10 gene length ) = -0.347
+   r(LOEUF, log blood TPM     ) = -0.191
+   r(LOEUF, CpG o/e           ) = -0.094
+   r(length, CpG)              = +0.056
+
+==========================================================================
+NESTED TEST: does shape predict constraint beyond length/expression/CpG?
+==========================================================================
+  1. confounders only (length, expression, CpG)    r = +0.452
+  2. shape only (amount-corrected, 18 comps)       r = +0.154
+  3. confounders + shape                           r = +0.455
+  4. shape, confounders partialled from both       r = +0.069
+
+  shape adds +0.002 over the confounders alone
+  after partialling, shape retains r = +0.069 against +0.154 unadjusted (45% retained)
+
+leave-one-confounder-in, to see which one matters:
+   partialling log10 gene length  shape r = +0.092
+   partialling log blood TPM      shape r = +0.156
+   partialling CpG o/e            shape r = +0.151
+
+Model 3 versus 1 is the test. If shape adds nothing over the confounders,
+the constraint result is length and expression, and Phase B is not worth
+building on it.

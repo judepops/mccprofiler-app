@@ -1,4 +1,91 @@
-# Current findings, as of 2026-08-14
+# Current findings
+
+> **⚠ SUPERSEDED IN PART, 2026-08-16 (evening). The substrate changed.**
+>
+> The feature set went from 91 to 73 (four degenerate topology features and
+> sixteen unreproducible per-peak moments removed, `n_active_peaks` protected)
+> and the store was rebuilt. **Every component count, variance share and effect
+> size below is from the old 91-feature substrate.** Section 0 states what
+> changed and what survived. Numbers not yet re-checked against
+> `audit/scripts/output_S2/` should not be quoted.
+
+---
+
+## 0. What the rebuild changed, 2026-08-16
+
+Feature set 91 to 73. Store rebuilt, `verify_store.py` re-baselined and passing
+38 of 38. Full re-run in `audit/scripts/output_S2/`.
+
+### The substrate got substantially cleaner
+
+| | before (91) | after (73) |
+|---|---|---|
+| components above the noise ceiling | 19 | **14** |
+| variance they carry | 78.0% | 77.7% |
+| PC1 variance | 15.27% | **17.23%** |
+| **retained structure on reproducible features** | **67%** | **86%** |
+| components below 50% trusted | 8 of 19 | **0 of 14** |
+
+One percentage point of variance bought a 19-point rise in trust and removed
+every weak component. PC1's top loading is now `n_active_peaks`, the primitive
+protected from the prune, at +0.223.
+
+### Aim 1 holds, essentially unchanged
+
+Gene length, expression and CpG explain **2.9%** of the feature variance (was
+2.6%) and **0.8%** of the retained components (was 0.6%). Zero of 18 components
+exceed R2 0.10. The orthogonality claim is unaffected.
+
+### Aim 2 holds
+
+HDBSCAN returns **0 clusters, 100% unassigned**, every dip test unimodal,
+silhouette peaking at k=2 at 0.123 to 0.159 against a null of 0.040. The
+continuum result does not depend on the removed features.
+
+### Aim 3 changed, and the super-enhancer claim must be restated
+
+**The cleaner substrate detects more, not less.** Nineteen of 21 sets now clear
+p < 0.05, where 17 did before. And the super-enhancer set is now among them:
+
+| | before (91) | after (73) |
+|---|---|---|
+| dbSUPER SE | z 0.9, **p = 0.177**, d = -0.16, sPC12 | z 2.3, **p = 0.0145**, d = -0.25, sPC6 |
+
+**"Super-enhancers do not separate at all" is withdrawn.** They are weakly
+displaced, like almost every other set. What survives, and is now a cleaner
+statement than the null was:
+
+> Every external category tested is displaced in contact-architecture space and
+> **none is separated**. Super-enhancers are displaced no more than an average
+> set (d = 0.25, 90% overlap, 5 of 21 sets lean on a lower-ranked component) and
+> far less than chromatin-state categories (ChromHMM bivalent d = -0.76 at 70%
+> overlap, Roadmap silenced -0.65 at 74%), despite being defined as a distinct
+> class of regulatory element.
+
+The power argument still stands: at n = 158 the test detects d = 0.35 with 80%
+power, and the observed 0.25 is below that, so this remains a weak effect rather
+than a strong one measured precisely.
+
+Other Aim 3 results on the new substrate:
+
+- **Positive controls strengthen.** ChromHMM_bivalent -0.76 (was -0.58) and now
+  on sPC3 at 87% trust rather than the old asymmetry-dominated component at 15%.
+  That control is no longer compromised.
+- **Definition-type taxonomy holds**: DIRECT median 0.29 against OUTPUT 0.16,
+  Mann-Whitney p = 0.0024, Kruskal-Wallis p = 0.036. Unchanged.
+- **Axis rank weakens as an argument**: SE now leans on sPC6 rather than sPC12,
+  and the rank correlation falls from -0.53 to -0.30. Still directionally right,
+  no longer a headline.
+- `gene_desert` remains the largest at 0.74, still the density control.
+
+### What must be redone
+
+Figures (all six, drawn on the old substrate), the density and chromosome
+re-tests quoted in Sections 4 and 6a, and every number in Sections 2 to 6 that
+has not been checked against `output_S2/`.
+
+---
+
 
 **This is the document to write from.** Every number here has survived the
 corrections and controls applied on 2026-08-14 and is the version to quote.

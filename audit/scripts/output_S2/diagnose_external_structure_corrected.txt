@@ -1,0 +1,35 @@
+magnitude basis 9 features, degenerate dropped 4, shape substrate 64 features
+components above the noise ceiling on this substrate: 14
+ribosomal protein genes in panel: 19
+
+==================================================================================
+DISPLACEMENT ON THE AMOUNT-CORRECTED SHAPE SUBSTRATE
+==================================================================================
+set                                        n       z        p    dim       d  overlap
+gene_desert_bottomQ_density              456    21.8   0.0005   sPC1    0.74      71% ***
+ChromHMM_bivalent                         46     7.3   0.0005   sPC3   -0.76      70% ***
+GWAS_total_topQ                          509     6.2   0.0005   sPC2    0.24      90% ***
+Lambert_TF                               156     6.0   0.0005   sPC1   -0.38      85% ***
+DICE_top_TPM_quartile                   1539     5.8   0.0005  sPC10   -0.28      89% ***
+gnomAD_pLI_topQ                          546     4.8   0.0005  sPC10   -0.20      92% ***
+bio_dev_TF_k3                            303     4.7   0.0005   sPC8   -0.27      89% ***
+Roadmap_silenced                          41     4.6   0.0010   sPC3   -0.65      74% ***
+ChromHMM_active_TSS                     1619     4.5   0.0005   sPC3    0.34      86% ***
+GWAS_immune_hot                          130     4.4   0.0005   sPC2    0.35      86% ***
+CpG_island_promoter                     1526     4.4   0.0005   sPC4    0.22      91% ***
+GWAS_immune_any                          733     4.4   0.0005   sPC2    0.21      91% ***
+phastCons_2kb_topQ                       415     3.7   0.0010   sPC5   -0.23      91% ***
+cd4_rna_top_quartile                     759     3.0   0.0025   sPC3    0.16      94% **
+cd4_specific_immune                      820     2.7   0.0035  sPC10   -0.16      94% **
+dbSUPER_CD4_SE_TSS_pm50kb                158     2.3   0.0145   sPC6   -0.25      90% *
+Eisenberg_HK                             633     2.1   0.0205   sPC3    0.13      95% *
+bio_HK_k3                                353     2.0   0.0320   sPC6   -0.13      95% *
+bio_bulk_k3                             1068     1.7   0.0455   sPC8    0.10      96% *
+DepMap_curated_essential                 254     1.7   0.0570   sPC6   -0.16      94% 
+DepMap_inferred_essential                328     1.5   0.0655   sPC2   -0.17      93% 
+
+19 of 21 sets still displaced after amount correction (was 21 of 21 on the raw components).
+3 reach |d| >= 0.5. Largest |d| = 0.76, which leaves 70% overlap.
+  Roadmap_silenced                       z    4.6  d -0.65  74% overlap
+  Eisenberg_HK                           z    2.1  d +0.13  95% overlap
+  dbSUPER_CD4_SE_TSS_pm50kb              z    2.3  d -0.25  90% overlap

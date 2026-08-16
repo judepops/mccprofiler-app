@@ -1,0 +1,28 @@
+substrate 1846 genes x 18 components
+
+==========================================================================
+MINIMUM DETECTABLE EFFECT, by set size
+==========================================================================
+Power to detect a true displacement of size d on ONE component,
+at alpha 0.05, from 300 simulations per cell.
+
+set (n)                    0.10   0.15   0.20   0.25   0.30   0.35   0.40   0.50
+dbSUPER_CD4_SE (n=158)     0.11   0.14   0.28   0.48   0.66   0.84   0.95   1.00
+Lambert_TF (n=156)         0.08   0.13   0.27   0.38   0.61   0.82   0.90   0.99
+ChromHMM_bivalent (n=46)   0.04   0.06   0.13   0.11   0.15   0.17   0.25   0.46
+Roadmap_silenced (n=41)    0.08   0.09   0.11   0.11   0.16   0.19   0.26   0.44
+
+Smallest d detected with >= 80% power:
+  dbSUPER_CD4_SE (n=158)     d = 0.35
+  Lambert_TF (n=156)         d = 0.35
+  ChromHMM_bivalent (n=46)   d = > 0.5
+  Roadmap_silenced (n=41)    d = > 0.5
+
+==========================================================================
+MATCHED-N COMPARISON: the cleanest control for power
+==========================================================================
+  Lambert_TF                     n=156   z=   6.0  p=0.0010  d=-0.38
+  dbSUPER_CD4_SE_TSS_pm50kb      n=158   z=   2.1  p=0.0200  d=-0.25
+
+  Same substrate, same test, set sizes within two genes of each other,
+  opposite results. Power cannot explain the difference.

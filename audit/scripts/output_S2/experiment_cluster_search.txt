@@ -1,0 +1,128 @@
+73 features, 45 measured twice, 37 reproduce above rho 0.7
+
+==========================================================================
+A  all 91 features   n=1846  features=73
+==========================================================================
+  silhouette  k2:0.159  k3:0.088  k4:0.089  k5:0.082  k6:0.083  k7:0.082  k8:0.083
+  null        k2:0.041  k3:0.034  k4:0.030  k5:0.033  k6:0.029  k7:0.032  k8:0.031
+  best k by silhouette 2 (0.159), null gives 0.041, excess +0.118
+  gap statistic best k = 8  (gap still rising at k=8, so k=1 is not excluded)
+  HDBSCAN clusters = 0, 100% unassigned
+  dip test p on PC1-5: 0.94, 1.00, 0.94, 0.99, 0.99   unimodal
+
+==========================================================================
+B  trusted only (rho > 0.7)   n=1846  features=37
+==========================================================================
+  silhouette  k2:0.123  k3:0.078  k4:0.086  k5:0.080  k6:0.072  k7:0.076  k8:0.083
+  null        k2:0.040  k3:0.037  k4:0.035  k5:0.039  k6:0.036  k7:0.042  k8:0.042
+  best k by silhouette 2 (0.123), null gives 0.040, excess +0.083
+  gap statistic best k = 8  (gap still rising at k=8, so k=1 is not excluded)
+  HDBSCAN clusters = 0, 100% unassigned
+  dip test p on PC1-5: 0.99, 0.99, 1.00, 0.89, 0.97   unimodal
+
+==========================================================================
+C  all 91, amount removed   n=1846  features=73
+==========================================================================
+  silhouette  k2:0.178  k3:0.092  k4:0.092  k5:0.103  k6:0.072  k7:0.088  k8:0.084
+  null        k2:0.039  k3:0.035  k4:0.031  k5:0.028  k6:0.031  k7:0.031  k8:0.030
+  best k by silhouette 2 (0.178), null gives 0.039, excess +0.139
+  gap statistic best k = 8  (gap still rising at k=8, so k=1 is not excluded)
+  HDBSCAN clusters = 0, 100% unassigned
+  dip test p on PC1-5: 0.99, 1.00, 1.00, 0.99, 1.00   unimodal
+
+==========================================================================
+D  trusted, amount removed   n=1846  features=37
+==========================================================================
+  silhouette  k2:0.131  k3:0.087  k4:0.082  k5:0.078  k6:0.081  k7:0.079  k8:0.079
+  null        k2:0.043  k3:0.045  k4:0.035  k5:0.032  k6:0.036  k7:0.045  k8:0.040
+  best k by silhouette 2 (0.131), null gives 0.043, excess +0.089
+  gap statistic best k = 8  (gap still rising at k=8, so k=1 is not excluded)
+  HDBSCAN clusters = 0, 100% unassigned
+  dip test p on PC1-5: 0.99, 0.99, 0.99, 0.99, 0.98   unimodal
+
+
+##########################################################################
+CONDITIONAL: clustering WITHIN amount tertiles
+If amount dominates the geometry, shape clusters could exist inside a
+stratum and be invisible globally. This is the test that has never run.
+##########################################################################
+
+==========================================================================
+low amount, all 91   n=616  features=73
+==========================================================================
+  silhouette  k2:0.283  k3:0.110  k4:0.090  k5:0.096  k6:0.080  k7:0.082  k8:0.083
+  null        k2:0.042  k3:0.036  k4:0.045  k5:0.041  k6:0.048  k7:0.051  k8:0.050
+  best k by silhouette 2 (0.283), null gives 0.042, excess +0.241
+  gap statistic best k = 8  (gap still rising at k=8, so k=1 is not excluded)
+  HDBSCAN clusters = 0, 100% unassigned
+  dip test p on PC1-5: 0.89, 0.91, 0.81, 0.99, 1.00   unimodal
+
+==========================================================================
+low amount, trusted   n=616  features=37
+==========================================================================
+  silhouette  k2:0.121  k3:0.091  k4:0.080  k5:0.080  k6:0.080  k7:0.074  k8:0.081
+  null        k2:0.041  k3:0.051  k4:0.049  k5:0.054  k6:0.048  k7:0.051  k8:0.051
+  best k by silhouette 2 (0.121), null gives 0.041, excess +0.079
+  gap statistic best k = 8  (gap still rising at k=8, so k=1 is not excluded)
+  HDBSCAN clusters = 0, 100% unassigned
+  dip test p on PC1-5: 0.96, 0.91, 0.59, 0.99, 0.39   unimodal
+
+==========================================================================
+mid amount, all 91   n=615  features=73
+==========================================================================
+  silhouette  k2:0.646  k3:0.111  k4:0.097  k5:0.099  k6:0.086  k7:0.076  k8:0.082
+  null        k2:0.042  k3:0.033  k4:0.041  k5:0.037  k6:0.036  k7:0.037  k8:0.041
+  best k by silhouette 2 (0.646), null gives 0.042, excess +0.604
+  gap statistic best k = 8  (gap still rising at k=8, so k=1 is not excluded)
+  HDBSCAN clusters = 0, 100% unassigned
+  dip test p on PC1-5: 0.95, 0.99, 0.99, 1.00, 0.99   unimodal
+
+==========================================================================
+mid amount, trusted   n=615  features=37
+==========================================================================
+  silhouette  k2:0.148  k3:0.135  k4:0.107  k5:0.086  k6:0.087  k7:0.084  k8:0.084
+  null        k2:0.043  k3:0.036  k4:0.042  k5:0.032  k6:0.039  k7:0.045  k8:0.036
+  best k by silhouette 2 (0.148), null gives 0.043, excess +0.105
+  gap statistic best k = 8  (gap still rising at k=8, so k=1 is not excluded)
+  HDBSCAN clusters = 0, 100% unassigned
+  dip test p on PC1-5: 0.99, 0.96, 0.94, 0.99, 0.97   unimodal
+
+==========================================================================
+high amount, all 91   n=615  features=73
+==========================================================================
+  silhouette  k2:0.146  k3:0.103  k4:0.115  k5:0.088  k6:0.080  k7:0.082  k8:0.107
+  null        k2:0.044  k3:0.045  k4:0.041  k5:0.042  k6:0.043  k7:0.042  k8:0.044
+  best k by silhouette 2 (0.146), null gives 0.044, excess +0.102
+  gap statistic best k = 8  (gap still rising at k=8, so k=1 is not excluded)
+  HDBSCAN clusters = 0, 100% unassigned
+  dip test p on PC1-5: 0.99, 0.92, 0.92, 0.90, 0.99   unimodal
+
+==========================================================================
+high amount, trusted   n=615  features=37
+==========================================================================
+  silhouette  k2:0.134  k3:0.108  k4:0.098  k5:0.096  k6:0.078  k7:0.078  k8:0.078
+  null        k2:0.161  k3:0.054  k4:0.048  k5:0.046  k6:0.044  k7:0.053  k8:0.046
+  best k by silhouette 2 (0.134), null gives 0.161, excess -0.027
+  gap statistic best k = 8  (gap still rising at k=8, so k=1 is not excluded)
+  HDBSCAN clusters = 0, 100% unassigned
+  dip test p on PC1-5: 0.99, 0.99, 0.99, 0.54, 0.99   unimodal
+
+
+==========================================================================
+SUMMARY
+==========================================================================
+                      label    n  p  best_k   sil  sil_null  excess  gap_k  hdbscan  dip_min
+         A  all 91 features 1846 73       2 0.159     0.041   0.118      8        0    0.938
+B  trusted only (rho > 0.7) 1846 37       2 0.123     0.040   0.083      8        0    0.890
+  C  all 91, amount removed 1846 73       2 0.178     0.039   0.139      8        0    0.990
+ D  trusted, amount removed 1846 37       2 0.131     0.043   0.089      8        0    0.979
+         low amount, all 91  616 73       2 0.283     0.042   0.241      8        0    0.813
+        low amount, trusted  616 37       2 0.121     0.041   0.079      8        0    0.388
+         mid amount, all 91  615 73       2 0.646     0.042   0.604      8        0    0.950
+        mid amount, trusted  615 37       2 0.148     0.043   0.105      8        0    0.939
+        high amount, all 91  615 73       2 0.146     0.044   0.102      8        0    0.901
+       high amount, trusted  615 37       2 0.134     0.161  -0.027      8        0    0.540
+
+A real cluster structure would show: silhouette well above its null,
+gap statistic peaking at k > 1, HDBSCAN returning >1 cluster, and a dip
+test rejecting unimodality. Read the four together, not one at a time.

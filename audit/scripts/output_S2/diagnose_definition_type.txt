@@ -1,0 +1,56 @@
+
+============================================================================================
+ALL 21 SETS, CLASSIFIED BY DEFINITION PROCEDURE BEFORE ANY EFFECT SIZE WAS READ
+============================================================================================
+
+SEQUENCE
+   Lambert_TF                         156  axis  1  |d| 0.38*   curated DNA-binding domain
+   phastCons_2kb_topQ                 415  axis  5  |d| 0.23*   cross-species sequence conservation
+   CpG_island_promoter               1526  axis  4  |d| 0.22*   CpG dinucleotide content of the promoter
+
+GENETIC
+   GWAS_immune_hot                    130  axis  2  |d| 0.35*   immune GWAS variant density
+   GWAS_total_topQ                    509  axis  2  |d| 0.24*   total GWAS burden
+   GWAS_immune_any                    733  axis  2  |d| 0.21*   any immune GWAS association
+   gnomAD_pLI_topQ                    546  axis 10  |d| 0.20*   population LoF constraint
+
+STATE_MULTI
+   ChromHMM_bivalent                   46  axis  3  |d| 0.76*   HMM state over many marks
+   Roadmap_silenced                    41  axis  3  |d| 0.65*   HMM state over many marks
+   ChromHMM_active_TSS               1619  axis  3  |d| 0.34*   HMM state over many marks
+
+RANK_SINGLE
+   dbSUPER_CD4_SE_TSS_pm50kb          158  axis  6  |d| 0.25*   ROSE rank cutoff on H3K27ac
+
+EXPRESSION
+   DICE_top_TPM_quartile             1539  axis 10  |d| 0.28*   RNA abundance
+   bio_dev_TF_k3                      303  axis  8  |d| 0.27*   expression-derived label
+   cd4_specific_immune                820  axis 10  |d| 0.16*   RNA specificity
+   cd4_rna_top_quartile               759  axis  3  |d| 0.16*   RNA abundance
+   Eisenberg_HK                       633  axis  3  |d| 0.13*   RNA stability across tissues
+   bio_HK_k3                          353  axis  6  |d| 0.13    expression-derived label
+   bio_bulk_k3                       1068  axis  8  |d| 0.10*   expression-derived label
+
+FITNESS
+   DepMap_inferred_essential          328  axis  2  |d| 0.17*   CRISPR dropout screen
+   DepMap_curated_essential           254  axis  6  |d| 0.16    CRISPR dropout screen
+
+CONTEXT
+   gene_desert_bottomQ_density        456  axis  1  |d| 0.74*   local gene density
+
+============================================================================================
+TEST: do the categories differ?
+============================================================================================
+Kruskal-Wallis across 5 testable categories: H = 10.28, p = 0.0360
+
+DIRECT (sequence, genetic, multi-mark state; n = 10) median |d| = 0.29
+OUTPUT (expression, fitness;                  n = 9) median |d| = 0.16
+Mann-Whitney one-sided, DIRECT > OUTPUT: U = 80, p = 0.0024
+
+significant at p < 0.05:
+  DIRECT: 10 of 10
+  OUTPUT: 7 of 9
+
+RANK_SINGLE is n = 1 and cannot be tested as a category.
+  dbSUPER_CD4_SE_TSS_pm50kb: |d| = 0.25, p = 0.021, axis 6.
+  It sits at the 57th percentile of |d| across all sets, i.e. mid-pack, not last.
