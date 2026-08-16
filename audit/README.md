@@ -15,6 +15,14 @@ handoffs.
 corrections that must land before writing separated from the research programme
 that follows.
 
+**[WHERE_WE_ARE.md](WHERE_WE_ARE.md)** is orientation: what the project asked
+and found, where it sits in the DPhil aims, and what the literature says about
+the position. Read it if you are picking this up cold, or before writing
+anything that has to survive a supervisor. It flags two things about the
+literature notebook that matter: it contains our own draft, so answers about
+this project are partly circular, and Hennig (2015) is cited in our notes but is
+not in the collection.
+
 ## The provenance record
 
 **[REVIEW.md](REVIEW.md)** is the full audit trail, kept deliberately. Its base
