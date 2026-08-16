@@ -369,9 +369,13 @@ Structure, following the framing that the work actually supports:
 1. **Question.** Is regulatory architecture categorical? Not "we will find
    archetypes."
 2. **Aim 1, the tool.** MCCProfiler, 91 features from bp-resolution MCC.
-   Nested cross-validated baselines against `n_peaks` and against the
-   11-feature magnitude basis. State the margins honestly: consistent wins,
-   substantial only for constraint and immune GWAS.
+   Justified by what the features CONTAIN, not by what they predict: gene
+   length, expression and CpG density explain 2.6% of the feature space and
+   0.6% of its retained components, while that unexplained variance reproduces
+   (rho 0.752, 19 components above the noise ceiling, kappa 0.72). State the
+   retraction plainly in the same paragraph: the features add nothing to those
+   three properties for predicting existing annotations, which is the point,
+   because the structure they measure is not what the annotations describe.
 3. **Aim 2, the answer is no.** Sixteen adversarial conditions. Structure is
    dimensional, not partitional. 18-19 components above a parallel-analysis
    ceiling. Include the caveat that only ~67% of that rests on reproducible

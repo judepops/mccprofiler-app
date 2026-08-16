@@ -56,6 +56,51 @@ The defensible claim is therefore specific rather than sweeping:
 Those two are also the only targets that survive amount correction in the
 shape-corrected analysis, so two independent analyses converge on the same pair.
 
+### Aim 1, restated: the features measure something gene properties do not
+
+The predictive justification is retracted (below). This replaces it, and it is a
+better claim because it asks what the features **contain** rather than what they
+predict. A readout can fail to beat simple covariates at predicting known labels
+while still measuring a quantity nobody has measured. Those are different claims
+and only the second is what a new assay readout is for.
+
+`diagnose_feature_novelty.py`, cross-validated:
+
+| | variance explained |
+|---|---|
+| gene length + expression + CpG, across the 91 features | **2.6%** |
+| the same, across the 18 retained components | **0.6%** |
+| for scale: the assay's own 11-feature magnitude basis | 27.3% |
+
+Zero of 91 features exceed R2 0.25 and only three exceed 0.10, the largest being
+`n_peaks_promoter` at 0.181. **Zero of 18 components exceed 0.10.** Several
+features are at 0.000: `contact_asymmetry`, `max_mcc`, `oe_distance_kurtosis`,
+`distance_to_nearest_peak_bp`.
+
+> **Gene length, expression and CpG density explain 2.6% of the variance in the
+> 91-feature space and 0.6% of its retained components. The substrate is not a
+> re-description of gene properties.**
+
+**The apparent tension with the retraction is the finding, not a problem.** The
+features contain 97% variance that gene properties do not explain, yet they add
+nothing to those properties for predicting existing annotations. Both are true,
+and together they say something specific:
+
+> The assay measures reproducible structure that existing gene annotations do
+> not capture.
+
+The reproducibility clause is what stops this being an elaborate way of saying
+"noise". The unexplained variance reproduces: median cross-panel rho **0.752**
+over 63 shared features, **19 components above a parallel-analysis noise
+ceiling** carrying 78% of variance against 8 for permuted data, and Cohen's
+kappa **0.72** for the imposed partition across independent captures. Noise does
+not do that.
+
+And it motivates Aims 2 and 3 directly rather than sitting beside them. If the
+structure were categorical and matched existing categories, the annotations
+would predict it. They do not, because the structure is continuous and the
+categories are directions rather than regions.
+
 ### RETRACTED 2026-08-16: the predictive claim does not survive gene length
 
 The nested baselines compare the 91 features against peak counting and against
@@ -95,9 +140,10 @@ contained length. The honest version:
 
 **What survives.** Aims 2 and 3 are untouched, because they concern the geometry
 of the feature space rather than prediction of external labels, and Aim 3 was
-re-tested against length directly (below). The tool is still what makes the
-continuum and displacement analyses possible; it is simply not justified as a
-predictor.
+re-tested against length directly (below). And the tool's justification is not
+lost, only relocated: see the section above, where gene properties explain 2.6%
+of the feature space. It is justified by what it measures, not by what it
+predicts.
 
 ### Aim 3 survives gene length: six confounders now controlled
 
@@ -603,7 +649,7 @@ earlier handoffs.
 | "Amount is not one quantity" | **Reframed.** Amount is multi-faceted, so it must be measured with the 11-feature basis, not with `total_mcc`. |
 | "Regress `total_mcc` out before PCA" | **Superseded.** Use `MAG_OVERALL` via `_shape.corrected_shape`. |
 | "Contact architecture predicts evolutionary constraint" | **Retracted 2026-08-16.** Shape adds +0.002 over gene length, expression and CpG. The confound is length, which LOEUF scales with by construction and which no baseline contained. |
-| "The 91 features are justified because they predict biology" | **Retracted.** They beat peak counting and the magnitude basis, but add nothing over three simple gene properties. Justify them by what they make possible, not by prediction. |
+| "The 91 features are justified because they predict biology" | **Retracted and replaced.** They add nothing over three gene properties for prediction, but those properties explain only 2.6% of the feature space. Justify by what the features contain, not by what they predict. |
 | "Mechanism vs output taxonomy over 7 sets" | **Superseded.** Redone across all 21 with the assignment fixed by annotation procedure; the pattern holds at p = 0.0024, but RANK_SINGLE is n = 1 so nothing is claimable about that category. |
 | "Super-enhancers are the weakest of 21" | **Withdrawn twice.** First as over-precise, then outright: on the corrected substrate the SE set has a LARGER effect (\|d\| 0.16) than Eisenberg-HK (0.11). Replaced by the kind-of-definition pattern in Section 4. |
 | "The asymmetry family is a strand/orientation bug" | **Refuted.** `|value|` reproduces worse, and strand-relative asymmetry is d = -0.045. It is a support-size problem: median peak ~11 bins at 1-2 reads per bin. |
