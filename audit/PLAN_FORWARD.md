@@ -117,6 +117,13 @@ delay writing.
 
 ## S2. Corrections, before any figure or sentence is final
 
+**Working practice in `scripts_cleaned`.** That tree carries ~137 uncommitted
+changes that are not ours. `git commit -o <path>` commits ALL pending changes to
+that path, not only the ones just made, and it has already swept unrelated work
+into two commits this session (`build_briefing.py`, `config.py`). **Run
+`git diff <file>` before editing any file there**, and if it is already dirty,
+say so in the commit message rather than silently absorbing it.
+
 None is a research question. Nothing has been applied upstream yet.
 
 **S2.1 Drop the four degenerate topology features** (`mean_degree`,
