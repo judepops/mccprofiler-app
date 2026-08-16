@@ -3,9 +3,23 @@
 Consolidated 2026-08-16, replacing the running edits of the previous two days.
 Transfer of Status target is HT Year 2, roughly Jan to Mar 2027, 5,000 words.
 
+## Order of work
+
+    S0 orthogonality  DONE
+    S1 core promoters (the last test)
+    S2.6 PROJECT_STATUS.md first, then the rest of S2, including BOTH feature
+         removals (S2.1 degenerate topology, S2.1b the moment families)
+    S3 figures
+    S4 write
+
 ## The rule for this phase
 
 **One more test, then stop auditing and write.**
+
+Note what this rule does not cover. S2.1 and S2.1b are **fixes, not tests**:
+they remove features that are provably degenerate or unmeasurable. Doing them is
+not a continuation of the audit, and skipping them would leave known-bad features
+in the substrate that the figures are drawn from.
 
 The audit has done its job. The central claim has now survived five independent
 attacks: overall magnitude, gene density, cell-state matching, statistical
@@ -18,6 +32,15 @@ return has turned negative.
 The one remaining test is the core-promoter sequence classes (S1 below), because
 it is not an audit but the second independent positive control, and the argument
 currently rests on one.
+
+---
+
+## S0. DONE 2026-08-16: the orthogonality measurement
+
+Complete, and it is Aim 1's replacement claim. Gene length, expression and CpG
+density explain **2.6%** of the 91-feature variance and **0.6%** of the retained
+components; zero features exceed R2 0.25, zero components exceed 0.10.
+`diagnose_feature_novelty.py`.
 
 ---
 
@@ -58,11 +81,33 @@ Confirmed algebraic at 1842/1842. PC1 goes 15.27% to 18.41% and becomes
 nameable: dispersed distal contact versus emptiness. *Half a day, unblocks
 everything.*
 
+**S2.1b Re-support or retire the per-peak moment families.** This was dropped
+when the plan was consolidated and should not have been. Eight of the nineteen
+retained components rest on `oe_asymmetry` and `oe_tailedness`, which reproduce
+at rho 0.27 to 0.42, and together they carry 14.9% of variance. Diagnosed as a
+support-size problem: the median peak is about 11 bins at 1 to 2 reads per
+non-zero bin, so a third or fourth central moment estimated there has enormous
+sampling variance. `contact_asymmetry`, the same statistic computed over the
+whole window, reproduces at 0.900, so the concept works and only the support is
+wrong. Recompute on aggregated support (stacked peaks per gene, or per element
+class) rather than per peak, or retire them.
+
+**This is not cosmetic.** `ChromHMM_bivalent`, one of the Aim 3 corroborating
+controls, takes its displacement on shape-PC4, which is 15% trustworthy and
+asymmetry-dominated. Fixing or removing those families changes what that control
+means. *Two days.*
+
 **S2.2 Re-derive the archetype display names** on the `MAG_OVERALL`-corrected
 substrate. Current names come from unadjusted group means. *Half a day.*
 
-**S2.3 Rebuild the store, re-run the nine diagnostic scripts, regenerate the six
-figures.** All are written; this is mechanical. *One hour.*
+**S2.3 Rebuild the store, re-run the eleven diagnostic scripts, regenerate the
+figures.** All are written; this is mechanical. **Note the consequence:** S2.1
+and S2.1b both change the feature set, so the component count, the variance
+shares, the trust weighting and every displacement number move. Aim 2's "19
+components, 78% of variance" and Aim 3's effect sizes must be re-quoted from the
+rebuilt store, not carried over. This is the reason figures and writing come
+after the corrections rather than beside them. *One hour to run, then re-read
+every number in CURRENT_FINDINGS.md.*
 
 **S2.4 Fix the app.** `/api/enrichment/grid` still computes on raw components
 and shows displacements we have retracted, and `MAX_GROUP_COVERAGE` is honoured
@@ -131,7 +176,15 @@ self-correction record itself, which is an asset.
 
 Ranked by measured justification, not appeal.
 
-**A. Peak-level unit of analysis. Now the only research bet.** Summits reproduce at 14 bp
+**A. Peak-level unit of analysis. Now the only research bet.**
+
+*Pre-registered before any of it is run:* peak-level analysis asks where contacts
+land rather than what gene annotations they predict, so the length confound bites
+differently, but it bites. **Any peak-level predictive claim gets tested against
+peak-level equivalents of length, expression and local sequence composition
+before it is believed.** Same rule as S0, one level down. No baseline in this
+project has ever contained them, which is how a whole phase came to be built on
+a length artefact. Summits reproduce at 14 bp
 median, 64x tighter than a jitter null, and CTCF summits sit 9 bp from the motif
 centre at 4.48x a centrality-matched null with an enhancer negative control at
 1.01x. The 91 features use nothing below roughly 1 kb and lose 18.7% of peaks at
@@ -368,7 +421,13 @@ Structure, following the framing that the work actually supports:
 
 1. **Question.** Is regulatory architecture categorical? Not "we will find
    archetypes."
-2. **Aim 1, the tool.** MCCProfiler, 91 features from bp-resolution MCC.
+2. **Methods, not a result: the instrument.** Aim 1 moves toward Methods. A
+   description tool is justified by what it measures and how reliably, not by
+   what it predicts, which is also what CellProfiler is: nobody justifies it by
+   "it predicts cell type better than cell diameter". The report becomes two
+   results rather than three, both geometric, both having survived everything.
+
+   MCCProfiler, 91 features from bp-resolution MCC.
    Justified by what the features CONTAIN, not by what they predict: gene
    length, expression and CpG density explain 2.6% of the feature space and
    0.6% of its retained components, while that unexplained variance reproduces
