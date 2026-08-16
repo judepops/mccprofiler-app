@@ -158,48 +158,73 @@ sensitivity figure. So the null cannot be dismissed as a cell-state mismatch.
 Running the naive list as a sensitivity check is still worth an hour
 (`PLAN_FORWARD.md` Phase 0.5).
 
-### What actually separates: it is the KIND of definition, not the label
+### What actually separates: the kind of definition, tested across all 21 sets
 
-Stated first because it corrects something earlier drafts got wrong. The
-super-enhancer set is **not** uniquely poor. Set against the expression-defined
-housekeeping list:
+An earlier version of this section was a just-so story: a two-bin taxonomy drawn
+over seven sets after seeing which ones separated. It has been redone properly
+(`diagnose_definition_type.py`). All 21 sets are classified by the **data and
+procedure their annotation was computed from**, which is a documented property
+of the annotation, and the assignment is written into the script before any
+effect size is consulted.
 
-| set | n | d | p (magnitude-corrected) | p (+ density) |
-|---|---|---|---|---|
-| Eisenberg_HK | 633 | **+0.11** | 0.034 | 0.076 |
-| dbSUPER_CD4_SE | 158 | **-0.16** | 0.177 | 0.160 |
+| category | rule | sets | median \|d\| |
+|---|---|---|---|
+| SEQUENCE | property of the gene product or DNA, no cell-type measurement | Lambert_TF 0.46, CpG_island 0.18, phastCons 0.16 | |
+| GENETIC | association or constraint from population variation | GWAS_immune_hot 0.32, GWAS_total 0.24, GWAS_immune_any 0.20, pLI 0.17 | |
+| STATE_MULTI | combinatorial state from an HMM over many marks | Roadmap_silenced 0.73, ChromHMM_bivalent 0.58, ChromHMM_active_TSS 0.29 | |
+| **DIRECT (the three above)** | | **n = 10** | **0.27** |
+| EXPRESSION | RNA abundance, specificity or stability | bio_dev_TF 0.24, DICE 0.23, bio_HK 0.16, cd4_rna 0.15, cd4_specific 0.14, bio_bulk 0.12, Eisenberg_HK 0.11 | |
+| FITNESS | CRISPR dropout screen | DepMap_inferred 0.14, DepMap_curated 0.12 | |
+| **OUTPUT (the two above)** | | **n = 9** | **0.14** |
+| RANK_SINGLE | rank-order regions by ONE mark, cut at an inflection point | dbSUPER_CD4_SE 0.16 | n = 1 |
+| CONTEXT | genomic neighbourhood, not the gene | gene_desert 0.71 | the density control |
 
-**The super-enhancer set has the larger effect of the two.** Eisenberg reaches
-nominal significance only because it is four times bigger, and neither survives
-density control. Any claim that super-enhancers are the worst-performing label
-in the table is withdrawn.
+**The pattern holds with the assignment fixed in advance.** Kruskal-Wallis
+across the five testable categories H = 10.75, p = 0.030. DIRECT versus OUTPUT
+by Mann-Whitney, one-sided, **U = 80, p = 0.0024**. Ten of ten DIRECT sets are
+significant; six of nine OUTPUT sets are.
 
-What the data supports is a pattern by **how a set is defined**:
+> Gene sets defined by what a gene or its regulation **is** (sequence, genetic
+> consequence, multi-mark chromatin state) are displaced further in
+> contact-architecture space than sets defined by what a gene **does**
+> (expression, fitness). Median \|d\| 0.27 against 0.14, p = 0.0024.
 
-| separates | does not separate |
-|---|---|
-| Lambert_TF, DNA-binding domain, d = +0.46 | Eisenberg_HK, expression stability, d = +0.11 |
-| GWAS_immune_hot, disease variants, d = +0.32 | dbSUPER_CD4_SE, H3K27ac signal threshold, d = -0.16 |
-| Roadmap_silenced, chromatin state, d = -0.73 | DepMap_curated, CRISPR fitness, d = +0.12 |
+**Three honest limits on this, all of which belong in the writeup.**
 
-> Gene sets defined by regulatory **mechanism** (a protein domain), by **genetic
-> consequence** (disease variants), or by **chromatin state** occupy distinct
-> regions of contact-architecture space. Gene sets defined by **output**
-> (expression stability, fitness) or by a **threshold on signal** do not.
+*It is not a preregistration.* The assignment is made from documented annotation
+procedures rather than from the results, and the rule is written down so a
+reader can check it was not drawn to fit. But the results had already been seen,
+so this is a structured post-hoc test, not a blind one.
 
-That is a broader and more useful claim than one about super-enhancers alone,
-and it puts the housekeeping failure inside the finding rather than beside it.
-Super-enhancers remain the case of most interest because they are the label most
-often treated as a distinct functional class, and here they behave like the
-output-defined sets rather than the mechanism-defined ones.
+*It is a distribution shift, not a dichotomy.* Six of nine OUTPUT sets still
+reach significance. Nothing here says output-defined sets have no architectural
+signature; they have a weaker one.
 
-**The objection to pre-empt.** Three of the sets that separate are
-chromatin-proximal, so a reader may say this only shows that chromatin-defined
-things correlate with chromatin. Two things answer it: Lambert_TF is defined by
-protein sequence and GWAS_immune_hot by variant association, neither of which
-touches chromatin, and both separate at the top of the table. So the split is
-not chromatin-versus-not. It is mechanism-and-consequence versus output-and-
-threshold. State the objection and this answer together.
+*The super-enhancer category has n = 1 and cannot be tested.* RANK_SINGLE
+contains one set. So no claim of the form "single-mark rank thresholds do not
+correspond to architecture" is supported. Super-enhancers sit at the **38th
+percentile** of \|d\| across all 21 sets: mid-pack, not last.
+
+### Why super-enhancers remain the case of interest anyway
+
+Not because their effect is smallest. It is not, and the earlier claim that it
+was has been withdrawn twice. The reason is an asymmetry in what the literature
+claims:
+
+> **Nobody argues that Eisenberg housekeeping genes constitute a distinct
+> three-dimensional architectural class. People do argue exactly that about
+> super-enhancers.** A null for super-enhancers contradicts a live claim; a null
+> for an expression-defined list contradicts nothing.
+
+The methodological point sharpens it. ChromHMM and Roadmap fit a hidden Markov
+model over many histone marks to assign a state, and both separate. ROSE ranks
+stitched regions by a single mark and cuts at the inflection point of the ranked
+curve, and that one does not. That is the precise procedure Pott and Lieb (2015)
+argue has no biological warrant, and this is a direct measurement of the
+consequence in a data type they did not have.
+
+State it that way and the claim rests on the literature asymmetry and the
+methodological contrast, not on an effect-size ranking that does not hold.
 
 ### The axis rank is a stronger statement of the null than the effect size
 
@@ -381,6 +406,7 @@ earlier handoffs.
 | "PC1 is not amount" (r = 0.033 with `total_mcc`) | **Retracted.** Against the `MAG_OVERALL` basis, PC1 correlates at **0.623**. PC1 is the amount axis. The error was using one feature as the amount proxy. |
 | "Amount is not one quantity" | **Reframed.** Amount is multi-faceted, so it must be measured with the 11-feature basis, not with `total_mcc`. |
 | "Regress `total_mcc` out before PCA" | **Superseded.** Use `MAG_OVERALL` via `_shape.corrected_shape`. |
+| "Mechanism vs output taxonomy over 7 sets" | **Superseded.** Redone across all 21 with the assignment fixed by annotation procedure; the pattern holds at p = 0.0024, but RANK_SINGLE is n = 1 so nothing is claimable about that category. |
 | "Super-enhancers are the weakest of 21" | **Withdrawn twice.** First as over-precise, then outright: on the corrected substrate the SE set has a LARGER effect (\|d\| 0.16) than Eisenberg-HK (0.11). Replaced by the kind-of-definition pattern in Section 4. |
 | "The asymmetry family is a strand/orientation bug" | **Refuted.** `|value|` reproduces worse, and strand-relative asymmetry is d = -0.045. It is a support-size problem: median peak ~11 bins at 1-2 reads per bin. |
 | "Most of the signal is amount, not shape" | **Softened.** Correct statement is *amount is sufficient for most targets*; residualisation can strip real architecture if amount is downstream of it. |

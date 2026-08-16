@@ -157,14 +157,21 @@ Two things to state explicitly rather than hide:
   self-correction methods paragraph, and an examiner who finds the earlier
   version in a handoff will respect it.
 
-*Three to four weeks of writing, after Phase 0, 1 and 2a.*
+*Three to four weeks of writing, after Phase 0, 1 and 2a. Figures come FIRST,
+see below.*
 
-### Phase 2a. Figure production, scoped separately
+### Phase 2a. Figure production, BEFORE writing
 
-Figures are not a by-product of writing and should not be assumed to fall out of
-it. Every one needs the corrected substrate from Phase 0, so none can start
-earlier, and seven composite figures is substantial work that will otherwise
-compress against the deadline.
+Moved ahead of the writing phase on evidence. Drawing figure 6 on 2026-08-16
+falsified the claim that the k=2 cut recovered arch-HK, which four rounds of
+written review had not caught, and drawing figure 3 exposed an arithmetic error
+in an overlap statistic. **Figures are a control, not a presentation step.** They
+find things prose review does not, so they must come before the prose depends on
+the numbers.
+
+Every one needs the corrected substrate from Phase 0, so none can start earlier
+than that, and seven composites is substantial work that will otherwise compress
+against the deadline.
 
 | # | figure | source |
 |---|---|---|
@@ -173,7 +180,7 @@ compress against the deadline.
 | 3 | The continuum: gap, HDBSCAN, dip, silhouette vs null across 16 conditions | `experiment_cluster_search.py` |
 | 4 | The dimensions: scree, noise ceiling, loadings, trust weighting | `diagnose_dimension_trust.py` |
 | 5 | External sets displaced but not separated, corrected substrate | `diagnose_external_structure_corrected.py` |
-| 6 | The super-enhancer null: three matched positive controls, axis-rank plot (17 significant sets at median rank 3 against SE at 12), density stratification, power curve, naive-vs-stimulated sensitivity | `diagnose_external_axis_rank.py`, `diagnose_external_density_stratified.py`, `diagnose_external_power.py` |
+| 6 | The super-enhancer null: definition-type test across all 21 sets (DIRECT 0.27 vs OUTPUT 0.14, p = 0.0024), three matched positive controls, axis-rank plot, density stratification, power curve, naive-vs-stimulated sensitivity | `diagnose_external_axis_rank.py`, `diagnose_external_density_stratified.py`, `diagnose_external_power.py` |
 | 7 | Resolution: 14 bp summits, sub-resolution collapse | `summit_precision.tsv` |
 
 *Two weeks, in parallel with early writing but after Phase 0.*
