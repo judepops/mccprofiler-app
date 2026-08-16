@@ -168,19 +168,40 @@ findings. That is a methods contribution in its own right.
 
 ---
 
-## 4. Two warnings about the literature notebook
+## 4. Using the NotebookLM collections correctly
 
-**The notebook contains our own draft.** Queries return "Transfer Report (Draft)"
-as a source, and it was cited back quoting "56% vs 15% variance" for the feature
-substrate. **Do not treat notebook answers about this project as external
-literature.** They are partly our own prior claims reflected back, and some of
-those claims are now retracted. Check any number attributed to the transfer
-report against `CURRENT_FINDINGS.md`.
+**There are three notebooks and they are split by topic.** Querying one and
+inferring absence from a negative answer is wrong, and it produced a false
+warning in the first version of this document.
 
-**Hennig (2015) is not in the notebook.** It has been cited repeatedly in this
-project's working notes as the methodological reference for "what are the true
-clusters". That citation comes from `CLAUDE.md`, not from a source in the
-collection. Either add the paper or stop citing it.
+| notebook | id | sources | holds |
+|---|---|---|---|
+| clustering | `034c21a2` | 38 | methodology: gap statistic, silhouette, consensus, SigClust, gcPCA, UMAP, Hennig, Crowley |
+| literature | `1b49ca44` | 44 | biology: MCC protocol, enhancers, super-enhancers, Sexton, core promoters |
+| MCC | `cc9fc651` | 11 | created 2026-08-14 |
+
+**A methodology question must go to `clustering`, a biology question to
+`literature`, and anything spanning both to both.** All three of the references
+flagged as missing in the first draft of this section were already present, in
+the notebook appropriate to their subject:
+
+- **Hennig (2015)**, `what_are_true_clusters.pdf`, clustering notebook, since
+  2026-05-06. *A duplicate was added on 2026-08-16 in response to the false
+  warning and should be removed: source `7a8434d6`, titled
+  `hennig_true_clusters.pdf`. Keep `77616a4b`.*
+- **Rousseeuw (1987)**, `silhouettes.pdf`, clustering notebook, since 2026-05-06.
+- **Sexton et al.**, `22_Sexton_Micro...`, literature notebook, since 2026-04-28.
+
+The lesson generalises beyond the notebooks: a negative answer from a partial
+search is not evidence of absence, which is the same error pattern that this
+week's confound work kept catching in the analysis.
+
+**The one real warning: the collection contains our own draft.** Queries return
+"Transfer Report (Draft)" as a source, and it was cited back quoting "56% vs 15%
+variance" for the feature substrate. **Do not treat notebook answers about this
+project as external literature.** They are partly our own prior claims reflected
+back, and several of those claims are now retracted. Check any number attributed
+to the transfer report against `CURRENT_FINDINGS.md`.
 
 ---
 
