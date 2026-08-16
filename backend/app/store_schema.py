@@ -115,6 +115,30 @@ TABLES: dict[str, str] = {
 # enrichments over those are noise (PLAN.md §5 view 5).
 MIN_GROUP_N = 25
 
+# The symmetric rule, added 2026-08-16. A set covering most of the panel cannot
+# produce an interpretable "set versus rest" contrast at any effect size,
+# because the comparison group is whatever is left over and is defined only by
+# exclusion. Three sets exceed this on gw_cd4_1: ChromHMM_active_TSS at 88%
+# (rest = 227 genes), DICE_top_TPM_quartile and CpG_island_promoter at 83%.
+#
+# Flagged rather than dropped. Removing them would invite the question of why a
+# set covering most of the panel is missing, and the honest answer is more
+# useful than a silent omission: the row exists, it is simply not evidence in
+# either direction. It also explains the otherwise surprising near-null for
+# CpG-island promoters, which are architecturally distinct in the literature but
+# describe 83% of this panel.
+#
+# The headline results are unaffected: dbSUPER super-enhancers cover 8.6% and
+# Lambert_TF 8.4%, so the matched-size comparison sits well inside the bound,
+# and the definition-type result is unchanged by dropping all three
+# (p = 0.0019 against 0.0018).
+MAX_GROUP_COVERAGE = 0.70
+
+
+def coverage_ok(n_in_set: int, n_panel: int) -> bool:
+    """Whether a set/rest contrast is interpretable at all for this set."""
+    return MIN_GROUP_N <= n_in_set <= MAX_GROUP_COVERAGE * n_panel
+
 # Posterior below which a gene renders as "mixture" rather than a named
 # archetype. 44% of active genes fall here and that is the point, not a defect.
 CORE_POSTERIOR_MIN = 0.8

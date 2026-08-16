@@ -149,15 +149,32 @@ implies a spectrum from most-positive to most-negative that does not exist. The
 signs in the table below are retained only so each row can be traced back to its
 component; they carry no cross-set meaning.
 
-**Three sets cover more than 80% of the panel** and their "set versus rest"
-contrasts are weak by construction, because the comparison group is a small and
-unusual remainder: `ChromHMM_active_TSS` (1,619 of 1,846, 88%),
-`DICE_top_TPM_quartile` (1,539, 83%), `CpG_island_promoter` (1,526, 83%). This
-explains the otherwise surprising near-null for CpG-island promoters, which are
-one of the more architecturally distinct classes in the literature: 83% of the
-panel has one, so the contrast has little to work with. The definition-type
-result is **not** driven by these: dropping all three leaves p = 0.0019 with
-medians 0.28 against 0.14, essentially unchanged.
+**A coverage ceiling applies, mirroring the existing size floor.** The cohort
+convention already excludes sets below 25 genes as too small to interpret. The
+symmetric rule was missing and is now `MAX_GROUP_COVERAGE = 0.70` in
+`store_schema.py`: a set covering most of the panel cannot produce an
+interpretable "set versus rest" contrast at any effect size, because the
+comparison group is whatever is left over and is defined only by exclusion.
+
+Three sets exceed it and are reported separately rather than mixed in:
+
+| set | n | % of panel | "rest" |
+|---|---|---|---|
+| ChromHMM_active_TSS | 1,619 | 88% | 227 |
+| DICE_top_TPM_quartile | 1,539 | 83% | 307 |
+| CpG_island_promoter | 1,526 | 83% | 320 |
+
+They are **flagged, not deleted**. Removing them invites the question of why a
+set covering most of the panel is missing, and the honest answer is more useful
+than a silent omission: the row exists, it is simply not evidence in either
+direction. It also explains the otherwise surprising near-null for CpG-island
+promoters, which are architecturally distinct in the literature but describe 83%
+of this panel, so the contrast has little to work with.
+
+**Nothing that matters depends on this.** The headline comparison sits well
+inside the bound: super-enhancers cover 8.6% of the panel and Lambert_TF 8.4%.
+The definition-type result is unchanged by dropping all three, p = 0.0019
+against 0.0018, medians 0.28 against 0.14.
 
 ### The headline claim
 

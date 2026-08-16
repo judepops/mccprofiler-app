@@ -52,6 +52,13 @@ the dominant axis. `arch-HK` is already known not to be housekeeping; whether
 "dispersed" survives correction is untested.
 *Half a day. Blocks any naming in the report.*
 
+**0.3a Apply the coverage ceiling in the app.** `store_schema.MAX_GROUP_COVERAGE`
+(0.70) exists but only the analysis scripts and figures use it. The cohort list
+and enrichment grid still offer the three oversized sets without a flag, so the
+app can still be read as saying ChromHMM_active_TSS at |d| = 0.29 is comparable
+to Lambert_TF at 0.46. Surface `coverage_ok` alongside the existing
+`passes_min_n`. *One hour.*
+
 **0.3 Fix the app's enrichment grid.** `/api/enrichment/grid` still computes on
 raw components, so every displacement it shows is the uncorrected, overstated
 one. Switch to the corrected substrate.

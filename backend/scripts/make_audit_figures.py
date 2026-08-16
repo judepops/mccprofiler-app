@@ -272,15 +272,25 @@ DEFN_CAT = {
 }
 CAT_COL = {"DIRECT": INK, "OUTPUT": "#9fb6c8", "RANK_SINGLE": OCHRE, "CONTEXT": GREEN}
 
-fig = plt.figure(figsize=(10.6, 5.0))
-gs = fig.add_gridspec(3, 2, width_ratios=[1.35, 1], hspace=.55, wspace=.30,
-                      left=.20, right=.97, top=.86, bottom=.18)
-axL = fig.add_subplot(gs[:, 0])
+# Split by coverage. A set covering most of the panel cannot give an
+# interpretable set-versus-rest contrast at any effect size, because the
+# comparison group is defined only by exclusion. Shown separately rather than
+# dropped, so nobody has to wonder where they went.
+o_all = ext.copy()
+o_all["cat"] = o_all["group"].map(DEFN_CAT).fillna("OUTPUT")
+o_all["ad"] = o_all["d"].abs()
+o_all["cov"] = o_all["n"] / n
+ok = o_all["cov"] <= S.MAX_GROUP_COVERAGE
+o = o_all[ok].sort_values("ad")
+o_big = o_all[~ok].sort_values("ad")
 
-o = ext.copy()
-o["cat"] = o["group"].map(DEFN_CAT).fillna("OUTPUT")
-o["ad"] = o["d"].abs()
-o = o.sort_values("ad")
+fig = plt.figure(figsize=(10.6, 6.0))
+gs = fig.add_gridspec(4, 2, width_ratios=[1.35, 1],
+                      height_ratios=[1, 1, 1, .62],
+                      hspace=1.05, wspace=.30,
+                      left=.20, right=.97, top=.84, bottom=.11)
+axL = fig.add_subplot(gs[:3, 0])
+axB = fig.add_subplot(gs[3, 0])
 cols = [CAT_COL[c] for c in o["cat"]]
 bars = axL.barh(range(len(o)), o["ad"], color=cols, height=.7,
                 edgecolor=[INK if q < .05 else "none" for q in o["p"]], linewidth=.9)
@@ -294,17 +304,35 @@ axL.set_yticks(range(len(o)))
 axL.set_yticklabels([g.replace("_", " ")[:30] for g in o["group"]], fontsize=6.8)
 axL.set_xlabel("|Cohen's d| on that set's strongest component")
 axL.set_xlim(0, 1.02)
-axL.set_title("Displaced, but never separated", loc="left", fontsize=9)
+axL.set_title(f"Displaced, but never separated  "
+              f"({len(o)} sets covering under {S.MAX_GROUP_COVERAGE:.0%} of the panel)",
+              loc="left", fontsize=9)
 axL.legend(handles=[
     Line2D([], [], color=INK, lw=7, label="direct annotation"),
     Line2D([], [], color="#9fb6c8", lw=7, label="output-defined"),
     Line2D([], [], color=OCHRE, lw=7, label="super-enhancers (rank cutoff)"),
     Line2D([], [], color=GREEN, lw=7, label="gene desert: density control,\nnot a finding"),
     ], frameon=False, fontsize=6.2, loc="lower right", handlelength=1.4)
-axL.text(.02, -.115, "Magnitudes only. Each set is measured on its own strongest "
-                     "component and PCA sign is arbitrary,\nso signed values are not "
-                     "comparable between sets.",
-         transform=axL.transAxes, fontsize=6, color=GREY, style="italic")
+CAPTION_FIG3 = ("Magnitudes only. Each set is measured on its own strongest component and PCA sign is arbitrary, so signed\n"
+                "values are not comparable between sets. Asterisk marks p < 0.05.")
+
+# The oversized sets: kept visible but set apart and greyed, so nobody has to
+# wonder where they went.
+axB.barh(range(len(o_big)), o_big["ad"], color="#dddddd", height=.58,
+         edgecolor=GREY, linewidth=.8)
+for i_, (nn, cv) in enumerate(zip(o_big["n"], o_big["cov"])):
+    axB.text(o_big["ad"].iloc[i_] + .015, i_, f"n={nn}  ({cv:.0%} of panel)",
+             va="center", fontsize=6, color=GREY)
+axB.set_yticks(range(len(o_big)))
+axB.set_yticklabels([g.replace("_", " ")[:30] for g in o_big["group"]],
+                    fontsize=6.6, color=GREY)
+axB.set_xlim(0, 1.02); axB.set_xlabel("|Cohen's d|", fontsize=7)
+axB.tick_params(labelsize=6.5)
+axB.set_title(f"Not interpretable as set versus rest: each covers over "
+              f"{S.MAX_GROUP_COVERAGE:.0%} of the panel, so the comparison group is a\n"
+              f"small remainder defined only by exclusion. Shown for completeness, "
+              f"not as evidence either way.",
+              loc="left", fontsize=6.6, color=GREY, pad=4)
 
 # Right: the claim itself, as overlapping densities on each set's own axis.
 EX = [("Lambert_TF", "largest real separation"),
@@ -324,15 +352,15 @@ for row, (g, note) in enumerate(EX):
         a.fill_between(xs, kde / kde.max(), color=c, alpha=.13)
     dd = ext.loc[ext["group"] == g, "d"].abs().iloc[0]
     ov = ext.loc[ext["group"] == g, "overlap"].iloc[0]
-    a.set_title(f"{g.replace('_', ' ')[:26]}  ({note})\n"
-                f"|d| = {dd:.2f}, {ov:.0f}% overlap, shape-PC{j + 1}",
-                loc="left", fontsize=7)
+    a.set_title(f"{g.replace('_', ' ')[:24]} ({note}): |d| = {dd:.2f}, "
+                f"{ov:.0f}% overlap", loc="left", fontsize=6.8, pad=3)
     a.set_yticks([]); a.set_xlim(-3.2, 3.2)
     a.set_xlabel("position on that component" if row == 2 else "")
     if row == 0:
         a.legend(frameon=False, fontsize=6, loc="upper right")
 fig.suptitle("External categories are directions, not regions", x=.02, y=.985,
              ha="left", fontsize=10.5, weight="bold")
+fig.text(.02, .012, CAPTION_FIG3, fontsize=6, color=GREY, style="italic", va="bottom")
 save(fig, "fig3_displaced_not_separated", "|d| by definition type, plus density overlays")
 
 
