@@ -11,6 +11,87 @@
 
 ---
 
+## 0b. Feature health audit, all 73 (`audit_feature_health.py`)
+
+Four feature problems were found this week, each by accident and each a
+different failure mode. This runs all four checks over every feature at once so
+the next one is found deliberately. **It found more.**
+
+### What was removed, and why it was right
+
+| removed | n | why |
+|---|---|---|
+| `mean_degree`, `mean_degree_raw`, `frac_active_pairs`, `n_isolates_raw` | 4 | exact algebraic functions of two peak counts (1842/1842 genes), from a complete-graph adjacency with no contact criterion |
+| `oe_asymmetry_*`, `oe_tailedness_*` | 16 | 3rd and 4th moments of ~11-bin peaks at 1-2 reads per bin; 14 of 15 measured below the pre-set rho 0.70 |
+| **restored:** `n_active_peaks` | +1 | the interpretable primitive the four derivatives were functions of, wrongly pruned while they survived |
+
+**Why it was positive, measured rather than asserted.** Retained structure
+resting on reproducible features rose from **67% to 86%**; components below 50%
+trusted went from **8 of 19 to 0 of 14**; PC1 rose 15.27% to 17.23% and its top
+loading is now `n_active_peaks`. Cost: 0.3 points of variance. And the results
+did not become unstable, they became sharper: effect sizes across all 21
+external sets correlate **r = 0.959** before against after, with 16 of 21
+increasing.
+
+### What the audit found that we had not looked for
+
+**Three feature families are compositional and sum to 1**, so one member of each
+is redundant by construction, exactly as `mean_degree` was:
+
+| family | members | row sum |
+|---|---|---|
+| distance bands: `frac_promoter_proximal`, `frac_local`, `frac_distal`, `frac_far_distal` | 4 | **1.0000** |
+| element classes (O/E): `promoter_`, `enhancer_`, `ctcf_signal_fraction` | 3 | **1.0000** |
+| element classes (raw): the same three, `_raw` | 3 | **1.0000** |
+
+All four band fractions predict at **R2 = 1.000** from the others. Fifteen
+features exceed R2 0.95 and thirty exceed 0.90. The correlation prune cannot
+catch this: compositional redundancy is a linear dependency among three or four
+variables, and a pairwise |r| filter only sees pairs.
+
+**`total_mcc` is the weakest member of the magnitude basis.** R2 = **0.965**
+predictable from the other 72 features, and cross-panel rho **0.65**, the
+fourth-lowest in the substrate. It is the feature `MAG_OVERALL` leads with and
+the one used as the amount proxy in the analysis that was already retracted for
+being the wrong basis. The basis as a whole is fine; the habit of reaching for
+`total_mcc` alone is not.
+
+**`n_peaks_promoter` is 41% gene properties.** The only feature above R2 0.25
+against length, expression, CpG, density and chr19, and it also predicts at 0.93
+from the other features. It fails two checks.
+
+**Eight of 45 measured features are below rho 0.70**, led by
+`distance_to_nearest_peak_bp` at **0.32**, `oe_local_enrichment_max_all` 0.44,
+`spacing_regularity` 0.55, `corr_raw_distance` 0.57.
+
+**28 of 73 features have never been measured twice.** The reproducibility panel
+covers 45. Nothing is known about the reliability of the other 28, and that is a
+coverage gap rather than a clean bill of health.
+
+### Should we be more careful: yes, and here is the specific answer
+
+The four problems found this week were not bad luck. They are what happens when
+features are added individually and audited never. Three rules follow, and the
+script now enforces the first:
+
+1. **Every new feature is checked for predictability from the existing set
+   before it is adopted.** R2 > 0.95 means it is a derivative; R2 > 0.90 means
+   it earns almost nothing.
+2. **Compositional families must declare which member is dropped.** Fractions
+   over an exhaustive partition always contain a redundancy, and no pairwise
+   filter will find it.
+3. **Reproducibility is a property of a feature, not of the substrate.** A
+   feature with no cross-capture measurement should be labelled unknown rather
+   than assumed sound; 28 of 73 currently are.
+
+**What NOT to do.** Removing the redundant compositional members is not urgent
+and may not be worth it. Redundancy is a mild inefficiency, whereas the four
+removed features were degenerate or unmeasurable, which is a different problem.
+The audit exists so the distinction is made deliberately rather than by whoever
+happens to notice something in a loadings plot.
+
+---
+
 ## 0. What the rebuild changed, 2026-08-16
 
 Feature set 91 to 73. Store rebuilt, `verify_store.py` re-baselined and passing
