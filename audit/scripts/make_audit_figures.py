@@ -13,7 +13,7 @@ Run in cd4env.
 """
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "backend"))
 sys.path.insert(0, "/home/imm/grte4643/Documents/DPhil/Data_Exploration/MCC/"
                    "cd4_cleaned/scripts_cleaned/audit/GW/scripts")
 
@@ -36,7 +36,7 @@ from app import store_schema as S
 
 warnings.filterwarnings("ignore")
 
-OUT = Path(__file__).resolve().parents[2] / "audit" / "figures"
+OUT = Path(__file__).resolve().parents[1] / "figures"
 OUT.mkdir(parents=True, exist_ok=True)
 
 INK, STEEL, PALE = "#2b5070", "#5b89ae", "#c3d6e4"

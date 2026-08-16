@@ -18,7 +18,7 @@ explains the axis. Three ways to test it, each answering a different objection:
    exactly what was already found for PC3.
 """
 import sys
-sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[2] / "backend"))
 
 import numpy as np
 import pandas as pd

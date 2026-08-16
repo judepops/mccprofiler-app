@@ -34,3 +34,4 @@ frontend/dist/
 
 # local working context for Claude sessions — never published
 CLAUDE.md
+audit/scripts/output/
