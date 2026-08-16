@@ -105,14 +105,21 @@ splits 771 against 1075 on dispersed-and-long-range versus focal-and-local
 under proper amount correction, so it is a cut through a continuum at its widest
 point, not two clusters.
 
-**That cut recovers `arch-HK` almost exactly: 819 of its 844 genes.** So the
-imposed four-way partition in Section 6 is, geometrically, a two-way split
-(dispersed versus focal) with the focal side subdivided into promoter-local,
-enhancer-focal and sparse. That is a more honest description of what the geometry
-contains than "four archetypes", it explains why `arch-HK` is the largest group
-by some margin, and it is the same contrast PC1 becomes once the degenerate
-topology features are removed. Sections 3 and 6 are describing one structure,
-not two.
+**RETRACTED, 2026-08-16: the k=2 cut is not a restatement of `arch-HK`.** An
+earlier version of this section claimed it recovered 819 of `arch-HK`'s 844
+genes. That number came from the superseded substrate (trusted features,
+corrected against `total_mcc` alone). Recomputed on the correct
+`MAG_OVERALL`-corrected substrate with the degenerate topology features dropped,
+the cut captures **476 of 844 against 456 expected by chance, a 1.04x
+enrichment**, i.e. essentially nothing. The claim is withdrawn.
+
+What survives is only the weaker statement: the widest binary cut in the
+continuum is dispersed-versus-focal, and it is amount-free. It is **not** the
+same object as the imposed k=4 partition, and Sections 3 and 6 describe two
+different things after all.
+
+This was caught by drawing the figure rather than by a further review, which is
+an argument for producing figures earlier than Phase 2a.
 
 ---
 
@@ -311,10 +318,6 @@ peak-level research programme.
 Sizes 844 / 369 / 351 / 261 / 21. Core (posterior >= 0.8): 1,040 of 1,846; mean
 max posterior 0.793; 44% of active genes are mixtures.
 
-`arch-HK` is one side of the dispersed-versus-focal cut described in Section 3
-(819 of its 844 genes), and the other three active groups subdivide the focal
-side.
-
 **`arch-HK` is not the housekeeping group**: Eisenberg-HK fraction 38.2% against
 `arch-ME-constitutive`'s 40.2%, and it has the lowest median blood expression of
 the three active groups (4.5 TPM vs 11.8 and 9.9).
@@ -341,6 +344,7 @@ earlier handoffs.
 | Varimax rotation should be adopted | **Withdrawn.** It nearly doubles nameability for free, but its most concentrated factors are the `oe_asymmetry` families at rho 0.27-0.42. Do not adopt without weighting by reproducibility. |
 | Displacement figures from the raw components (largest d = 1.61, 21 of 21) | **Superseded** by the corrected substrate in Section 4 (largest d = 0.73, 17 of 21). |
 | The app's `/api/enrichment/grid` numbers | **Uncorrected.** Still computed on raw components. Phase 0.3. |
+| "The k=2 cut recovers arch-HK almost exactly, 819 of 844" | **Retracted 2026-08-16.** On the correct `MAG_OVERALL` substrate it is 476 of 844 against 456 expected, 1.04x. The 819 figure came from the superseded `total_mcc` correction. |
 
 ---
 
