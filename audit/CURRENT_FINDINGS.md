@@ -151,7 +151,53 @@ sensitivity figure. So the null cannot be dismissed as a cell-state mismatch.
 Running the naive list as a sensitivity check is still worth an hour
 (`PLAN_FORWARD.md` Phase 0.5).
 
-### Which positive control to lead with, and which to qualify
+### The axis rank is a stronger statement of the null than the effect size
+
+Effect size says how far a set is displaced. Axis rank says *where* it leans,
+and for the super-enhancer null that is the more legible statement.
+
+A set with real architectural structure should find its largest displacement in
+a high-variance, well-measured component. A set with no architectural signature
+has no preferred direction, so its largest lean lands wherever noise happens to
+be biggest: a low-variance, poorly-reproducing component.
+
+Measured across all 21 sets (`diagnose_external_axis_rank.py`):
+
+| | sets clearing p < 0.05 (17) | sets that do not (4) |
+|---|---|---|
+| median axis rank | **3** | **9** |
+| median trust of that axis | **74%** | **45%** |
+
+Eleven of the seventeen significant sets displace along one of the top four
+components. Spearman between -log10 p and axis rank is **-0.53**: the more
+displaced a set is, the higher-variance the component it displaces along.
+
+**Super-enhancers lean on sPC12** (2.7% of variance, 43% trusted). Only 3 of 21
+sets lean on a lower-ranked component. So the finding is not "weakly displaced".
+It is **no preferred direction anywhere in the well-measured part of the space**,
+with the strongest lean landing exactly where noise would put it.
+
+### Three independent positive controls, on three different well-measured axes
+
+| set | defined by | n | axis | var | trust | d | p |
+|---|---|---|---|---|---|---|---|
+| Lambert_TF | DNA-binding domain (mechanism) | 156 | sPC1 | 11.1% | 74% | +0.46 | 0.0005 |
+| GWAS_immune_hot | disease variants | 130 | sPC2 | 10.1% | 76% | +0.32 | 0.0005 |
+| Roadmap_silenced | chromatin state | 41 | sPC3 | 7.8% | 74% | -0.73 | 0.0005 |
+| **dbSUPER SE** | **H3K27ac signal threshold** | **158** | **sPC12** | **2.7%** | **43%** | **-0.16** | **0.18** |
+
+Three different kinds of definition, three different top-4 components, all
+well-measured, all significant. The super-enhancer set is defined by a threshold
+on signal rather than by a mechanism, a variant, or a chromatin state, and it is
+the one that finds no direction.
+
+**One caveat on Lambert_TF.** It shares sPC1 with `gene_desert_bottomQ_density`,
+in the opposite direction: TFs sit in gene-dense regions, deserts do not. Since
+Lambert_TF retains 84% of its effect under gene-density stratification, the TF
+signal is not merely density, but the shared axis should be stated rather than
+discovered by a reader.
+
+### Which positive control to qualify
 
 The controls do not separate on equally trustworthy axes, and this matters more
 than their effect sizes:
@@ -162,9 +208,6 @@ than their effect sizes:
 | Roadmap_silenced | shape-PC3 | 7.8% | **74%** |
 | ChromHMM_bivalent | shape-PC4 | 5.5% | **15%** |
 | dbSUPER SE | shape-PC12 | 2.7% | 43% |
-
-**Lead with Lambert_TF and Roadmap_silenced.** Both separate on well-measured
-components, and Lambert_TF additionally on an interpretable one.
 
 **Qualify ChromHMM_bivalent.** Its d = -0.58 sits on the `oe_asymmetry`
 component, the feature family that reproduces at rho 0.27 to 0.42 (Section 3
@@ -322,6 +365,7 @@ current representation demonstrably does not use.
 | 4 | `backend/scripts/diagnose_external_structure_corrected.py` |
 | 4 density | `backend/scripts/diagnose_external_density_stratified.py` |
 | 4 power | `backend/scripts/diagnose_external_power.py` |
+| 4 axis rank | `backend/scripts/diagnose_external_axis_rank.py` |
 | 5 resolution | `audit/continuous_methods/summit_precision.tsv`, `subresolution_collapse.tsv` |
 | 7 (PC naming) | `backend/scripts/diagnose_pc_names.py`, `experiment_rotate_axes.py` |
 | store invariants | `backend/scripts/verify_store.py`, 38 checks |

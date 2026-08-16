@@ -77,6 +77,13 @@ stratification), and statistical power (`diagnose_external_power.py`: the
 super-enhancer test is the **best** powered set in the table at 80% power for
 d = 0.35, which inverts the worry that the positive controls were the small ones).
 
+Two further items closed on 2026-08-16. Cell-state mismatch: the super-enhancer
+set is state-matched, built from dbSUPER `CD4p CD25- Il17- PMAstim Th`. And the
+"essentially one strong positive control" worry: `GWAS_immune_hot` separates on
+sPC2 (10.1% of variance, 76% trusted, d = +0.32, p = 0.0005), giving three
+independent controls on three different well-measured axes, defined by mechanism,
+by disease variants, and by chromatin state respectively.
+
 ---
 
 ## Phase 1. Two open questions that could change the report's claims
@@ -163,7 +170,7 @@ compress against the deadline.
 | 3 | The continuum: gap, HDBSCAN, dip, silhouette vs null across 16 conditions | `experiment_cluster_search.py` |
 | 4 | The dimensions: scree, noise ceiling, loadings, trust weighting | `diagnose_dimension_trust.py` |
 | 5 | External sets displaced but not separated, corrected substrate | `diagnose_external_structure_corrected.py` |
-| 6 | The super-enhancer null: matched-n against Lambert_TF, density-stratified, with the power curve, and the naive-vs-stimulated sensitivity | `diagnose_external_density_stratified.py`, `diagnose_external_power.py` |
+| 6 | The super-enhancer null: three matched positive controls, axis-rank plot (17 significant sets at median rank 3 against SE at 12), density stratification, power curve, naive-vs-stimulated sensitivity | `diagnose_external_axis_rank.py`, `diagnose_external_density_stratified.py`, `diagnose_external_power.py` |
 | 7 | Resolution: 14 bp summits, sub-resolution collapse | `summit_precision.tsv` |
 
 *Two weeks, in parallel with early writing but after Phase 0.*
