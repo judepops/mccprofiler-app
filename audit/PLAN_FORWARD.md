@@ -14,6 +14,7 @@ substrate that was about to change, and therefore running it twice.
                                                     run in parallel with the below
     S2.1  drop degenerate topology features   0.5 d
     S2.1b re-support or retire the moments    2 d
+    S2.1c strand-orient asymmetry             1 d   NEW, real signal recovery
     S2.3  rebuild the store, re-run scripts   1 h
     S1b   core-promoter displacement test     2 h   <- on the FINAL substrate
     S2.2  re-derive archetype names           0.5 d
@@ -123,6 +124,20 @@ class) rather than per peak, or retire them.
 controls, takes its displacement on shape-PC4, which is 15% trustworthy and
 asymmetry-dominated. Fixing or removing those families changes what that control
 means. *Two days.*
+
+**S2.1c Orient the profile by transcription direction before computing
+asymmetry.** New 2026-08-16. `contact_asymmetry` is computed in genome
+coordinates, so a gene-relative bias cancels across strands: plus-strand mean
++0.308 against minus-strand -0.300, d = 0.638, strand-corrected mean at
+t = 13.7 over 1,838 genes. The feature is discarding real, well-measured signal,
+and at rho 0.900 it is one of the most reproducible in the set.
+
+Use `Lab/Protocol_20k/Genes/Output/01_tss_regions.bed` for strand. **Do not use
+`cd4_rna_plus_promoter` versus `cd4_rna_minus_promoter`**: checked against the
+annotation it is 51% accurate, i.e. chance, and it already invalidated one
+recorded conclusion. Check whether other directional features (the
+`max_distance_to_viewpoint_*` family, `frac_promoter_proximal`) have the same
+problem. *One day.*
 
 **S2.2 Re-derive the archetype display names** on the `MAG_OVERALL`-corrected
 substrate. Current names come from unadjusted group means. *Half a day.*

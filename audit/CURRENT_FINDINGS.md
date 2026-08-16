@@ -638,6 +638,51 @@ amount-corrected substrate before use (Phase 0.2 in `PLAN_FORWARD.md`).
 
 ---
 
+## 6b. NEW 2026-08-16: contact asymmetry is strand-dependent, and the feature destroys it
+
+Found while sourcing strand for the core-promoter test (S1a), and it reverses a
+conclusion recorded on 14 August.
+
+**The earlier test used a broken strand source.** Strand was derived from
+`cd4_rna_plus_promoter` versus `cd4_rna_minus_promoter`. Checked against the
+annotation in `Lab/Protocol_20k/Genes/Output/01_tss_regions.bed`, that proxy is
+**51% accurate**, i.e. chance. It would have been wrong for about 886 of 1,807
+panel genes. The conclusion drawn from it, that orientation is measurable but
+negligible at d = -0.045, could only ever have returned zero and is withdrawn.
+
+**With annotation strand (1,838 of 1,846 panel genes covered):**
+
+| feature | plus-strand mean | minus-strand mean | d | strand-corrected mean |
+|---|---|---|---|---|
+| `contact_asymmetry` | **+0.308** | **-0.300** | **0.638** | **+0.304, t = 13.7** |
+| `oe_asymmetry_mean_all` | -0.051 | +0.048 | -0.099 | -0.049, t = -2.1 |
+| `oe_asymmetry_mean_promoter` | -0.036 | +0.042 | -0.079 | -0.039, t = -1.7 |
+
+Opposite in sign, near-equal in magnitude, and a strand-corrected mean 13.7
+standard errors from zero. **Contacts are systematically biased to one side
+relative to the direction of transcription, and `contact_asymmetry` as computed
+averages that away.** Its docstring says "positive means more signal
+downstream", but downstream in *genomic* coordinates, which is upstream for half
+the genome.
+
+**Why this matters more than a tidy-up.** d = 0.638 is larger than every
+external-set displacement in Section 4 except `Roadmap_silenced`. This is real
+signal that the feature definition currently discards, and `contact_asymmetry`
+is one of the most reproducible features in the set (rho 0.900). Recovering it
+adds a well-measured, biologically interpretable axis rather than removing a bad
+one.
+
+The per-peak `oe_asymmetry` family shows only a weak strand effect, consistent
+with those features being noise-dominated (rho 0.27 to 0.42) and independently
+scheduled for re-supporting or retirement in S2.1b.
+
+**Action: S2.1c.** Orient the profile by transcription direction before
+computing asymmetry, using `01_tss_regions.bed` for strand, never the RNA
+proxy. This is a third feature change and belongs with the other two, before
+the rebuild.
+
+---
+
 ## 7. Retracted, do not quote
 
 Listed explicitly because all of these appear in `REVIEW.md` Parts 1 to 5 and in
@@ -652,7 +697,8 @@ earlier handoffs.
 | "The 91 features are justified because they predict biology" | **Retracted and replaced.** They add nothing over three gene properties for prediction, but those properties explain only 2.6% of the feature space. Justify by what the features contain, not by what they predict. |
 | "Mechanism vs output taxonomy over 7 sets" | **Superseded.** Redone across all 21 with the assignment fixed by annotation procedure; the pattern holds at p = 0.0024, but RANK_SINGLE is n = 1 so nothing is claimable about that category. |
 | "Super-enhancers are the weakest of 21" | **Withdrawn twice.** First as over-precise, then outright: on the corrected substrate the SE set has a LARGER effect (\|d\| 0.16) than Eisenberg-HK (0.11). Replaced by the kind-of-definition pattern in Section 4. |
-| "The asymmetry family is a strand/orientation bug" | **Refuted.** `|value|` reproduces worse, and strand-relative asymmetry is d = -0.045. It is a support-size problem: median peak ~11 bins at 1-2 reads per bin. |
+| "Orientation is measurable but negligible, d = -0.045" | **Retracted 2026-08-16.** Computed with an RNA-derived strand proxy that is 51% accurate, i.e. random. With annotation strand, `contact_asymmetry` shows d = 0.638 and a strand-corrected mean at t = 13.7. See Section 6b. |
+| "The PER-PEAK asymmetry family is a strand/orientation bug" | **Still refuted** for that family specifically. `|value|` reproduces worse, and strand-relative asymmetry is d = -0.045. It is a support-size problem: median peak ~11 bins at 1-2 reads per bin. |
 | "Most of the signal is amount, not shape" | **Softened.** Correct statement is *amount is sufficient for most targets*; residualisation can strip real architecture if amount is downstream of it. |
 | Varimax rotation should be adopted | **Withdrawn.** It nearly doubles nameability for free, but its most concentrated factors are the `oe_asymmetry` families at rho 0.27-0.42. Do not adopt without weighting by reproducibility. |
 | Displacement figures from the raw components (largest d = 1.61, 21 of 21) | **Superseded** by the corrected substrate in Section 4 (largest d = 0.73, 17 of 21). |
