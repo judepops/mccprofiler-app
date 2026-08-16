@@ -200,6 +200,61 @@ sensitivity figure. So the null cannot be dismissed as a cell-state mismatch.
 Running the naive list as a sensitivity check is still worth an hour
 (`PLAN_FORWARD.md` Phase 0.5).
 
+### Chromosome is a confound, and it costs us the Lambert_TF control
+
+Found 2026-08-16 (`diagnose_chromosome_confound.py`). This is the fourth
+confound class discovered in the external-set analysis and the only one that
+removes a positive control.
+
+Splitting Lambert TFs by DNA-binding domain showed the entire TF effect coming
+from **C2H2 zinc fingers** (|d| 0.75) with non-C2H2 TFs at nothing (p = 0.52).
+But C2H2-ZF genes are **38% chr19** in this panel against 6% elsewhere, because
+of the KRAB-ZNF arrays, and **chr19 membership by itself displaces at |d| = 0.63,
+p = 0.0005**. Every other chromosome sits at 0.23 to 0.30. So chr19 has
+distinctive contact architecture and any set enriched there inherits it.
+
+Two tests, answering different questions, both reported:
+
+| set | all genes | excluding chr19 | chromosome controlled | chr19 share |
+|---|---|---|---|---|
+| **Lambert_TF** | 0.46, p 0.0005 | **0.20, p 0.16** | 0.39, p 0.0005 | **25%** |
+| GWAS_immune_hot | 0.32, p 0.0005 | **0.33, p 0.0005** | 0.40, p 0.0005 | 7% |
+| Roadmap_silenced | 0.73, p 0.0005 | 0.72, p 0.0020 | 0.77, p 0.0005 | 7% |
+| ChromHMM_bivalent | 0.58, p 0.0005 | 0.58, p 0.0005 | 0.59, p 0.0005 | 7% |
+| dbSUPER SE | 0.16, p 0.18 | 0.18, p 0.36 | 0.20, p 0.14 | 6% |
+| gene_desert | 0.71, p 0.0005 | 0.68, p 0.0005 | 0.60, p 0.0005 | 0% |
+
+**Lambert_TF is demoted.** A quarter of it is chr19 and it does not separate
+among genes elsewhere in the genome (|d| 0.20, p = 0.16 at n = 117, where the
+test has ample power). It survives as a within-chromosome effect (0.39), so it
+is displaced relative to its own neighbours, but its headline displacement is
+substantially locus-driven. It can no longer serve as the clean matched-n
+comparator against super-enhancers.
+
+**`GWAS_immune_hot` becomes the primary chromatin-independent positive control.**
+It is 7% chr19, unchanged by exclusion (0.32 to 0.33) and stronger with
+chromosome controlled (0.40). It is variant-defined, so it touches no chromatin
+assay, which is the property Lambert_TF was being relied on for. Set size 130
+against the super-enhancer set's 158 is a looser match than 156 against 158, but
+still comparable.
+
+**The headline is unaffected.** Super-enhancers remain null under all three
+treatments (0.16, 0.18, 0.20; p 0.18, 0.36, 0.14). The definition-type result
+holds with chromosome controlled (p = 0.0078 either way, DIRECT median rising
+from 0.28 to 0.36).
+
+Two smaller casualties: `Eisenberg_HK` and `bio_bulk_k3` both fail the exclusion
+test, so their marginal significance was partly locus-driven too.
+
+**What this means for the chromatin-independence argument.** Three of the four
+sets that separate are ChIP-derived (ChromHMM active TSS, bivalent, Roadmap
+silenced), and chromatin state and 3D contact are both downstream of the same
+biology, so those are partly two assays measuring one thing. With Lambert_TF
+demoted, **`GWAS_immune_hot` is now the only genuinely chromatin-independent
+positive control.** That is one line of evidence where there were two, and it is
+the strongest argument yet for building a mechanism-defined set from outside
+chromatin entirely (Phase 1.1).
+
 ### Why super-enhancers are the case of interest
 
 Not because their effect is smallest. It is not, and the earlier claim that it
@@ -475,6 +530,8 @@ earlier handoffs.
 | Varimax rotation should be adopted | **Withdrawn.** It nearly doubles nameability for free, but its most concentrated factors are the `oe_asymmetry` families at rho 0.27-0.42. Do not adopt without weighting by reproducibility. |
 | Displacement figures from the raw components (largest d = 1.61, 21 of 21) | **Superseded** by the corrected substrate in Section 4 (largest d = 0.73, 17 of 21). |
 | The app's `/api/enrichment/grid` numbers | **Uncorrected.** Still computed on raw components. Phase 0.3. |
+| "Lambert_TF is the primary positive control, matched-n against SE" | **Demoted 2026-08-16.** 25% of the set is chr19, and it does not separate among non-chr19 genes (\|d\| 0.20, p = 0.16). GWAS_immune_hot replaces it. |
+| "The TF signature is promoter-driven and CTCF-poor" | **Narrowed.** The effect is C2H2 zinc fingers only (non-C2H2 TFs p = 0.52), and the C2H2 effect does not survive chr19 exclusion. |
 | "The k=2 cut recovers arch-HK almost exactly, 819 of 844" | **Retracted 2026-08-16.** On the correct `MAG_OVERALL` substrate it is 476 of 844 against 456 expected, 1.04x. The 819 figure came from the superseded `total_mcc` correction. |
 
 ---

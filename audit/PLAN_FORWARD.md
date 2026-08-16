@@ -98,7 +98,23 @@ by disease variants, and by chromatin state respectively.
 
 ## Phase 1. Two open questions that could change the report's claims
 
-**1.1 Is Eisenberg-HK failing because the label is wrong?**
+**1.1 A mechanism-defined set from outside chromatin. Now the most important
+open item.** Lambert_TF is demoted (chr19), leaving `GWAS_immune_hot` as the
+only genuinely chromatin-independent positive control. Everything else that
+separates is ChIP-derived, and chromatin state and 3D contact are both
+downstream of the same biology, so those are partly two assays measuring one
+thing.
+
+Candidates, in order of independence, all sequence or protein defined:
+core-promoter sequence classes (TATA / Inr / DPE by JASPAR motif scan on the
+hg38 already on disk, which is the Haberle and Stark distinction and the right
+test for the housekeeping question); translation machinery from MSigDB
+(ribosomal proteins alone give 19, below the floor, but adding initiation and
+elongation factors and aminoacyl-tRNA synthetases should clear 50); CORUM
+protein-complex membership; other Pfam families as further Lambert-style
+controls. Check chr19 share for every candidate before trusting it.
+
+**1.1b Is Eisenberg-HK failing because the label is wrong?**
 It sits at d = 0.11, 96% overlap, the weakest meaningful set. The objection that
 housekeeping genes form promoter assemblies and therefore *should* separate is
 untested, because the mechanism-based check could not run: only 19 ribosomal

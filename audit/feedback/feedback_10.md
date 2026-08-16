@@ -1,9 +1,44 @@
-All four landed cleanly, and the panel-coverage finding extends the point further than I did.
+Correct — ChromHMM is a segmentation, not a list. It runs a hidden Markov model over histone ChIP tracks and assigns every genomic segment a state. To turn that into a gene set you have to take each gene's TSS, look up which state it falls in, and group accordingly. That's a derived categorisation from a measurement, not a curated annotation.
 
-One symmetric fix worth adding: you have a minimum-n floor (25 genes) but no maximum-coverage rule. A set covering 88% of the panel can't produce an interpretable set-vs-rest contrast at any effect size — the comparison group is a 227-gene remainder defined only by not being in a very large set. Those rows shouldn't be read as evidence either way.
+Contrast with Lambert TF: someone read the literature and identified proteins containing a DNA-binding domain. That's a property of the protein, independent of any chromatin assay.
 
-Adding a coverage ceiling (say, flag or exclude above 70%) mirrors the existing convention and stops a reader treating ChromHMM_active_TSS at |d| = 0.29 as comparable to Lambert TF at 0.46. It also pre-empts someone asking why a set covering most of your panel is in a "displaced vs not" table at all.
+Two consequences:
 
-Worth noting for reassurance: this doesn't touch the headline. SE is 8.6% of the panel and Lambert TF 8.4% — both well inside any sensible bound, and the matched-n comparison is unaffected. And you've already shown the taxonomy survives dropping all three oversized sets (0.0019 vs 0.0018).
+The DIRECT/OUTPUT taxonomy is shakier than it looks for the ChromHMM rows. Cluster Claude's distinction was multi-mark HMM vs single-mark rank-cutoff — a real methodological difference — but both are still thresholding operations on ChIP signal. ChromHMM sits closer to dbSUPER than the category boundary implies. Worth acknowledging rather than defending.
 
-The density-overlay panel is the right call. That figure is now the single most persuasive thing in the report — a reader sees the SE curve sitting on the panel curve and doesn't need the statistics explained.
+More importantly, it sharpens which controls are load-bearing. Chromatin state and 3D contact are both downstream of the same underlying chromatin biology, so "ChromHMM-derived sets separate in MCC space" is partly two assays measuring one thing. That's the "chromatin predicts chromatin" objection, and it applies to active_TSS, bivalent, and Roadmap_silenced alike.
+
+Your genuinely independent controls are the two that touch no chromatin assay at all:
+
+Lambert TF — protein sequence
+GWAS_immune_hot — variant association
+
+Those are the ones that show contact architecture corresponds to something outside chromatin measurement. Everything ChromHMM-derived should be presented as corroboration with that caveat stated, not as independent evidence.
+
+Which makes Phase 1.1 more valuable again — a mechanism-defined housekeeping set would be a third control from outside chromatin, and you'd have three independent lines instead of two.
+
+do we have a mechanism defined housekeeping set and anythign else like this for other genes?
+
+Ran a command
+
+No mechanism-defined housekeeping set has been built. But several are available, and the best one is free.
+
+Strongest candidate, already on disk: Lambert DBD subfamilies.
+
+The Lambert file carries DNA-binding-domain classes — C2H2 zinc finger, bHLH, IRF, Rel, forkhead, and so on. You're currently collapsing all 1,600+ human TFs into one set. Splitting by DBD gives you multiple mechanism-defined sets at finer grain, all sequence-derived and independent of any chromatin assay.
+
+It also tests something specific: does the "promoter-driven, CTCF-poor" signature hold uniformly across TF families, or does it differ? That connects directly to your earlier finding that C2H2-ZF and IRF/Rel families split across archetypes. Zero fetch, and it could turn one positive control into three or four.
+
+For housekeeping specifically, in order of independence:
+
+Core promoter sequence classes — TATA-box, Initiator, DPE-containing promoters. Scan hg38 (on disk, same reference as your probes) with the JASPAR core-promoter motifs. TATA-containing is the classic sharp/developmental class and CpG-island-broad is the housekeeping class — this is the Haberle/Stark distinction, mechanism-defined by sequence, and completely independent of chromatin. This is the right test for the housekeeping question.
+Translation machinery — ribosomal proteins alone give only 19, but RP + translation initiation and elongation factors + aminoacyl-tRNA synthetases should clear 50. MSigDB is on disk and unused; KEGG_RIBOSOME and the translation GO terms would build it.
+Hwang 2023 promoter-assembly genes — the paper is in your folder; check whether it has a supplementary gene list.
+
+Other mechanism-defined sets worth considering (all protein/sequence-defined, chromatin-independent):
+
+Protein complex membership (CORUM) — genes whose products are in the same complex
+Imprinted genes — defined by allele-specific regulation mechanism
+Other Pfam domain families — kinases, GPCRs, as further Lambert-style controls
+
+I'd do the Lambert DBD split first since it's free, then core promoter sequence classes since that's the one that answers the housekeeping question properly.
