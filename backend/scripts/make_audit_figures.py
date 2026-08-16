@@ -253,41 +253,87 @@ save(fig, "fig2_axis_rank", "SE leans on sPC12; displaced sets lean on the top 4
 # =========================================================================
 # FIG 3: displaced but not separated
 # =========================================================================
-print("fig 3: displacement forest...")
-fig, ax = plt.subplots(1, 2, figsize=(9.5, 4.4),
-                       gridspec_kw={"width_ratios": [1, 1]})
-o = ext.sort_values("d")
-cols = [OCHRE if g == SE else (GREEN if g == "gene_desert_bottomQ_density" else INK)
-        for g in o["group"]]
-ax[0].barh(range(len(o)), o["d"], color=cols, height=.68)
-ax[0].axvline(0, color="#666", lw=.8)
-for x, lab_ in [(-0.8, "large"), (-0.5, "medium"), (-0.2, "small")]:
-    ax[0].axvline(x, color=GREY, ls=":", lw=.7)
-    ax[0].axvline(-x, color=GREY, ls=":", lw=.7)
-ax[0].set_yticks(range(len(o)))
-ax[0].set_yticklabels([g.replace("_", " ")[:30] for g in o["group"]], fontsize=6.5)
-ax[0].set_xlabel("Cohen's d on the set's strongest component")
-ax[0].set_title("Displaced, but never separated", loc="left")
-ax[0].set_xlim(-1.0, 1.0)
+print("fig 3: displacement + density overlays...")
+# |d| ONLY, never signed. Each set's d is measured on ITS OWN strongest
+# component, PCA sign is arbitrary per component, and different components are
+# not a shared scale. Sorting signed values would imply a spectrum from "most
+# positive" to "most negative" that does not exist.
+DEFN_CAT = {
+    "Lambert_TF": "DIRECT", "CpG_island_promoter": "DIRECT", "phastCons_2kb_topQ": "DIRECT",
+    "GWAS_immune_hot": "DIRECT", "GWAS_total_topQ": "DIRECT", "GWAS_immune_any": "DIRECT",
+    "gnomAD_pLI_topQ": "DIRECT", "ChromHMM_active_TSS": "DIRECT",
+    "ChromHMM_bivalent": "DIRECT", "Roadmap_silenced": "DIRECT",
+    "DICE_top_TPM_quartile": "OUTPUT", "cd4_rna_top_quartile": "OUTPUT",
+    "cd4_specific_immune": "OUTPUT", "Eisenberg_HK": "OUTPUT", "bio_HK_k3": "OUTPUT",
+    "bio_bulk_k3": "OUTPUT", "bio_dev_TF_k3": "OUTPUT",
+    "DepMap_curated_essential": "OUTPUT", "DepMap_inferred_essential": "OUTPUT",
+    "dbSUPER_CD4_SE_TSS_pm50kb": "RANK_SINGLE",
+    "gene_desert_bottomQ_density": "CONTEXT",
+}
+CAT_COL = {"DIRECT": INK, "OUTPUT": "#9fb6c8", "RANK_SINGLE": OCHRE, "CONTEXT": GREEN}
 
-ax[1].scatter(o["d"].abs(), o["overlap"], s=20 + 45 * np.sqrt(o["n"] / o["n"].max()),
-              c=cols, zorder=3)
-for g in [SE, "Lambert_TF", "Roadmap_silenced", "GWAS_immune_hot"]:
-    r = o[o["group"] == g]
-    if len(r):
-        ax[1].annotate(g.replace("_", " ")[:22],
-                       (abs(r["d"].iloc[0]), r["overlap"].iloc[0]),
-                       xytext=(abs(r["d"].iloc[0]) + .025, r["overlap"].iloc[0] + 1.6),
-                       fontsize=6.5, color=OCHRE if g == SE else INK,
-                       weight="bold" if g == SE else "normal")
-ax[1].axhline(70, color=GREY, ls=":", lw=.8)
-ax[1].text(.02, 71, "70% overlap", fontsize=6, color=GREY)
-ax[1].set_xlabel("|d|"); ax[1].set_ylabel("% overlap of the two distributions")
-ax[1].set_ylim(65, 100)
-ax[1].set_title("Even the largest effect leaves 71% overlap", loc="left")
-fig.suptitle("External categories are directions, not regions", x=0.06, ha="left",
-             fontsize=10, weight="bold")
-save(fig, "fig3_displaced_not_separated", "d and overlap, SE ochre, density control green")
+fig = plt.figure(figsize=(10.6, 5.0))
+gs = fig.add_gridspec(3, 2, width_ratios=[1.35, 1], hspace=.55, wspace=.30,
+                      left=.20, right=.97, top=.86, bottom=.18)
+axL = fig.add_subplot(gs[:, 0])
+
+o = ext.copy()
+o["cat"] = o["group"].map(DEFN_CAT).fillna("OUTPUT")
+o["ad"] = o["d"].abs()
+o = o.sort_values("ad")
+cols = [CAT_COL[c] for c in o["cat"]]
+bars = axL.barh(range(len(o)), o["ad"], color=cols, height=.7,
+                edgecolor=[INK if q < .05 else "none" for q in o["p"]], linewidth=.9)
+# n and the significance marker both go to the RIGHT of the bar, clear of the
+# set labels on the left.
+for i, (q, nn) in enumerate(zip(o["p"], o["n"])):
+    star = "*" if q < .05 else " "
+    axL.text(o["ad"].iloc[i] + .015, i, f"{star}  n={nn}", va="center",
+             fontsize=6, color=INK if q < .05 else GREY)
+axL.set_yticks(range(len(o)))
+axL.set_yticklabels([g.replace("_", " ")[:30] for g in o["group"]], fontsize=6.8)
+axL.set_xlabel("|Cohen's d| on that set's strongest component")
+axL.set_xlim(0, 1.02)
+axL.set_title("Displaced, but never separated", loc="left", fontsize=9)
+axL.legend(handles=[
+    Line2D([], [], color=INK, lw=7, label="direct annotation"),
+    Line2D([], [], color="#9fb6c8", lw=7, label="output-defined"),
+    Line2D([], [], color=OCHRE, lw=7, label="super-enhancers (rank cutoff)"),
+    Line2D([], [], color=GREEN, lw=7, label="gene desert: density control,\nnot a finding"),
+    ], frameon=False, fontsize=6.2, loc="lower right", handlelength=1.4)
+axL.text(.02, -.115, "Magnitudes only. Each set is measured on its own strongest "
+                     "component and PCA sign is arbitrary,\nso signed values are not "
+                     "comparable between sets.",
+         transform=axL.transAxes, fontsize=6, color=GREY, style="italic")
+
+# Right: the claim itself, as overlapping densities on each set's own axis.
+EX = [("Lambert_TF", "largest real separation"),
+      ("GWAS_total_topQ", "mid-pack"),
+      ("dbSUPER_CD4_SE_TSS_pm50kb", "the null")]
+for row, (g, note) in enumerate(EX):
+    a = fig.add_subplot(gs[row, 1])
+    members = set(cm.loc[cm["group"] == g, "symbol_key"])
+    hit = np.fromiter((v in members for v in sym), bool, n)
+    j = int(ext.loc[ext["group"] == g, "axis"].iloc[0]) - 1
+    xs = np.linspace(-3.2, 3.2, 220)
+    for mask, c, lab_, lw in [(~hit, GREY, "rest of panel", 1.2),
+                              (hit, CAT_COL[DEFN_CAT[g]], "set", 1.9)]:
+        v = D[mask, j]
+        kde = np.exp(-((xs[:, None] - v[None, :]) / .38) ** 2 / 2).sum(1)
+        a.plot(xs, kde / kde.max(), color=c, lw=lw, label=lab_)
+        a.fill_between(xs, kde / kde.max(), color=c, alpha=.13)
+    dd = ext.loc[ext["group"] == g, "d"].abs().iloc[0]
+    ov = ext.loc[ext["group"] == g, "overlap"].iloc[0]
+    a.set_title(f"{g.replace('_', ' ')[:26]}  ({note})\n"
+                f"|d| = {dd:.2f}, {ov:.0f}% overlap, shape-PC{j + 1}",
+                loc="left", fontsize=7)
+    a.set_yticks([]); a.set_xlim(-3.2, 3.2)
+    a.set_xlabel("position on that component" if row == 2 else "")
+    if row == 0:
+        a.legend(frameon=False, fontsize=6, loc="upper right")
+fig.suptitle("External categories are directions, not regions", x=.02, y=.985,
+             ha="left", fontsize=10.5, weight="bold")
+save(fig, "fig3_displaced_not_separated", "|d| by definition type, plus density overlays")
 
 
 # =========================================================================

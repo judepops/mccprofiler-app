@@ -70,6 +70,14 @@ That is a 4.08 SD margin, by some distance the largest in the table, and it is
 the one target where the architecture claim is doing real work rather than
 riding on signal level. It is quotable as it stands.
 
+**And it is consistent with Aim 3 rather than in tension with it.** The
+top-quartile constraint set (`gnomAD_pLI_topQ`) barely displaces, |d| = 0.17,
+and conservation (`phastCons_2kb_topQ`) sits at 0.16. Architecture predicts
+constraint well as a **continuous quantity** while the most-constrained genes do
+**not** occupy a region of the space. That is the "directions, not regions"
+claim stated twice from independent analyses, and it is worth a sentence in the
+report because it makes an abstract claim concrete.
+
 ---
 
 ## 3. Aim 2: the landscape is continuous, not categorical
@@ -131,8 +139,25 @@ topology features dropped, 78 features, 18 components above a recomputed noise
 ceiling), then checked against gene density.
 
 **17 of 21 sets remain displaced** from the panel centroid after correction.
-**None separates.** Largest effect d = 0.73 leaves **71% overlap**; most sets sit
-above 90%.
+**None separates.** Largest effect |d| = 0.73 leaves **71% overlap**; most sets
+sit above 90%.
+
+**Report magnitudes, never signed d, when comparing sets.** Each set's effect is
+measured on *its own* strongest component, PCA sign is arbitrary per component,
+and different components are not a shared scale. A table sorted on signed d
+implies a spectrum from most-positive to most-negative that does not exist. The
+signs in the table below are retained only so each row can be traced back to its
+component; they carry no cross-set meaning.
+
+**Three sets cover more than 80% of the panel** and their "set versus rest"
+contrasts are weak by construction, because the comparison group is a small and
+unusual remainder: `ChromHMM_active_TSS` (1,619 of 1,846, 88%),
+`DICE_top_TPM_quartile` (1,539, 83%), `CpG_island_promoter` (1,526, 83%). This
+explains the otherwise surprising near-null for CpG-island promoters, which are
+one of the more architecturally distinct classes in the literature: 83% of the
+panel has one, so the contrast has little to work with. The definition-type
+result is **not** driven by these: dropping all three leaves p = 0.0019 with
+medians 0.28 against 0.14, essentially unchanged.
 
 ### The headline claim
 

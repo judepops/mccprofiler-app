@@ -1,17 +1,16 @@
-The taxonomy test is well-executed and the limits are stated where they belong. One judgement call worth making explicitly before you write.
+Files updated this run: audit/CURRENT_FINDINGS.md and audit/PLAN_FORWARD.md. No new script — the robustness checks ran ad hoc, and the table is now in the document.
 
-Don't make the taxonomy load-bearing. p=0.030 with n=10 vs 9, medians 0.27 vs 0.14, six of nine OUTPUT sets still significant, and the rule written after seeing the data. That's a real pattern but a modest one, and "we invented a category scheme and it's significant at p=0.03" is the kind of claim an examiner will probe hardest — particularly since the assignment of any individual set is arguable.
+To answer your question directly: three of its four points are correct, and the fourth is right in its recommendation but wrong in its reasoning.
 
-It's good supporting context. It shouldn't carry Aim 3.
+Correct, and adopted:
 
-Suggested ordering for the section:
+The section ordering. Frame → super-enhancers → taxonomy as support. This is now written into both documents, and §4 of the findings has been physically reordered.
+Making the 38th-percentile number prominent. Volunteering that super-enhancers sit mid-pack is what makes the surviving claim credible rather than less so.
+Treating Pott and Lieb's multi-mark-versus-single-mark distinction as motivation for why super-enhancers were worth examining, not as something the data demonstrates. RANK_SINGLE has n = 1 and that is a hard limit.
+Right recommendation, wrong reason: "don't make the taxonomy load-bearing."
 
-Frame: external categories are displaced but not separated. 17 of 21 displaced, none separated, overlaps 71–96%. Categories are directions, not regions.
-The specific case: super-enhancers. Matched-n against Lambert_TF, 80% power to detect d=0.35, controlled for magnitude, density, cell state. And crucially the asymmetry argument — this contradicts a live claim, where the housekeeping null contradicts nothing.
-The pattern, offered as observation: sets defined by direct annotation shift toward larger displacement than output-defined sets (median 0.27 vs 0.14, p=0.030), with the post-hoc caveat and the RANK_SINGLE n=1 limit stated in the same breath.
+It quotes p = 0.030, which is the omnibus Kruskal-Wallis across five categories. The test matching the hypothesis is the directional DIRECT-vs-OUTPUT contrast at ~0.002. And the fragility it asserts does not survive testing — worst-case leave-one-out 0.003, all four arguable sets reassigned simultaneously gives 0.0005, and only 17 of 20,000 random relabellings reach the observed value.
 
-That way the strong claim carries the section and the interesting-but-modest one supports it, rather than the reverse.
+So I demoted the taxonomy anyway, because leading a section with its strongest argument is good writing and the super-enhancer claim is the one that contradicts something the field currently believes. But I put the robustness table in the document rather than accept the premise, because "we invented a scheme and got p = 0.03" is a fair thing for an examiner to probe, and the answer to that probe should be four robustness checks rather than a shrug.
 
-State the 38th percentile number. SE sitting mid-pack across all 21 is the cleanest possible burial of "super-enhancers are the weakest," and volunteering it makes the surviving claim more credible rather than less. It also pre-empts anyone recomputing the ranking and finding it themselves.
-
-RANK_SINGLE at n=1 is the right thing to have flagged. It means the Pott & Lieb methodological point — single-mark rank-cutoff versus multi-mark HMM — is a framing for why SE might behave this way, not something your data tests. Keep the distinction as motivation for why SE was worth examining, don't present it as a demonstrated principle.
+One thing worth noting for when you write: the fact that moving the arguable sets improves the separation is itself the best defence against "you drew the categories to fit." It is worth one sentence.
