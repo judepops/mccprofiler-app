@@ -131,18 +131,22 @@ self-correction record itself, which is an asset.
 
 Ranked by measured justification, not appeal.
 
-**A. Peak-level unit of analysis. The main bet.** Summits reproduce at 14 bp
+**A. Peak-level unit of analysis. Now the only research bet.** Summits reproduce at 14 bp
 median, 64x tighter than a jitter null, and CTCF summits sit 9 bp from the motif
 centre at 4.48x a centrality-matched null with an enhancer negative control at
 1.01x. The 91 features use nothing below roughly 1 kb and lose 18.7% of peaks at
 5 kb binning. The assay resolves two orders of magnitude finer than the
 representation reads. Requires a real adjacency first, which S2.1 begins.
 
-**B. Constraint as the biological result.** LOEUF is the one place architecture
-does genuine work: 0.031 from peak counting, 0.210 from all features, **0.191
-surviving complete magnitude removal**, so 91% is shape. Which architectural
-features carry it, and why, is a positive mechanistic question of the kind the
-project currently lacks. Most likely to succeed; A has the higher ceiling.
+**B. CANCELLED 2026-08-16.** Constraint was to be the biological result, on the
+grounds that 91% of the LOEUF prediction survived magnitude removal. It does not
+survive gene length: shape adds +0.002 over length, expression and CpG, and the
+confound is length specifically, which LOEUF scales with by construction. An
+hour of checking saved a phase, which is exactly what it was added for.
+
+The wider lesson applies to A and C as well: **any predictive claim must be
+tested against gene length, expression and CpG density before it is believed.**
+No baseline in this project has ever contained them.
 
 **C. Learned representations.** The MAE arm, plus a contrastive objective using
 the twice-captured genes as positive pairs, which targets the measured

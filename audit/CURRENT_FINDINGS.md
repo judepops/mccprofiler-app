@@ -56,7 +56,68 @@ The defensible claim is therefore specific rather than sweeping:
 Those two are also the only targets that survive amount correction in the
 shape-corrected analysis, so two independent analyses converge on the same pair.
 
-### The strongest single result in Aim 1: constraint
+### RETRACTED 2026-08-16: the predictive claim does not survive gene length
+
+The nested baselines compare the 91 features against peak counting and against
+the 11-feature magnitude basis. They never compared against **gene length,
+expression level and CpG density**, and those three simple covariates predict
+better than the features on every target tested
+(`diagnose_loeuf_confounds.py`).
+
+| target | confounders | shape | both | shape adds |
+|---|---|---|---|---|
+| gnomad_loeuf | **0.452** | 0.152 | 0.454 | **+0.002** |
+| GWAS_immune_hot | 0.694 | 0.627 | 0.699 | +0.005 |
+| DepMap_curated_essential | 0.576 | 0.520 | 0.582 | +0.006 |
+| Eisenberg_HK | 0.680 | 0.533 | 0.673 | **-0.007** |
+| gtex_tau | 0.218 | 0.080 | 0.230 | +0.012 |
+| phastcons_2kb | 0.055 | 0.065 | 0.098 | +0.043 |
+| Lambert_TF | 0.577 | 0.622 | 0.631 | +0.053 |
+
+**Contact shape adds essentially nothing to three simple gene properties.** The
+confound is specifically length: partialling length alone drops the LOEUF result
+from 0.152 to 0.085, while expression and CpG cost nothing.
+
+Why length. LOEUF is a depletion statistic, so it scales with coding sequence
+length by construction, and length independently changes contact features
+because a longer gene occupies more of the plus-or-minus 1 Mb window
+(`r(length, n_peaks_promoter)` = 0.42, though the median across features is only
+0.08).
+
+**What this costs.** Aim 1's justification cannot be "the features predict
+biology better than the baselines". They beat peak counting and they beat the
+magnitude basis, both true and both now insufficient, because neither baseline
+contained length. The honest version:
+
+> The 91 features improve on peak counting and on overall magnitude, but their
+> predictive advantage over gene length, expression and CpG density is
+> negligible. Their value is not prediction of existing annotations.
+
+**What survives.** Aims 2 and 3 are untouched, because they concern the geometry
+of the feature space rather than prediction of external labels, and Aim 3 was
+re-tested against length directly (below). The tool is still what makes the
+continuum and displacement analyses possible; it is simply not justified as a
+predictor.
+
+### Aim 3 survives gene length: six confounders now controlled
+
+| set | magnitude only | + length | + length, expression, CpG, density |
+|---|---|---|---|
+| ChromHMM_bivalent | 0.58 | 0.59 | 0.66, p 0.0005 |
+| Roadmap_silenced | 0.73 | 0.74 | 0.47, p 0.0025 |
+| Lambert_TF | 0.46 | 0.49 | 0.39, p 0.0005 |
+| GWAS_immune_hot | 0.32 | 0.24 | 0.31, p 0.040 |
+| **dbSUPER SE** | 0.16 | 0.19 | **0.24, p 0.15** |
+| gene_desert (density control) | 0.71 | 0.57 | 0.20, p 0.0005 |
+
+The super-enhancer null holds under all of them. `gene_desert` collapsing is
+expected and is the check working: density is in the confounder set.
+
+The claim is now controlled for **overall magnitude, gene density, gene length,
+expression, CpG density, chromosome, cell-state matching, and statistical
+power.**
+
+### The former Aim 1 headline, retained for context only
 
 Do not let the honesty about the other seven flatten this one.
 
@@ -541,6 +602,8 @@ earlier handoffs.
 | "PC1 is not amount" (r = 0.033 with `total_mcc`) | **Retracted.** Against the `MAG_OVERALL` basis, PC1 correlates at **0.623**. PC1 is the amount axis. The error was using one feature as the amount proxy. |
 | "Amount is not one quantity" | **Reframed.** Amount is multi-faceted, so it must be measured with the 11-feature basis, not with `total_mcc`. |
 | "Regress `total_mcc` out before PCA" | **Superseded.** Use `MAG_OVERALL` via `_shape.corrected_shape`. |
+| "Contact architecture predicts evolutionary constraint" | **Retracted 2026-08-16.** Shape adds +0.002 over gene length, expression and CpG. The confound is length, which LOEUF scales with by construction and which no baseline contained. |
+| "The 91 features are justified because they predict biology" | **Retracted.** They beat peak counting and the magnitude basis, but add nothing over three simple gene properties. Justify them by what they make possible, not by prediction. |
 | "Mechanism vs output taxonomy over 7 sets" | **Superseded.** Redone across all 21 with the assignment fixed by annotation procedure; the pattern holds at p = 0.0024, but RANK_SINGLE is n = 1 so nothing is claimable about that category. |
 | "Super-enhancers are the weakest of 21" | **Withdrawn twice.** First as over-precise, then outright: on the corrected substrate the SE set has a LARGER effect (\|d\| 0.16) than Eisenberg-HK (0.11). Replaced by the kind-of-definition pattern in Section 4. |
 | "The asymmetry family is a strand/orientation bug" | **Refuted.** `|value|` reproduces worse, and strand-relative asymmetry is d = -0.045. It is a support-size problem: median peak ~11 bins at 1-2 reads per bin. |
