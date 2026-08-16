@@ -1,19 +1,17 @@
-The reframe is better and the retraction was right. Two problems with the new taxonomy, both fixable, and one of them a reviewer will find immediately.
+The taxonomy test is well-executed and the limits are stated where they belong. One judgement call worth making explicitly before you write.
 
-1. The categories are post-hoc, built from 7 of 21 sets.
+Don't make the taxonomy load-bearing. p=0.030 with n=10 vs 9, medians 0.27 vs 0.14, six of nine OUTPUT sets still significant, and the rule written after seeing the data. That's a real pattern but a modest one, and "we invented a category scheme and it's significant at p=0.03" is the kind of claim an examiner will probe hardest — particularly since the assignment of any individual set is arguable.
 
-"Mechanism / consequence / chromatin state" vs "output / threshold" was chosen after seeing which sets separated. With seven sets and two bins you can nearly always find a scheme that fits. As written it's a just-so story.
+It's good supporting context. It shouldn't carry Aim 3.
 
-The fix is straightforward and makes it a real result: classify all 21 sets by definition type before looking at any effect size, write the assignment down, then test whether the categories differ (Mann-Whitney on d across categories, or just report the two distributions). If the pattern holds across all 21 with the assignment fixed in advance, it's a finding. If it only holds for the 7 you happened to tabulate, it isn't.
+Suggested ordering for the section:
 
-That's an hour and it's the difference between a claim and an observation.
+Frame: external categories are displaced but not separated. 17 of 21 displaced, none separated, overlaps 71–96%. Categories are directions, not regions.
+The specific case: super-enhancers. Matched-n against Lambert_TF, 80% power to detect d=0.35, controlled for magnitude, density, cell state. And crucially the asymmetry argument — this contradicts a live claim, where the housekeeping null contradicts nothing.
+The pattern, offered as observation: sets defined by direct annotation shift toward larger displacement than output-defined sets (median 0.27 vs 0.14, p=0.030), with the post-hoc caveat and the RANK_SINGLE n=1 limit stated in the same breath.
 
-2. The chromatin-state / signal-threshold boundary doesn't survive scrutiny.
+That way the strong claim carries the section and the interesting-but-modest one supports it, rather than the reverse.
 
-dbSUPER super-enhancers are a rank-and-threshold on H3K27ac. ChromHMM bivalent is a threshold on H3K4me3 and H3K27me3. Roadmap silenced is a threshold on chromatin marks. All three are thresholds on ChIP signal — so why do two count as "chromatin state" and one as "threshold on signal"?
+State the 38th percentile number. SE sitting mid-pack across all 21 is the cleanest possible burial of "super-enhancers are the weakest," and volunteering it makes the surviving claim more credible rather than less. It also pre-empts anyone recomputing the ranking and finding it themselves.
 
-You need a principled distinction or the taxonomy collapses. The defensible one is combinatorial multi-mark state vs rank-cutoff on a single mark: ChromHMM and Roadmap use hidden Markov models over many marks to assign states; ROSE ranks regions by one mark and cuts at an inflection point. That's a real methodological difference and it's exactly the Pott & Lieb critique. But it has to be stated explicitly, because right now the categories look drawn to fit.
-
-On the SE claim specifically — it survives the reframe and is still the interesting case, for a reason worth stating: nobody claims Eisenberg housekeeping genes constitute a distinct 3D architectural class. People do claim that about super-enhancers. So a null for SE contradicts a live claim in the literature; a null for Eisenberg contradicts nothing. That asymmetry is why SE stays the headline even though its effect size is marginally larger.
-
-And the figure-as-control lesson is right. Drawing figure 6 falsified the arch-HK claim that four written review rounds missed. Move figure production before writing in the plan, not after.
+RANK_SINGLE at n=1 is the right thing to have flagged. It means the Pott & Lieb methodological point — single-mark rank-cutoff versus multi-mark HMM — is a framing for why SE might behave this way, not something your data tests. Keep the distinction as motivation for why SE was worth examining, don't present it as a demonstrated principle.

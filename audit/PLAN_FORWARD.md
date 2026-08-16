@@ -121,6 +121,37 @@ load-bearing for any current claim.*
 
 ---
 
+## How to order Aim 3 when writing
+
+Strongest claim first, supporting observation second. Decided 2026-08-16.
+
+1. **Frame.** External categories are displaced but not separated. 17 of 21
+   displaced, none separated, overlaps 71 to 96%. Categories are directions in
+   this space, not regions of it.
+2. **The specific case: super-enhancers.** Matched-n against Lambert_TF (158 vs
+   156), 80% power to detect d = 0.35, controlled for magnitude, gene density
+   and cell state. Carried by the literature asymmetry: a null here contradicts
+   a live claim, where the housekeeping null contradicts nothing. State the
+   38th-percentile number in the same breath, because volunteering it is what
+   makes the surviving claim credible.
+3. **The pattern, as supporting observation.** Direct-annotation sets shift
+   toward larger displacement than output-defined sets, median 0.27 against
+   0.14, p = 0.002, robust to leave-one-out and to reassigning every arguable
+   set. Give the post-hoc caveat and the RANK_SINGLE n = 1 limit in the same
+   paragraph.
+
+The taxonomy is demoted for rhetorical reasons, not evidential ones: it survives
+every robustness check run against it, but the super-enhancer claim is the one
+that contradicts something the field currently believes, and a section reads
+better led by its strongest argument.
+
+Pott and Lieb's multi-mark-state versus single-mark-rank-cutoff distinction is
+**motivation for why super-enhancers were worth examining**, not a principle the
+data demonstrates. RANK_SINGLE contains one set. Do not present it as a
+demonstrated result.
+
+---
+
 ## Phase 2. Write the transfer report
 
 Structure, following the framing that the work actually supports:

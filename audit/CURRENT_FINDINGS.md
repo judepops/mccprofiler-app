@@ -158,9 +158,31 @@ sensitivity figure. So the null cannot be dismissed as a cell-state mismatch.
 Running the naive list as a sensitivity check is still worth an hour
 (`PLAN_FORWARD.md` Phase 0.5).
 
-### What actually separates: the kind of definition, tested across all 21 sets
+### Why super-enhancers are the case of interest
 
-An earlier version of this section was a just-so story: a two-bin taxonomy drawn
+Not because their effect is smallest. It is not, and the earlier claim that it
+was has been withdrawn twice. The reason is an asymmetry in what the literature
+claims:
+
+> **Nobody argues that Eisenberg housekeeping genes constitute a distinct
+> three-dimensional architectural class. People do argue exactly that about
+> super-enhancers.** A null for super-enhancers contradicts a live claim; a null
+> for an expression-defined list contradicts nothing.
+
+The methodological point sharpens it. ChromHMM and Roadmap fit a hidden Markov
+model over many histone marks to assign a state, and both separate. ROSE ranks
+stitched regions by a single mark and cuts at the inflection point of the ranked
+curve, and that one does not. That is the precise procedure Pott and Lieb (2015)
+argue has no biological warrant, and this is a direct measurement of the
+consequence in a data type they did not have.
+
+State it that way and the claim rests on the literature asymmetry and the
+methodological contrast, not on an effect-size ranking that does not hold.
+
+### Supporting observation: the kind of definition predicts displacement
+
+Offered as context for the result above, not as the argument carrying it. An
+earlier version of this section was a just-so story: a two-bin taxonomy drawn
 over seven sets after seeing which ones separated. It has been redone properly
 (`diagnose_definition_type.py`). All 21 sets are classified by the **data and
 procedure their annotation was computed from**, which is a documented property
@@ -189,6 +211,25 @@ significant; six of nine OUTPUT sets are.
 > contact-architecture space than sets defined by what a gene **does**
 > (expression, fitness). Median \|d\| 0.27 against 0.14, p = 0.0024.
 
+**It is robust to how the sets are assigned.** The obvious objection is that
+individual assignments are arguable and the result would move if they changed.
+Tested four ways and it does not:
+
+| check | p |
+|---|---|
+| baseline, DIRECT vs OUTPUT | 0.002 |
+| leave-one-out across all 19 sets | worst case **0.003** |
+| reassign each of the 4 most arguable sets in turn | 0.0006 to 0.0018 |
+| reassign **all four simultaneously** | **0.0005** |
+| 20,000 random 10/9 relabellings | 17 reach the observed p, i.e. **0.001** |
+
+Moving the arguable sets *improves* the separation, which indicates the rule was
+not drawn to maximise it. The four treated as arguable were
+`CpG_island_promoter` (a promoter-class annotation as much as a sequence one),
+`bio_dev_TF_k3` (about TFs, though the label is expression-derived),
+`phastCons_2kb_topQ` (conservation is sequence but proxies function) and
+`gnomAD_pLI_topQ` (population genetics, but reflects fitness).
+
 **Three honest limits on this, all of which belong in the writeup.**
 
 *It is not a preregistration.* The assignment is made from documented annotation
@@ -204,27 +245,6 @@ signature; they have a weaker one.
 contains one set. So no claim of the form "single-mark rank thresholds do not
 correspond to architecture" is supported. Super-enhancers sit at the **38th
 percentile** of \|d\| across all 21 sets: mid-pack, not last.
-
-### Why super-enhancers remain the case of interest anyway
-
-Not because their effect is smallest. It is not, and the earlier claim that it
-was has been withdrawn twice. The reason is an asymmetry in what the literature
-claims:
-
-> **Nobody argues that Eisenberg housekeeping genes constitute a distinct
-> three-dimensional architectural class. People do argue exactly that about
-> super-enhancers.** A null for super-enhancers contradicts a live claim; a null
-> for an expression-defined list contradicts nothing.
-
-The methodological point sharpens it. ChromHMM and Roadmap fit a hidden Markov
-model over many histone marks to assign a state, and both separate. ROSE ranks
-stitched regions by a single mark and cuts at the inflection point of the ranked
-curve, and that one does not. That is the precise procedure Pott and Lieb (2015)
-argue has no biological warrant, and this is a direct measurement of the
-consequence in a data type they did not have.
-
-State it that way and the claim rests on the literature asymmetry and the
-methodological contrast, not on an effect-size ranking that does not hold.
 
 ### The axis rank is a stronger statement of the null than the effect size
 
