@@ -5,12 +5,30 @@ Transfer of Status target is HT Year 2, roughly Jan to Mar 2027, 5,000 words.
 
 ## Order of work
 
-    S0 orthogonality  DONE
-    S1 core promoters (the last test)
-    S2.6 PROJECT_STATUS.md first, then the rest of S2, including BOTH feature
-         removals (S2.1 degenerate topology, S2.1b the moment families)
-    S3 figures
-    S4 write
+Corrected 2026-08-16. The earlier order ran S1 before the feature removals,
+which would have meant running the core-promoter displacement test on a
+substrate that was about to change, and therefore running it twice.
+
+    S2.6  PROJECT_STATUS.md redirect          1 h   outward-facing risk, do first
+    S1a   build the core-promoter sets        1 d   substrate-independent, can
+                                                    run in parallel with the below
+    S2.1  drop degenerate topology features   0.5 d
+    S2.1b re-support or retire the moments    2 d
+    S2.3  rebuild the store, re-run scripts   1 h
+    S1b   core-promoter displacement test     2 h   <- on the FINAL substrate
+    S2.2  re-derive archetype names           0.5 d
+    S2.4  fix the app                         3 h
+    S2.5  reconcile 116 vs 119                1 h
+    S3    figures                             2 w
+    S4    write                               3-4 w
+
+**S1 splits.** Building the sets is a JASPAR motif scan against hg38 and touches
+no feature; only the displacement test needs the final substrate. So S1a can run
+alongside the feature work rather than behind it.
+
+Everything from S2.3 onward depends on the rebuilt store. Nothing before S2.3
+should quote a component count, a variance share or an effect size, because all
+of them move.
 
 ## The rule for this phase
 
@@ -81,7 +99,16 @@ Confirmed algebraic at 1842/1842. PC1 goes 15.27% to 18.41% and becomes
 nameable: dispersed distal contact versus emptiness. *Half a day, unblocks
 everything.*
 
-**S2.1b Re-support or retire the per-peak moment families.** This was dropped
+**S2.1b Re-support the per-peak moment families, with a threshold set in
+advance: keep only if the aggregated version clears rho 0.70 across the
+twice-captured genes; otherwise retire them.**
+
+The threshold is fixed now, before the work, for the same reason every other
+pre-registration here has earned its keep. The re-supporting route is worth
+trying because `contact_asymmetry` at rho 0.900 proves the concept works given
+adequate support. But if aggregation does not clear 0.70, retire rather than
+iterate: 14.9% of variance from features that cannot be measured reliably is
+worth less than a smaller trustworthy substrate. This was dropped
 when the plan was consolidated and should not have been. Eight of the nineteen
 retained components rest on `oe_asymmetry` and `oe_tailedness`, which reproduce
 at rho 0.27 to 0.42, and together they carry 14.9% of variance. Diagnosed as a
@@ -116,10 +143,15 @@ by the scripts but not by the cohort list or the grid. *Three hours.*
 **S2.5 Reconcile 116 versus 119 twice-captured genes.** The median rho 0.752 is
 quoted widely and needs one number. *One hour.*
 
-**S2.6 Update `PROJECT_STATUS.md`**, or point it at `audit/CURRENT_FINDINGS.md`.
-It is collaborator-facing, last modified 3 August, and still describes arch-HK
-as housekeeping, which was measured false that same day. *One hour, and it is
-the highest outward-facing risk.*
+**S2.6 Point `PROJECT_STATUS.md` at `audit/CURRENT_FINDINGS.md`. Redirect, do
+not rewrite.** It is collaborator-facing, last modified 3 August, still describes
+arch-HK as housekeeping (measured false the same day) and still frames Aim 1 as
+a predictive result (retracted 16 August). Add a dated banner saying the numbers
+are being re-derived and pointing at the audit folder.
+
+Writing real numbers into it now guarantees writing them twice, because S2.1 and
+S2.1b change every one of them. The redirect is the choice, not the fallback.
+*One hour, and it is the highest outward-facing risk in the project.*
 
 ---
 
