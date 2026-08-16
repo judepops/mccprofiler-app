@@ -158,6 +158,49 @@ sensitivity figure. So the null cannot be dismissed as a cell-state mismatch.
 Running the naive list as a sensitivity check is still worth an hour
 (`PLAN_FORWARD.md` Phase 0.5).
 
+### What actually separates: it is the KIND of definition, not the label
+
+Stated first because it corrects something earlier drafts got wrong. The
+super-enhancer set is **not** uniquely poor. Set against the expression-defined
+housekeeping list:
+
+| set | n | d | p (magnitude-corrected) | p (+ density) |
+|---|---|---|---|---|
+| Eisenberg_HK | 633 | **+0.11** | 0.034 | 0.076 |
+| dbSUPER_CD4_SE | 158 | **-0.16** | 0.177 | 0.160 |
+
+**The super-enhancer set has the larger effect of the two.** Eisenberg reaches
+nominal significance only because it is four times bigger, and neither survives
+density control. Any claim that super-enhancers are the worst-performing label
+in the table is withdrawn.
+
+What the data supports is a pattern by **how a set is defined**:
+
+| separates | does not separate |
+|---|---|
+| Lambert_TF, DNA-binding domain, d = +0.46 | Eisenberg_HK, expression stability, d = +0.11 |
+| GWAS_immune_hot, disease variants, d = +0.32 | dbSUPER_CD4_SE, H3K27ac signal threshold, d = -0.16 |
+| Roadmap_silenced, chromatin state, d = -0.73 | DepMap_curated, CRISPR fitness, d = +0.12 |
+
+> Gene sets defined by regulatory **mechanism** (a protein domain), by **genetic
+> consequence** (disease variants), or by **chromatin state** occupy distinct
+> regions of contact-architecture space. Gene sets defined by **output**
+> (expression stability, fitness) or by a **threshold on signal** do not.
+
+That is a broader and more useful claim than one about super-enhancers alone,
+and it puts the housekeeping failure inside the finding rather than beside it.
+Super-enhancers remain the case of most interest because they are the label most
+often treated as a distinct functional class, and here they behave like the
+output-defined sets rather than the mechanism-defined ones.
+
+**The objection to pre-empt.** Three of the sets that separate are
+chromatin-proximal, so a reader may say this only shows that chromatin-defined
+things correlate with chromatin. Two things answer it: Lambert_TF is defined by
+protein sequence and GWAS_immune_hot by variant association, neither of which
+touches chromatin, and both separate at the top of the table. So the split is
+not chromatin-versus-not. It is mechanism-and-consequence versus output-and-
+threshold. State the objection and this answer together.
+
 ### The axis rank is a stronger statement of the null than the effect size
 
 Effect size says how far a set is displaced. Axis rank says *where* it leans,
@@ -338,7 +381,7 @@ earlier handoffs.
 | "PC1 is not amount" (r = 0.033 with `total_mcc`) | **Retracted.** Against the `MAG_OVERALL` basis, PC1 correlates at **0.623**. PC1 is the amount axis. The error was using one feature as the amount proxy. |
 | "Amount is not one quantity" | **Reframed.** Amount is multi-faceted, so it must be measured with the 11-feature basis, not with `total_mcc`. |
 | "Regress `total_mcc` out before PCA" | **Superseded.** Use `MAG_OVERALL` via `_shape.corrected_shape`. |
-| "Super-enhancers are the weakest of 21" | **Withdrawn as over-precise.** d = 0.29 and 0.37 are indistinguishable. Replaced by the null-against-positive-control statement in Section 4. |
+| "Super-enhancers are the weakest of 21" | **Withdrawn twice.** First as over-precise, then outright: on the corrected substrate the SE set has a LARGER effect (\|d\| 0.16) than Eisenberg-HK (0.11). Replaced by the kind-of-definition pattern in Section 4. |
 | "The asymmetry family is a strand/orientation bug" | **Refuted.** `|value|` reproduces worse, and strand-relative asymmetry is d = -0.045. It is a support-size problem: median peak ~11 bins at 1-2 reads per bin. |
 | "Most of the signal is amount, not shape" | **Softened.** Correct statement is *amount is sufficient for most targets*; residualisation can strip real architecture if amount is downstream of it. |
 | Varimax rotation should be adopted | **Withdrawn.** It nearly doubles nameability for free, but its most concentrated factors are the `oe_asymmetry` families at rho 0.27-0.42. Do not adopt without weighting by reproducibility. |

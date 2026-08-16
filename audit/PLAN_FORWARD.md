@@ -17,17 +17,20 @@ Three aims, and after today all three have an answer rather than a hope.
 
 The claim that carries the thesis:
 
-> Lambert transcription factors (n = 156, mechanism-defined by DNA-binding
-> domain) separate at d = +0.46, p = 0.001. Super-enhancer genes (n = 158, within
-> two genes of the same size, same substrate, same test) do not separate:
-> d = -0.16, p = 0.18, 94% overlap. The super-enhancer test has 80% power to
-> detect d = 0.35 at that size, so the null is informative rather than a failure
-> to look. Chromatin-state categories corroborate (bivalent d = -0.58, silenced
-> d = -0.73, both p = 0.0005, 98-112% retained under density stratification).
+> Gene sets defined by regulatory mechanism (Lambert TF, DNA-binding domain,
+> d = +0.46), by genetic consequence (GWAS immune, d = +0.32) or by chromatin
+> state (Roadmap silenced, d = -0.73) occupy distinct regions of
+> contact-architecture space. Sets defined by output (Eisenberg housekeeping,
+> d = +0.11) or by a threshold on signal (dbSUPER super-enhancers, d = -0.16)
+> do not, at a size where the test has 80% power to detect d = 0.35.
 
-A null against a mechanism-defined positive control of matched size, on the same
-test and substrate, controlled for magnitude, genomic context, and power. Pott
-and Lieb argued it from thresholding logic; this measures it.
+Nulls against mechanism-defined positive controls of matched size, on the same
+test and substrate, controlled for magnitude, genomic context and power. Note
+this is NOT a claim that super-enhancers are uniquely poor: they have a slightly
+larger effect than the housekeeping list. The claim is about which kinds of
+definition correspond to 3D architecture at all. Pott and Lieb argued the
+super-enhancer case from thresholding logic; this measures it, and places it in
+a wider pattern.
 
 ---
 
