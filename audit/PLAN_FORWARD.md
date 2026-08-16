@@ -10,8 +10,7 @@ which would have meant running the core-promoter displacement test on a
 substrate that was about to change, and therefore running it twice.
 
     S2.6  PROJECT_STATUS.md redirect          1 h   outward-facing risk, do first
-    S1a   build the core-promoter sets        1 d   substrate-independent, can
-                                                    run in parallel with the below
+    S1a   build the core-promoter sets        DONE, closed: no contrast on this panel
     S2.1  drop degenerate topology features   0.5 d
     S2.1b re-support or retire the moments    2 d
     S2.1c strand-orient asymmetry             1 d   NEW, real signal recovery
@@ -63,6 +62,23 @@ components; zero features exceed R2 0.25, zero components exceed 0.10.
 
 ---
 
+## S1. CLOSED 2026-08-16, cannot be tested on this panel
+
+Built and run (`build_core_promoter_sets.py`). The panel is 85.1% CpG-island and
+1.3% TATA against 63.8% and 2.8% genome-wide, an odds ratio of 3.56, because it
+was selected on ATAC accessibility. TATA gives 23 genes (below the floor) and
+CpG-island gives 1,564 (over the ceiling), so the Haberle and Stark contrast has
+nothing to measure. Only `coreprom_Inr` at n = 80 is usable, and it carries to
+S1b as a sequence-defined control without answering the housekeeping question.
+
+The housekeeping null therefore stays **open**, `GWAS_immune_hot` remains the
+only fully chromatin-independent positive control, and this becomes the third
+argument this week for the genome-wide panel. See CURRENT_FINDINGS.md 6c.
+
+**Testing is now finished.** What remains is fixes, figures and writing.
+
+<details><summary>original plan for S1, retained</summary>
+
 ## S1. The last test: core-promoter sequence classes
 
 TATA-box, Initiator and DPE-containing promoters, by JASPAR motif scan on the
@@ -87,6 +103,15 @@ Fallbacks if the motif scan is unusable: MSigDB translation machinery
 elongation factors and aminoacyl-tRNA synthetases should clear 50), CORUM
 protein-complex membership, or other Pfam families as further Lambert-style
 controls.
+
+**On the fallbacks:** they remain available but are lower value than they looked.
+The panel-composition problem that killed the core-promoter test is not specific
+to sequence classes, so any candidate set must be checked for panel coverage and
+chr19 share before it is trusted. Given testing is otherwise finished, pursue one
+only if the report needs a second chromatin-independent control badly enough to
+delay writing.
+
+</details>
 
 ---
 

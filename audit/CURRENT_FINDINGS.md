@@ -683,6 +683,64 @@ the rebuild.
 
 ---
 
+## 6c. S1 CLOSED 2026-08-16: the housekeeping question cannot be asked on this panel
+
+The last planned test was core-promoter sequence classes, the second
+chromatin-independent positive control and the proper form of the housekeeping
+question. It cannot be run here, and the reason is a property of the panel worth
+reporting in its own right.
+
+**The panel is strongly selected for CpG-island, TATA-less promoters.**
+Scanning the canonical windows on hg38 for all 19,704 annotated genes, against
+the 1,838 panel genes with sequence:
+
+| | n | TATA at -34 to -18 | CpG island |
+|---|---|---|---|
+| genome-wide | 19,704 | 2.8% | 63.8% |
+| **panel** | 1,838 | **1.3%** | **85.1%** |
+| not in panel | 17,866 | 2.9% | 61.6% |
+
+Odds ratio **3.56** for CpG-island enrichment; TATA depleted 2.2-fold. This
+follows from how the panel was built: TSS extraction then ATAC-accessibility
+selection in CD4, and active human promoters are overwhelmingly CpG-island and
+TATA-less.
+
+**Consequence.** The Haberle and Stark contrast, focused TATA-containing
+developmental against broad CpG-island housekeeping, has no contrast to measure
+here. The candidate sets:
+
+| set | n | % panel | verdict |
+|---|---|---|---|
+| `coreprom_TATA` | 23 | 1% | below the 25-gene floor |
+| `coreprom_focused_TATA_noCpG` | 4 | 0% | hopeless |
+| `coreprom_CpG_island` | 1,564 | 85% | over the 70% ceiling |
+| `coreprom_broad_CpG_TATAless` | 1,545 | 84% | over the ceiling |
+| **`coreprom_Inr`** | **80** | **4%** | **usable** |
+
+Only the Initiator set is testable, and Inr is a core promoter element rather
+than the housekeeping discriminant. It goes to S1b as a sequence-defined,
+chromatin-independent set, but it does not answer the housekeeping question.
+
+**Three things follow.**
+
+*The housekeeping null stays open, not resolved.* `Eisenberg_HK` has no
+architectural signature once magnitude and density are controlled, and we still
+cannot say whether that is because the biology is absent or because the label is
+an expression list. State it as an open question, not as a finding.
+
+*The chromatin-independence problem is not fixed.* `GWAS_immune_hot` remains the
+only positive control touching no chromatin assay, with Lambert_TF qualified for
+chr19 enrichment. That is a real limitation of the report and should be written
+as one.
+
+*It is a concrete argument for the genome-wide panel.* At 63.8% CpG island and
+2.8% TATA, a genome-wide panel gives roughly 550 TATA-containing genes instead
+of 23, and a real CpG contrast instead of an 85% majority. This is the third
+independent argument for Aim 4 found this week, alongside n being thin for
+representation learning and three reference sets exceeding the coverage ceiling.
+
+---
+
 ## 7. Retracted, do not quote
 
 Listed explicitly because all of these appear in `REVIEW.md` Parts 1 to 5 and in
