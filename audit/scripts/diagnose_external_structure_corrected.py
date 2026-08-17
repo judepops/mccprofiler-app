@@ -12,7 +12,9 @@ architecture.
 That makes Aim 3 untested rather than established. This script is the test.
 
 Same procedure as before, but on the amount-corrected substrate: every feature
-regressed on the full 11-feature MAG_OVERALL basis and replaced by its residual,
+regressed on the MAG_OVERALL basis and replaced by its residual (the basis lists
+11 features and resolves to 9 here, since mean_degree and mean_degree_raw were
+dropped as degenerate on 2026-08-16; see _shape.py for why they stay listed),
 with the basis features themselves dropped, exactly as
 `audit/GW/scripts/_shape.py::corrected_shape` does. Also drops the four
 degenerate topology features confirmed in A2, three of which are in the

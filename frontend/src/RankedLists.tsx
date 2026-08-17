@@ -1,3 +1,4 @@
+import { axisKey, type Space } from './space'
 /**
  * Given an axis, which genes sit at its extremes?
  *
@@ -18,7 +19,10 @@ const GROUP_DISPLAY: Record<string, string> = {
   'arch-off': 'empty (QC)',
 }
 
-const AXES = ['pc1', 'pc2', 'pc3', 'pc4', 'pc5'] as const
+// Ranking genes along a raw PC that carries magnitude would rank them partly by
+// how much signal they have, which is why the corrected space is the default.
+// The space itself is chosen once for the page; see space.ts.
+const AXIS_NUMBERS = [1, 2, 3, 4, 5] as const
 
 function Column({
   genes,
@@ -59,8 +63,16 @@ function Column({
   )
 }
 
-export function RankedLists({ onPick }: { onPick?: (symbol: string) => void }) {
-  const [axis, setAxis] = useState<string>('pc3')
+export function RankedLists({
+  onPick,
+  space = 'corrected',
+}: {
+  onPick?: (symbol: string) => void
+  space?: Space
+}) {
+  const AXES = AXIS_NUMBERS.map((n) => axisKey(space, n))
+  const [axisN, setAxisN] = useState<number>(2)
+  const axis = axisKey(space, axisN)
   const [data, setData] = useState<Ranked | null>(null)
 
   useEffect(() => {
@@ -75,7 +87,9 @@ export function RankedLists({ onPick }: { onPick?: (symbol: string) => void }) {
         </h2>
         <select
           value={axis}
-          onChange={(e) => setAxis(e.target.value)}
+          onChange={(e) =>
+            setAxisN(Number(e.target.value.replace(/^s?pc/, '')))
+          }
           className="rounded border border-ink-200 px-2 py-1 text-[11px]"
         >
           {AXES.map((a) => (

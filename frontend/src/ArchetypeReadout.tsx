@@ -44,9 +44,22 @@ export function ArchetypeReadout({ a }: { a: Archetype }) {
       </div>
 
       <div className="mb-1 flex items-baseline gap-3">
-        <span className="text-2xl font-semibold text-ink-900">
+        {/* Rendered at reduced weight, not as a headline. The label is a
+            readout of position, and since 2026-08-16 a provisional one: it was
+            fit on the earlier 91-feature substrate and has not been re-derived.
+            Showing it in the same confident type as before would contradict the
+            written demotion, and the app is what gets demoed. */}
+        <span className="text-xl font-medium text-ink-700">
           {a.display ?? a.group ?? '-'}
         </span>
+        {a.provisional && (
+          <span
+            className="rounded border border-ink-300 px-2 py-0.5 text-[11px] font-medium text-ink-500"
+            title={a.provisional_note ?? undefined}
+          >
+            provisional
+          </span>
+        )}
         {a.is_mixture ? (
           <span className="rounded bg-element-enhancer/10 px-2 py-0.5 text-xs font-medium text-element-enhancer">
             mixture
@@ -57,6 +70,12 @@ export function ArchetypeReadout({ a }: { a: Archetype }) {
           </span>
         )}
       </div>
+
+      {a.provisional_note && (
+        <p className="mb-2 border-l-2 border-ink-200 pl-2 text-[11px] leading-relaxed text-ink-500">
+          {a.provisional_note}
+        </p>
+      )}
 
       <p className="mb-3 font-mono text-[11px] text-ink-400">
         {a.group}

@@ -15,7 +15,8 @@ gene deserts", which is the amount trap one level over.
 Two independent checks:
 
   1. RESIDUALISE. Add gene density to the confounder basis alongside the
-     11-feature MAG_OVERALL magnitude basis, and re-run displacement.
+     MAG_OVERALL magnitude basis (11 listed, 9 resolved on this substrate), and
+     re-run displacement.
   2. STRATIFY. Compute the effect within gene-density deciles and pool. This
      asks the same question without assuming the density relationship is linear,
      and gives a retention percentage directly comparable to the

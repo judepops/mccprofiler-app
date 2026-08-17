@@ -1,0 +1,85 @@
+genes 1846, features 91
+
+==============================================================================
+PC1  amount, richness and reach vs emptiness
+  loading mass in the named concept : 23.3%   (even spread would give 12.1%, lift 1.93x)
+  strongest correlate overall       : n_high_consensus_peaks_075         r = +0.787
+  strongest NAMED correlate         : n_high_consensus_peaks_075         r = +0.787
+  correlation with total_mcc        : +0.033    <-- amount contamination
+  (not in the 91: n_peaks_within_250kb, raw_signal_sum)
+  top 6 correlates, whatever they are:
+      n_high_consensus_peaks_075             r = +0.787  [named]
+      mean_degree                            r = +0.763  [named]
+      n_peaks_all                            r = +0.717  [named]
+      max_distance_to_viewpoint_all          r = +0.715
+      n_peaks_ctcf                           r = +0.650  [named]
+      max_distance_to_viewpoint_ctcf         r = +0.640
+==============================================================================
+PC2  local vs long-range
+  loading mass in the named concept : 26.1%   (even spread would give 15.4%, lift 1.69x)
+  strongest correlate overall       : n_peaks_within_100kb               r = +0.739
+  strongest NAMED correlate         : n_peaks_within_100kb               r = +0.739
+  correlation with total_mcc        : +0.150    <-- amount contamination
+  (not in the 91: mean_distance_to_viewpoint, n_peaks_within_250kb)
+  top 6 correlates, whatever they are:
+      n_peaks_within_100kb                   r = +0.739  [named]
+      frac_far_distal                        r = -0.670  [named]
+      oe_distal_mean                         r = -0.611  [named]
+      frac_local                             r = +0.523  [named]
+      n_peaks_promoter                       r = +0.518
+      raw_peak_max_max_promoter              r = +0.514
+==============================================================================
+PC3  promoter-driven vs enhancer/CTCF
+  loading mass in the named concept : 30.9%   (even spread would give  9.9%, lift 3.12x)
+  strongest correlate overall       : promoter_signal_fraction           r = +0.760
+  strongest NAMED correlate         : promoter_signal_fraction           r = +0.760
+  correlation with total_mcc        : -0.621    <-- amount contamination
+  (not in the 91: enhancer_signal_fraction, frac_promoter, frac_enhancer)
+  top 6 correlates, whatever they are:
+      promoter_signal_fraction               r = +0.760  [named]
+      promoter_signal_fraction_raw           r = +0.694  [named]
+      total_mcc                              r = -0.621
+      n_peaks_enhancer                       r = -0.590  [named]
+      consensus_fraction_mean_all            r = +0.559
+      raw_peak_max_max_ctcf                  r = -0.527
+==============================================================================
+PC4  enhancer vs CTCF composition
+  loading mass in the named concept : 34.7%   (even spread would give  8.8%, lift 3.95x)
+  strongest correlate overall       : enhancer_signal_fraction_raw       r = +0.679
+  strongest NAMED correlate         : enhancer_signal_fraction_raw       r = +0.679
+  correlation with total_mcc        : -0.266    <-- amount contamination
+  (not in the 91: enhancer_signal_fraction, frac_enhancer)
+  top 6 correlates, whatever they are:
+      enhancer_signal_fraction_raw           r = +0.679  [named]
+      consensus_fraction_max_enhancer        r = +0.641
+      max_distance_to_viewpoint_enhancer     r = +0.549
+      raw_log2_enrichment_max_enhancer       r = +0.548
+      oe_max_max_enhancer                    r = +0.538
+      n_peaks_enhancer                       r = +0.508  [named]
+==============================================================================
+PC5  concentrated vs dispersed
+  loading mass in the named concept : 22.0%   (even spread would give  7.7%, lift 2.85x)
+  strongest correlate overall       : raw_peak_max_mean_all              r = +0.551
+  strongest NAMED correlate         : mean_peak_gap_bp                   r = +0.550
+  correlation with total_mcc        : -0.006    <-- amount contamination
+  (not in the 91: gini_coefficient)
+  top 6 correlates, whatever they are:
+      raw_peak_max_mean_all                  r = +0.551
+      mean_peak_gap_bp                       r = +0.550  [named]
+      frac_signal_in_top_peak                r = +0.540  [named]
+      frac_promoter_proximal                 r = +0.505
+      peak_dominance_index                   r = +0.488
+      signal_entropy                         r = -0.488  [named]
+
+==============================================================================
+SUMMARY
+==============================================================================
+PC    named-concept mass   lift   best named r    top r  r(amount)
+1                 23.3%   1.93          0.787    0.787      0.033
+2                 26.1%   1.69          0.739    0.739      0.150
+3                 30.9%   3.12          0.760    0.760     -0.621
+4                 34.7%   3.95          0.679    0.679     -0.266
+5                 22.0%   2.85          0.550    0.551     -0.006
+
+PC1-5 carry 45.2% of variance. 19 components sit above the noise ceiling, together 78.0%.
+So naming 5 axes describes 45.2% of the variation and leaves 32.9% real-but-unnamed.

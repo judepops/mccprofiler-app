@@ -46,6 +46,9 @@ run diagnose_external_power                "minimum detectable effect"
 run diagnose_external_axis_rank            "where each set leans"
 run diagnose_definition_type               "does definition type predict displacement"
 
+run experiment_feature_search              "can ANY feature subset separate them"
+run diagnose_promoter_assembly             "own- vs other-promoter contact, HK assembly test"
+
 echo; echo "--- 4. predictive claims, which need the length control ---"
 run diagnose_loeuf_confounds        "length, expression, CpG vs the shape substrate"
 

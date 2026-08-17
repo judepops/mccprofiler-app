@@ -27,18 +27,22 @@ import {
   type Profile,
 } from './api'
 import { ProfilePlot } from './ProfilePlot'
-import { ArchetypeReadout } from './ArchetypeReadout'
 import { FeatureTable } from './FeatureTable'
+import { DEFAULT_PLANE, SPACE_LABEL, SPACE_NOTE, planeInSpace, type Space } from './space'
 import { ContinuumMap } from './ContinuumMap'
 import { EnrichmentGrid } from './EnrichmentGrid'
 import { CohortView } from './CohortView'
 import { DimensionPanel } from './DimensionPanel'
+import { TaxonomyPanel } from './TaxonomyPanel'
+import { PanelBiasBanner } from './PanelBiasBanner'
+import { GeneTaxonomy } from './GeneTaxonomy'
 import { LabPage } from './LabPage'
 import { ExplainPanel } from './ExplainPanel'
 import { RankedLists } from './RankedLists'
 import { AskPanel } from './AskPanel'
 import { PeakDetail } from './PeakDetail'
 import { GeneCompare } from './GeneCompare'
+import { PsDecay } from './PsDecay'
 
 type Page = 'gene' | 'panel' | 'lab'
 
@@ -79,7 +83,18 @@ export default function App() {
   const [loading, setLoading] = useState(false)
 
   const [embedding, setEmbedding] = useState<Embedding | null>(null)
-  const [axes, setAxes] = useState<[string, string]>(['pc2', 'pc3'])
+  // The coordinate space is a PAGE-level decision, not a per-view one. Every
+  // view below reads this, so the map, the ranked lists and the enrichment grid
+  // can never be showing different spaces at the same time. See space.ts.
+  const [space, setSpace] = useState<Space>('corrected')
+  const [axes, setAxes] = useState<[string, string]>(DEFAULT_PLANE.corrected)
+
+  // Flipping the space moves the current plane with it, so the axis selectors
+  // never sit on sPC1 while the page claims to be showing raw PCs.
+  function changeSpace(next: Space) {
+    setSpace(next)
+    setAxes((cur) => planeInSpace(cur, next))
+  }
   const [embLoading, setEmbLoading] = useState(false)
   const [embErr, setEmbErr] = useState<string | null>(null)
   const embReq = useRef(0)
@@ -180,6 +195,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-ink-50 font-sans text-ink-900">
+      {/* Above the header, so it is read before any number. */}
+      <PanelBiasBanner />
+
       <header className="border-b border-ink-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3">
           <div>
@@ -202,6 +220,29 @@ export default function App() {
               </button>
             ))}
           </nav>
+
+          {/* One control for the whole page. Raw PCs are kept selectable
+              because older documents quote them, but they are labelled
+              provenance so nobody reads a position on them as architecture. */}
+          <div className="flex items-center gap-1.5" title={SPACE_NOTE[space]}>
+            <span className="text-[10px] uppercase tracking-wide text-ink-400">
+              axes
+            </span>
+            {(['corrected', 'raw'] as Space[]).map((s) => (
+              <button
+                key={s}
+                onClick={() => changeSpace(s)}
+                title={SPACE_NOTE[s]}
+                className={`rounded px-2 py-1 text-[11px] ${
+                  space === s
+                    ? 'bg-ink-600 text-white'
+                    : 'text-ink-600 hover:bg-ink-50'
+                }`}
+              >
+                {SPACE_LABEL[s]}
+              </button>
+            ))}
+          </div>
 
           <div className="text-right">
             <a
@@ -377,33 +418,23 @@ export default function App() {
                   </div>
 
                   {gene.ps?.alpha_both != null && (
-                    <div className="mt-5 rounded-lg border border-ink-200 bg-white p-4">
-                      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500">
-                        Contact decay P(s) ~ s<sup>−α</sup>
-                      </h2>
-                      <div className="flex flex-wrap gap-8 text-sm">
-                        {(
-                          [
-                            ['α overall', gene.ps.alpha_both],
-                            ['α near (10 to 100 kb)', gene.ps.alpha_near],
-                            ['α far (0.1 to 1 Mb)', gene.ps.alpha_far],
-                            ['fit R²', gene.ps.fit_r2_both],
-                          ] as [string, number | undefined][]
-                        ).map(([label, v]) =>
-                          v == null ? null : (
-                            <div key={label}>
-                              <p className="text-[11px] text-ink-500">{label}</p>
-                              <p className="font-mono text-base">{Number(v).toFixed(3)}</p>
-                            </div>
-                          ),
-                        )}
-                      </div>
-                    </div>
+                    <PsDecay
+                      ps={gene.ps}
+                      reference={gene.ps_reference}
+                      gene={gene.gene_symbol}
+                    />
                   )}
                 </section>
 
                 <aside className="space-y-5">
-                  <ArchetypeReadout a={gene.archetype} />
+                  {/* The old archetype readout is GONE from the gene page.
+                      Showing it beside the blend put two contradictory
+                      taxonomies on one screen: a confident five-way badge fit
+                      on the 91-feature substrate, next to a five-region blend
+                      fit on the current one. The legacy label survives in the
+                      store as `group` for provenance and is still visible on
+                      the Lab page. */}
+                  {gene && <GeneTaxonomy gene={gene.gene_symbol} />}
                   {selectedPeak && (
                     <PeakDetail
                       peak={selectedPeak}
@@ -421,6 +452,7 @@ export default function App() {
                     <ContinuumMap
                       data={embedding}
                       axes={axes}
+                      space={space}
                       loading={embLoading}
                       error={embErr}
                       onAxisChange={(x, y) => setAxes([x, y])}
@@ -472,21 +504,33 @@ export default function App() {
               found here is kept.
             </p>
 
+            {/* Order is an argument. What the panel IS comes before what
+                external labels do to it: taxonomy and map first, then the
+                coordinate system those are drawn in, and only then the cohort
+                and external-set views, which are post-hoc by construction. The
+                previous order put external enrichments above the taxonomy,
+                which invited reading the external sets as the primary result. */}
             <AskPanel onPick={select} />
-            <RankedLists onPick={select} />
-            <CohortView onPick={select} />
+
+            <TaxonomyPanel space={space} onPick={select} />
             {embedding && (
               <ContinuumMap
                 data={embedding}
                 axes={axes}
+                space={space}
                 loading={embLoading}
                 error={embErr}
                 onAxisChange={(x, y) => setAxes([x, y])}
                 onPick={select}
               />
             )}
-            <EnrichmentGrid />
-            <DimensionPanel />
+
+            <DimensionPanel space={space} />
+            <RankedLists onPick={select} space={space} />
+
+            <CohortView onPick={select} />
+            <EnrichmentGrid space={space} />
+
             <ExplainPanel />
           </div>
         )}

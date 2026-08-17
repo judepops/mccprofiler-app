@@ -240,7 +240,7 @@ The primary architectural contrast in this dataset.
 
 **Maps to:** `frac_local`, `frac_distal`,
 `frac_far_distal`, `local_to_distal_ratio`, `distal_signal_density`,
-`frac_promoter_proximal`, and the `max_distance_to_viewpoint_*` family.
+`frac_viewpoint_proximal`, and the `max_distance_to_viewpoint_*` family.
 
 PCA sign is arbitrary, so the pole must be read from the axis poles supplied in
 the prompt and never guessed. This is the most common way to get a query exactly

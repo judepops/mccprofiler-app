@@ -231,6 +231,38 @@ def run(query: dict, store) -> dict[str, Any]:
         if used:
             comp /= used
         hits["score"] = comp.values
+
+        # Per-feature percentiles for every ranked gene, and a flag for any
+        # criterion the gene FAILS.
+        #
+        # A weighted sum lets a gene compensate: asked for "short-range,
+        # promoter-dense, no CTCF", ZNF226 ranked third on 98th-percentile
+        # promoter peaks and 100th-percentile promoter signal while sitting at
+        # the 6th percentile for short-range. That is a defensible hit and a
+        # hidden trade-off, and hiding it is the problem. The scorecard makes
+        # each gene's weakest criterion visible instead of averaging it away.
+        pct = feats.pivot(index="gene_id", columns="feature", values="percentile")
+        cards = []
+        for gid in hits["gene_id"]:
+            row = {}
+            for c in contributions:
+                v = pct[c["feature"]].get(gid)
+                if v is None or pd.isna(v):
+                    continue
+                # "low" asked for => a LOW percentile is the good outcome
+                good = (100 - v) if c["direction"] == "low" else v
+                row[c["feature"]] = {
+                    "percentile": round(float(v), 1),
+                    "meets": round(float(good), 1),
+                }
+            weak = sorted(row.items(), key=lambda kv: kv[1]["meets"])
+            cards.append({
+                "criteria": row,
+                "weakest": weak[0][0] if weak else None,
+                "weakest_meets": weak[0][1]["meets"] if weak else None,
+                "fails_any": bool(weak and weak[0][1]["meets"] < 25),
+            })
+        hits["scorecard"] = cards
         hits = hits.sort_values("score", ascending=False)
         steps.append({
             "reads_as": "ranked by " + ", ".join(
@@ -247,7 +279,7 @@ def run(query: dict, store) -> dict[str, Any]:
         hits = hits.drop(columns="_sort")
 
     cols = [c for c in ("gene_id", "gene_symbol", "group", "max_posterior",
-                        "viewpoint_chrom", "viewpoint_pos", "score")
+                        "viewpoint_chrom", "viewpoint_pos", "score", "scorecard")
             if c in hits.columns]
 
     limit = int(query.get("limit", 25 if rank else 50))

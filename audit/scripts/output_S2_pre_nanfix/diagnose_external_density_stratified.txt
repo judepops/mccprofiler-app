@@ -1,0 +1,27 @@
+gene density available for 1813 of 1846 genes
+
+============================================================================================
+GENE-DENSITY CHECK ON THE AIM 3 POSITIVE CONTROLS
+============================================================================================
+set                                   n  d (amt-corr)  d (+density)  d (stratified)  retained
+ChromHMM_bivalent                    46        -0.58          0.69           -0.65      112%
+Roadmap_silenced                     41        -0.73         -0.53           -0.72       98%
+Lambert_TF                          156         0.46         -0.39            0.39       84%
+GWAS_immune_hot                     130         0.32         -0.41            0.27       85%
+Eisenberg_HK                        633         0.11         -0.11            0.10       92%
+dbSUPER_CD4_SE_TSS_pm50kb           158        -0.16         -0.23           -0.18      110%
+gene_desert_bottomQ_density         456        -0.71          0.23             nan      nan%
+
+p-values, amount-corrected vs amount+density-corrected:
+  ChromHMM_bivalent                  0.0005  ->  0.0005
+  Roadmap_silenced                   0.0005  ->  0.0005
+  Lambert_TF                         0.0005  ->  0.0005
+  GWAS_immune_hot                    0.0005  ->  0.0035
+  Eisenberg_HK                       0.0340  ->  0.0760   <- no longer significant
+  dbSUPER_CD4_SE_TSS_pm50kb          0.1774  ->  0.1599   <- no longer significant
+  gene_desert_bottomQ_density        0.0005  ->  0.0005
+
+Reading: if the positives (bivalent, silenced) retain most of their
+effect under BOTH residualisation and stratification, the Aim 3 positive
+control holds and the super-enhancer null is interpretable. If they
+collapse, the separation was genomic context and Aim 3 must be withdrawn.

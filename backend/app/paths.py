@@ -30,6 +30,7 @@ LAB = DPHIL / "Lab" / "Protocol_20k"
 AUDIT = SCRIPTS / "audit"
 CONTINUOUS = AUDIT / "continuous_methods"
 GW_AUDIT = AUDIT / "GW"
+APP = Path(__file__).resolve().parents[2]
 PROFILER = SCRIPTS / "mccprofiler"
 
 # app-owned
@@ -90,6 +91,25 @@ ARTEFACTS: list[Artefact] = [
         ),
     ),
     # ---- labels and coordinates -----------------------------------------
+    Artefact(
+        "taxonomy_labels",
+        APP / "audit/scripts/output/taxonomy_labels.tsv",
+        (
+            "Reach x composition taxonomy with per-gene MEMBERSHIPS, built by "
+            "audit/scripts/build_taxonomy.py on the amount-corrected substrate. "
+            "Five regions, asymmetric by design: a CTCF-dominated group exists "
+            "only among far-reaching genes. Supersedes archetype_labels.tsv for "
+            "display; that file is retained for provenance."
+        ),
+    ),
+    Artefact(
+        "taxonomy_radar",
+        APP / "audit/scripts/output/taxonomy_radar.tsv",
+        (
+            "Per-region medians and IQR on six interpretable axes, as panel "
+            "percentiles. Feeds the taxonomy comparison plot."
+        ),
+    ),
     Artefact(
         "archetype_labels",
         PROFILER / "outputs_gw_cd4_1/cluster/archetype_labels.tsv",

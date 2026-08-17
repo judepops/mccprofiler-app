@@ -37,7 +37,7 @@ from app.store import Store, StoreMissing  # noqa: E402
 # both are worth stopping for.
 EXPECTED = {
     "n_genes": 1846,
-    "n_features": 73,      # 91 before S2.1/S2.1b, 2026-08-16
+    "n_features": 85,      # 91 -> 73 (S2.1/S2.1b) -> 85 (NaN fix), 2026-08-16
     "label_counts": {
         "arch-HK": 844,
         "arch-ME-constitutive": 369,
@@ -47,17 +47,68 @@ EXPECTED = {
     },
     "n_core": 1040,                  # 56.3%, vs FINDINGS.md's "56% core"
     "repro_genes": 116,              # genes captured in both panels
-    "repro_features": 63,            # shared features
-    "repro_median_rho": 0.752,       # 2026-07-31 handoff
+    # RE-BASELINED 2026-08-17, and the reason matters because CLAUDE.md warns
+    # against re-baselining silently.
+    #
+    # These two checks used to read the `reproducibility` table, which is a copy
+    # of audit/continuous_methods/cross_panel_reproducibility.tsv, dated
+    # 2026-07-31 and never regenerated. 24 of its 63 features no longer exist in
+    # the substrate, including every oe_asymmetry_* and oe_tailedness_*, which
+    # were deleted on 2026-08-16 BECAUSE they failed a reproducibility threshold.
+    #
+    # So both checks were passing for a reason unrelated to the thing being
+    # checked: the file had 63 rows and a median of 0.752 because nobody had
+    # touched it. Same failure shape as the CORS bug and the vacuous
+    # `tsc --noEmit`, and a third instance of "if a check has never once failed,
+    # verify the verifier".
+    #
+    # Now computed from `reproducibility_pairs`, which is rebuilt from the immune
+    # pickle on every store build and whose 41 features are all live. The median
+    # RISES, because the features removed for being unreproducible were dragging
+    # it down:
+    #     stale, all 63                median rho 0.752   <- the old expectation
+    #     the 24 retired features      median rho 0.654
+    #     stale, 39 survivors          median rho 0.833
+    #     current pairs, 41 features   median rho 0.819   33/41 above 0.7
+    "repro_features": 41,            # live shared features, from the pairs table
+    "repro_median_rho": 0.819,       # recomputed 2026-08-17, was 0.752 stale
     # Re-baselined 2026-08-16 after removing 4 degenerate topology features and
     # 16 unreproducible per-peak moments, and protecting n_active_peaks.
     # NOTE: these no longer match audit/continuous_methods/dimension_names.tsv,
     # which was computed on the 91-feature substrate and is now STALE. The check
     # below compares against these constants, not against that file. Regenerate
     # dimension_names.tsv upstream before quoting it anywhere.
-    "pca_variance_top5": [17.23, 10.92, 9.34, 7.36, 7.06],  # was 15.27/9.47/8.21/6.33/5.88
-    "n_real_dimensions": 14,         # was 19; structure_vs_noise.tsv also stale
+    "pca_variance_top5": [15.42, 9.66, 8.81, 5.56, 5.36],
+    "n_real_dimensions": 18,         # 19 -> 14 -> 18; structure_vs_noise.tsv stale
     "usable_cohorts": 21,            # of 23 reference sets, >= 25 panel genes
+    # Amount-corrected space, added 2026-08-16 and now the display default.
+    # Magnitude is projected out before PCA, so these components differ from the
+    # raw PCs entirely: sPC3 is NOT PC3 and the numbering does not correspond.
+    "shape_variance_top5": [10.00, 8.35, 7.34, 5.59, 5.25],
+    # Renamed 2026-08-17: mid/far -> contained/extended. The reach axis is a
+    # RELATIVE position, and the absolute-band names matched a gene's dominant
+    # band only 20% of the time.
+    # RE-FIT 2026-08-17 excluding 9 under-evidenced genes (<3 called peaks:
+    # ASB9, CD209, CEP15, DEPDC1, NCALD, PADI4, SACS, TLR4, TTPAL). They carried
+    # the three highest top weights in the panel while having zero to two peaks,
+    # because the membership softmax squares distance and a gene with no evidence
+    # sits far from every centroid. Excluded from the FIT and given region = NA.
+    #
+    # Counts moved by more than the nine removed: reach went 1074/772 to
+    # 1119/718, so 36 other genes crossed the reach boundary. That is consistent
+    # with the measured substrate sensitivity (section 6g) and is a reminder the
+    # boundary is soft, not that something went wrong.
+    #
+    # Previous, for provenance: contained-promoter 555, contained-enhancer 519,
+    # extended-enhancer 281, extended-ctcf 253, extended-promoter 238.
+    "taxonomy_regions": {
+        "contained-promoter": 586, "contained-enhancer": 533,
+        "extended-promoter": 252, "extended-enhancer": 236,
+        "extended-ctcf": 230,
+    },
+    "n_under_evidenced": 9,          # region = NA by design, not a join failure
+    "shape_basis_n": 8,              # MAG_OVERALL lists 11; 2 degenerate, and
+                                     # raw_peak_max_max_all now loses the prune
 }
 
 PASS, FAIL, WARN = "ok  ", "FAIL", "warn"
@@ -173,18 +224,125 @@ def verify(s: Store) -> None:
               bool((n_per_pc == EXPECTED["n_features"]).all()),
               f"{n_per_pc.min()}-{n_per_pc.max()} per component")
 
+    # -- amount-corrected space, the DISPLAY DEFAULT since 2026-08-16 --------
+    # The load-bearing check is the last one. The whole reason this space is the
+    # display is that no component carries amount; if that stops being true the
+    # app is back to plotting "this gene has more signal" as if it were shape,
+    # which is the failure the switch was made to prevent.
+    if s.has("shape_scree"):
+        sc = s.table("shape_scree")
+        got = [round(float(v), 2) for v in sc["variance_pct"].head(5)]
+        check("shape PCA variance",
+              all(approx(a, b, 0.02) for a, b in zip(got, EXPECTED["shape_variance_top5"])),
+              f"{got} vs {EXPECTED['shape_variance_top5']}")
+
+    if s.has("shape_basis"):
+        nb = len(s.table("shape_basis"))
+        check("magnitude basis resolves to 9 of MAG_OVERALL's 11",
+              nb == EXPECTED["shape_basis_n"],
+              f"{nb} (mean_degree and mean_degree_raw no longer exist)")
+
+    if s.has("shape_embeddings") and s.has("features"):
+        se = s.table("shape_embeddings")
+        check("shape embeddings cover the panel", len(se) == EXPECTED["n_genes"],
+              f"{len(se)} rows")
+        W = s.table("features").pivot(index="gene_id", columns="feature", values="z")
+        basis = list(s.table("shape_basis")["feature"]) if s.has("shape_basis") else []
+        basis = [b for b in basis if b in W.columns]
+        if basis:
+            M = W[basis].to_numpy(float)
+            amount = (M - M.mean(0)).mean(1)
+            sub = se.set_index("gene_id").reindex(W.index)
+            worst = max(abs(float(np.corrcoef(sub[f"spc{i}"], amount)[0, 1]))
+                        for i in range(1, 11) if f"spc{i}" in sub.columns)
+            check("no shape component carries amount", worst < 0.05,
+                  f"max |r| over the first 10 = {worst:.4f}")
+
+    # -- taxonomy ------------------------------------------------------------
+    # The load-bearing check is the last one. If any gene ever exceeds a top
+    # weight of 0.5 for most of the panel, the regions have stopped being areas
+    # of a continuum and the whole framing needs revisiting.
+    if s.has("taxonomy"):
+        tx = s.table("taxonomy")
+        check("taxonomy covers every gene", len(tx) == EXPECTED["n_genes"],
+              f"{len(tx)} rows")
+        counts = tx["region"].value_counts().to_dict()
+        check("taxonomy region counts",
+              counts == EXPECTED["taxonomy_regions"],
+              f"{counts}")
+        # The under-evidenced rows carry NaN weights by design, so they are
+        # excluded from the weight checks rather than allowed to fail them.
+        ue = tx["under_evidenced"].fillna(False).astype(bool) \
+            if "under_evidenced" in tx.columns else pd.Series(False, index=tx.index)
+        check("under-evidenced genes are marked, not missing",
+              int(ue.sum()) == EXPECTED["n_under_evidenced"],
+              f"{int(ue.sum())} marked (expected {EXPECTED['n_under_evidenced']})")
+        check("under-evidenced genes carry no region",
+              int(tx.loc[ue, "region"].notna().sum()) == 0,
+              f"{int(tx.loc[ue, 'region'].notna().sum())} wrongly labelled")
+
+        fit = tx[~ue]
+        wcols = [c for c in tx.columns if c.startswith("w_")]
+        sums = fit[wcols].sum(axis=1)
+        check("memberships sum to 1", bool(((sums - 1).abs() < 1e-3).all()),
+              f"min {sums.min():.4f}, max {sums.max():.4f}")
+        pct = float((fit["top_weight"] < 0.5).mean() * 100)
+        check("regions are areas of a continuum, not clusters", pct > 95,
+              f"{pct:.2f}% of genes have top weight < 0.5 "
+              f"({int((fit['top_weight'] >= 0.5).sum())} exceptions)")
+
+    if "region" in genes.columns:
+        # Exactly the 9 under-evidenced genes may lack a region. Zero would mean
+        # the exclusion silently failed; more would mean a join dropped rows, the
+        # failure mode that lost 11 Cxorfnn genes once before.
+        n_na = int(genes["region"].isna().sum())
+        check("only under-evidenced genes lack a region",
+              n_na == EXPECTED["n_under_evidenced"],
+              f"{n_na} without a region (expected exactly "
+              f"{EXPECTED['n_under_evidenced']})")
+
     # -- reproducibility -----------------------------------------------------
-    if s.has("reproducibility"):
-        rp = s.table("reproducibility")
-        check("shared features", len(rp) == EXPECTED["repro_features"],
-              f"{len(rp)} (expected {EXPECTED['repro_features']})")
-        if "n" in rp.columns:
-            check("twice-captured genes", int(rp["n"].max()) == EXPECTED["repro_genes"],
-                  f"{int(rp['n'].max())} (expected {EXPECTED['repro_genes']})")
-        med = float(rp["spearman_rho"].median())
+    # Computed from `reproducibility_pairs`, NOT the stale `reproducibility`
+    # copy. See the EXPECTED block above for why.
+    if s.has("reproducibility_pairs"):
+        pairs = s.table("reproducibility_pairs")
+        per_feat = pairs.groupby("feature").apply(
+            lambda g: pd.Series({
+                "spearman_rho": float(np.corrcoef(g["gw"].rank(),
+                                                  g["immune"].rank())[0, 1]),
+                "n": int(len(g)),
+            }),
+            include_groups=False,
+        )
+        check("shared features (live)",
+              len(per_feat) == EXPECTED["repro_features"],
+              f"{len(per_feat)} (expected {EXPECTED['repro_features']})")
+        check("twice-captured genes",
+              int(per_feat["n"].max()) == EXPECTED["repro_genes"],
+              f"{int(per_feat['n'].max())} (expected {EXPECTED['repro_genes']})")
+        med = float(per_feat["spearman_rho"].median())
         check("median reproducibility rho",
               approx(med, EXPECTED["repro_median_rho"], 0.005),
               f"{med:.3f} (expected {EXPECTED['repro_median_rho']})")
+        # The 2026-08-16 removal of the asymmetry/tailedness families was
+        # justified on a rho >= 0.70 threshold, so nothing unreproducible should
+        # survive. This asserts the removal actually worked rather than trusting
+        # that it did.
+        n_bad = int((per_feat["spearman_rho"] < 0.3).sum())
+        check("no unreproducible feature survives", n_bad == 0,
+              f"{n_bad} features below rho 0.3")
+
+        # The stale copy is still in the store for provenance. Assert it is NOT
+        # being mistaken for current: if someone regenerates the tsv, this fires
+        # and the numbers above should be revisited together.
+        if s.has("reproducibility"):
+            stale = s.table("reproducibility")
+            live = set(s.table("features")["feature"].unique())
+            retired = sorted(set(stale["feature"]) - live)
+            check("stale reproducibility copy is unchanged (provenance only)",
+                  len(retired) == 24,
+                  f"{len(retired)} of {len(stale)} features retired; "
+                  f"regenerate the tsv or drop it from paths.py")
 
     # -- cohorts -------------------------------------------------------------
     if s.has("cohort_membership"):

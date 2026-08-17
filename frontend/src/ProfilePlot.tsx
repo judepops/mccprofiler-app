@@ -14,14 +14,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { formatBp, type Peak, type Profile } from './api'
 
 const BAND_FILL: Record<string, string> = {
-  promoter_proximal: 'rgba(43, 80, 112, 0.10)',
+  viewpoint_proximal: 'rgba(43, 80, 112, 0.10)',
   local: 'rgba(43, 80, 112, 0.06)',
   distal: 'rgba(43, 80, 112, 0.035)',
   far_distal: 'rgba(43, 80, 112, 0.015)',
 }
 
 const BAND_LABEL: Record<string, string> = {
-  promoter_proximal: '0–10 kb',
+  viewpoint_proximal: '0–10 kb',
   local: '10–50 kb',
   distal: '50–250 kb',
   far_distal: '250 kb–1 Mb',

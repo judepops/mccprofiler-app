@@ -13,18 +13,22 @@
 
 import { useEffect, useState } from 'react'
 import { api, type Loadings, type Scree } from './api'
+import { type Space } from './space'
 
-export function DimensionPanel() {
+export function DimensionPanel({ space = 'corrected' }: { space?: Space }) {
   const [scree, setScree] = useState<Scree | null>(null)
   const [pc, setPc] = useState(1)
   const [load, setLoad] = useState<Loadings | null>(null)
 
+  // Both requests carry the space. They used to disagree: the scree came from
+  // the raw PCs while the loadings came from the corrected ones, so the panel
+  // showed "PC1, 17.23%" above sPC1's feature list.
   useEffect(() => {
-    api.scree().then(setScree).catch(() => setScree(null))
-  }, [])
+    api.scree(space).then(setScree).catch(() => setScree(null))
+  }, [space])
   useEffect(() => {
-    api.loadings(pc).then(setLoad).catch(() => setLoad(null))
-  }, [pc])
+    api.loadings(pc, 15, space).then(setLoad).catch(() => setLoad(null))
+  }, [pc, space])
 
   const maxVar = scree ? Math.max(...scree.rows.map((r) => r.variance_pct)) : 1
   const maxLoad = load ? Math.max(...load.loadings.map((l) => Math.abs(l.loading))) : 1

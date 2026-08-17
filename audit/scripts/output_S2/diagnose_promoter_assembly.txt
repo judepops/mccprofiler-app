@@ -1,0 +1,98 @@
+loading peaks and annotation...
+  29103 peaks with annotation, 10056 classed promoter
+  of the promoter peaks: 583 OWN (5.8%), 9473 OTHER
+
+  distance of promoter peaks from the gene's own TSS:
+     10% quantile       5.3 kb
+     25% quantile      45.0 kb
+     50% quantile     115.0 kb
+     75% quantile     245.0 kb
+     90% quantile     425.0 kb
+
+  1835 of 1846 panel genes have usable values
+  reconstruction check: prom_total vs shipped promoter_signal_fraction_raw  r = 0.959
+
+==============================================================================
+IS `prom_other` JUST GENE DENSITY?
+==============================================================================
+  prom_own       Pearson r with gene_density_500kb = +0.005
+  prom_other     Pearson r with gene_density_500kb = +0.344
+  prom_total     Pearson r with gene_density_500kb = +0.332
+
+==============================================================================
+THE TEST: is the OTHER-promoter component different from the total?
+==============================================================================
+magnitude-residualised, two-sided permutation, 2000 permutations, OWN <= 5 kb
+
+  Eisenberg_HK  (n = 633)
+                               magnitude            + density       + len/expr/CpG
+     prom_own       d=-0.045 p=0.3640   d=-0.043 p=0.3680   d=-0.067 p=0.1685 
+     prom_other     d=+0.177 p=0.0005*  d=+0.138 p=0.0035*  d=+0.136 p=0.0075*
+     prom_total     d=+0.144 p=0.0025*  d=+0.104 p=0.0400*  d=+0.088 p=0.0660 
+
+  bio_HK_k3  (n = 353)
+                               magnitude            + density       + len/expr/CpG
+     prom_own       d=-0.077 p=0.2010   d=-0.072 p=0.2285   d=-0.093 p=0.1055 
+     prom_other     d=+0.133 p=0.0245*  d=+0.113 p=0.0540   d=+0.099 p=0.0825 
+     prom_total     d=+0.083 p=0.1455   d=+0.065 p=0.2715   d=+0.037 p=0.5205 
+
+  DepMap_curated_essential  (n = 254)
+                               magnitude            + density       + len/expr/CpG
+     prom_own       d=-0.064 p=0.3405   d=-0.056 p=0.4100   d=-0.067 p=0.3140 
+     prom_other     d=+0.054 p=0.4115   d=+0.056 p=0.4210   d=+0.048 p=0.4595 
+     prom_total     d=+0.014 p=0.8350   d=+0.018 p=0.7845   d=+0.004 p=0.9665 
+
+  dbSUPER_CD4_SE_TSS_pm50kb  (n = 158)
+                               magnitude            + density       + len/expr/CpG
+     prom_own       d=+0.048 p=0.5665   d=+0.068 p=0.4165   d=+0.064 p=0.4505 
+     prom_other     d=-0.060 p=0.4725   d=-0.109 p=0.1855   d=-0.082 p=0.3125 
+     prom_total     d=-0.031 p=0.7015   d=-0.062 p=0.4730   d=-0.038 p=0.6550 
+
+  gene_desert_bottomQ_density  (n = 456)
+                               magnitude            + density       + len/expr/CpG
+     prom_own       d=-0.001 p=0.9900   d=-0.071 p=0.1995   d=-0.065 p=0.2260 
+     prom_other     d=-0.538 p=0.0005*  d=-0.005 p=0.9145   d=-0.012 p=0.8255 
+     prom_total     d=-0.508 p=0.0005*  d=-0.050 p=0.3490   d=-0.052 p=0.3080 
+
+==============================================================================
+VERDICT
+==============================================================================
+  Only 5.8% of promoter-classed peaks are the gene's
+  OWN TSS, so `promoter_signal_fraction` was already almost purely
+  other-promoter contact. The promoter-assembly hypothesis HAS been
+  tested by the existing feature; the conflation is real in the code but
+  is a few per cent of contamination, not a mixing of two quantities.
+
+  The live question is therefore not conflation but CONFOUNDING:
+  a gene with more neighbours has more promoters available to contact,
+  so this measure is a gene-density proxy by construction.
+
+  Eisenberg_HK, other-promoter contact:
+     magnitude           d = +0.177  p = 0.0005
+     + density           d = +0.138  p = 0.0035
+     + length/expr/CpG   d = +0.136  p = 0.0075
+     SURVIVES EVERYTHING. Overlap still 95%: displaced, not
+     separated, like every other set. Small but mechanism-defined.
+
+  bio_HK_k3, other-promoter contact:
+     magnitude           d = +0.133  p = 0.0245
+     + density           d = +0.113  p = 0.0540
+     + length/expr/CpG   d = +0.099  p = 0.0825
+     Killed by density.
+
+  Controls that must stay null for this to mean anything:
+     DepMap_curated_essential     fully controlled d = +0.048  p = 0.4595
+     dbSUPER_CD4_SE_TSS_pm50kb    fully controlled d = -0.082  p = 0.3125
+     gene_desert (density check)  d -0.538 -> -0.005 once density is controlled; the control works
+
+  Own-promoter must also stay null, or this is just 'more contacts':
+     Eisenberg_HK                 fully controlled d = -0.067  p = 0.1685
+     bio_HK_k3                    fully controlled d = -0.093  p = 0.1055
+
+  MULTIPLICITY. Eisenberg_HK x prom_other was the pre-specified test, so
+  its p stands on its own. Everything else in this table is a control, and
+  no control may be promoted to a finding without its own correction.
+  PANEL CAVEAT: 85% CpG-island by ATAC-gated construction. Restricted
+  range attenuates, so surviving it argues for the effect, not against.
+
+wrote /home/imm/grte4643/Documents/DPhil/Data_Exploration/MCC/cd4_cleaned/mccprofiler-app/audit/scripts/output/promoter_assembly.tsv

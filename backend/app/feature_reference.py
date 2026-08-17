@@ -17,6 +17,8 @@ say which end is which.
 
 from __future__ import annotations
 
+import re
+
 from .feature_geometry import describe
 
 # The 24 with no geometry entry. Phrased as "high means ...", the same shape as
@@ -79,7 +81,16 @@ EXTRA: dict[str, str] = {
 # quietly stops being about long-range enhancers at all. 34 of the 91 features
 # are element-class specific precisely so the joint question can be asked
 # directly.
-JOINT_HINTS = """\
+JOINT_HINTS = """
+  "promoter-dense", "promoter-driven", "lots of promoter contact"
+      -> promoter_signal_fraction high AND/OR n_peaks_promoter high
+      NOT frac_viewpoint_proximal, which is a DISTANCE band and is high for any
+      gene whose contacts are close, including purely enhancer ones.
+  "short-range", "local", "nearby contacts"
+      -> frac_viewpoint_proximal high or median_contact_distance low. These are
+      distance measures and carry no element-class meaning; combine them with a
+      promoter feature if the question asks for both.
+\
 JOINT CONDITIONS. Read this before combining filters.
 
 When a question attaches a property to an ELEMENT CLASS (enhancer, promoter,
@@ -87,15 +98,15 @@ CTCF), that is ONE condition about those peaks, not two conditions about the
 gene. Use the single feature ending in _enhancer / _promoter / _ctcf.
 
   "long-range enhancer interactions"
-      RIGHT  max_distance_to_viewpoint_enhancer high        (one filter)
+      RIGHT  mean_distance_to_viewpoint_enhancer high        (one filter)
       WRONG  frac_far_distal high + n_peaks_enhancer high
              That returns genes with long-range contacts somewhere and
              enhancers somewhere. They need not be the same peaks, so the
              result stops being about long-range enhancers.
 
   "local CTCF contacts"     -> oe_local_enrichment_max_ctcf high, or
-                               max_distance_to_viewpoint_ctcf low
-  "distant promoter contacts" -> max_distance_to_viewpoint_promoter high
+                               mean_distance_to_viewpoint_ctcf low
+  "distant promoter contacts" -> mean_distance_to_viewpoint_promoter high
   "one strong enhancer"     -> raw_peak_max_max_enhancer high
   "broad enhancer contact"  -> oe_fwhm_bp_max_enhancer high
   "one-sided enhancer contacts" -> oe_asymmetry_mean_enhancer high
@@ -109,7 +120,7 @@ two independent conditions, such as "long-range enhancer contacts in genes that
 also have many CTCF sites".
 
 Element-specific features exist for these properties:
-  distance   max_distance_to_viewpoint_{enhancer,promoter,ctcf}
+  distance   mean_distance_to_viewpoint_{all,enhancer,promoter,ctcf}
   count      n_peaks_{enhancer,promoter,ctcf}
   strength   raw_peak_max_max_*, oe_max_max_*, raw_log2_enrichment_max_*
   locality   oe_local_enrichment_max_*
@@ -142,7 +153,52 @@ Phrases that map to a FEATURE and to no axis at all:
 """
 
 
+# Descriptions that OVERRIDE feature_geometry, because the name misleads and a
+# live query got the wrong answer because of it.
+#
+# 2026-08-17: asked for "very short range promoter dense architecture and no
+# CTCF sites", the model ranked on `frac_viewpoint_proximal` and returned SACS,
+# which sits at the 92nd percentile for that feature and the 1.4th percentile
+# for actual promoter content, while being the 99.9th percentile most
+# ENHANCER-dominated gene in the panel. The feature is a distance measure and
+# the model read it as a promoter-content measure.
+OVERRIDE: dict[str, str] = {
+    "frac_viewpoint_proximal":
+        "DISTANCE ONLY, not promoter content. Fraction of contact signal within "
+        "10 kb of the viewpoint, which stands in for the gene's own promoter "
+        "(the two differ for ~2% of genes). It says the signal is CLOSE, not "
+        "that it lies on promoter-classed peaks: a gene whose nearby contacts "
+        "are all enhancers scores high. For promoter CONTENT use "
+        "promoter_signal_fraction or n_peaks_promoter.",
+    "frac_local":
+        "DISTANCE ONLY. Fraction of signal in the 10-50 kb band from the "
+        "viewpoint. Says nothing about element class.",
+    "frac_distal":
+        "DISTANCE ONLY. Fraction of signal in the 50-250 kb RING (excludes "
+        ">250 kb, which is frac_far_distal). Says nothing about element class.",
+    "frac_far_distal":
+        "DISTANCE ONLY. Fraction of signal beyond 250 kb from the viewpoint.",
+    "distal_signal_density":
+        "Mean signal beyond 50 kb (a HALF-LINE, so it includes the far-distal "
+        "band, unlike frac_distal which is a ring). Amount-like, not "
+        "composition.",
+    "bait_pileup_fraction":
+        "Fraction of signal within 2 kb of the viewpoint. High values usually "
+        "mean the capture piled up at the bait rather than that the locus has "
+        "short-range architecture.",
+    "promoter_signal_fraction":
+        "Share of contact signal on peaks CLASSED as promoter by the ATAC-"
+        "intersected annotation. Note these are overwhelmingly OTHER genes' "
+        "promoters (94% lie >5 kb from this gene's own TSS, median 115 kb), so "
+        "high means 'contacts promoters', not 'has a strong own promoter'.",
+    "n_peaks_promoter":
+        "Count of promoter-classed peaks in the window, again mostly other "
+        "genes' promoters. The honest measure of promoter CONTENT.",
+}
+
 def _line(name: str) -> str:
+    if name in OVERRIDE:
+        return f"  {name}: {OVERRIDE[name]}"
     d = describe(name) or {}
     text = d.get("measures") or EXTRA.get(name)
     if not text:
@@ -154,13 +210,55 @@ def _line(name: str) -> str:
 
 
 def build(features: list[str]) -> str:
-    """The reference block injected into the prompt."""
+    """The reference block injected into the prompt.
+
+    THE HINTS ARE FILTERED AGAINST THE LIVE FEATURE SET. JOINT_HINTS and
+    PHRASE_HINTS are hand-written prose, so they outlive the substrate they were
+    written for: after the 2026-08-16 rebuild they still recommended
+    `max_distance_to_viewpoint_promoter`, which had just lost the correlation
+    prune to its `mean_` twin. The model dutifully asked for a feature that no
+    longer existed, the query layer dropped it, and "long-range promoter
+    contacts with lots of CTCF" degenerated to `max_mcc` ranked both high and
+    low. Any hint line naming a feature that is not in the store is now removed
+    before the prompt is built, so a stale hint costs a hint rather than a
+    nonsense query.
+    """
+    live = set(features)
+
+    def prune(block: str) -> tuple[str, list[str]]:
+        kept, dead = [], []
+        for ln in block.split("\n"):
+            names = re.findall(r"\b[a-z][a-z0-9]*(?:_[a-z0-9]+){2,}\b", ln)
+            missing = [n for n in names if n not in live and _looks_like_feature(n)]
+            if missing:
+                dead.extend(missing)
+                continue
+            kept.append(ln)
+        return "\n".join(kept), dead
+
+    joint, d1 = prune(JOINT_HINTS)
+    phrase, d2 = prune(PHRASE_HINTS)
+    if d1 or d2:
+        print(f"  [feature_reference] dropped {len(set(d1 + d2))} hint(s) naming "
+              f"features absent from the store: {sorted(set(d1 + d2))}")
+
     lines = "\n".join(_line(f) for f in sorted(features))
     return (
         "FEATURE REFERENCE. The query is built from these. Each is one measured "
         "quantity computed from the contact profile, so a feature filter asks for "
         "exactly the thing it names.\n\n"
-        f"{JOINT_HINTS}\n"
-        f"{PHRASE_HINTS}\n"
+        "Use ONLY names from the list below. If the quantity you want is not "
+        "there, say so in `unsupported` rather than substituting a loosely "
+        "related feature.\n\n"
+        f"{joint}\n"
+        f"{phrase}\n"
         f"All {len(features)} features, and what HIGH means:\n{lines}\n"
     )
+
+
+def _looks_like_feature(name: str) -> bool:
+    """Filter prose words out of the dead-name check."""
+    return any(k in name for k in (
+        "mcc", "peak", "oe_", "signal", "distance", "frac", "consensus",
+        "enrichment", "entropy", "band", "gap", "pairwise", "bait",
+    ))

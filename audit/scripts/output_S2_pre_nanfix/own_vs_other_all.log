@@ -1,0 +1,194 @@
+1835 genes, 9 measures
+  promoter    10056 peaks,   5.8% at the gene's own TSS (within 5 kb)
+  enhancer     9374 peaks,   6.0% at the gene's own TSS (within 5 kb)
+  ctcf         9673 peaks,   1.7% at the gene's own TSS (within 5 kb)
+  18 usable sets -> 162 tests
+
+========================================================================================
+SURVIVING BENJAMINI-HOCHBERG FDR 0.05 ACROSS ALL 162 TESTS
+========================================================================================
+set                           measure               n       d        p        q
+ChromHMM_bivalent             ctcf_total           46  +0.679   0.0005   0.0405
+Lambert_TF                    promoter_total      156  +0.309   0.0005   0.0270
+cd4_specific_immune           ctcf_other          819  -0.165   0.0005   0.0203
+Lambert_TF                    ctcf_total          156  -0.426   0.0005   0.0162
+Lambert_TF                    ctcf_other          156  -0.396   0.0005   0.0135
+Lambert_TF                    promoter_other      156  +0.268   0.0005   0.0116
+gene_desert_bottomQ_density   enhancer_total      456  +0.181   0.0005   0.0101
+gene_desert_bottomQ_density   enhancer_other      456  +0.206   0.0005   0.0090
+cd4_rna_top_quartile          ctcf_other          759  -0.152   0.0010   0.0090
+cd4_rna_top_quartile          promoter_total      759  +0.149   0.0010   0.0090
+ChromHMM_bivalent             promoter_total       46  -0.482   0.0010   0.0090
+ChromHMM_bivalent             promoter_other       46  -0.480   0.0010   0.0090
+cd4_specific_immune           ctcf_total          819  -0.155   0.0015   0.0090
+GWAS_total_topQ               promoter_other      508  -0.161   0.0030   0.0090
+GWAS_immune_any               promoter_other      732  -0.146   0.0030   0.0090
+GWAS_immune_hot               promoter_other      129  -0.255   0.0045   0.0090
+cd4_rna_top_quartile          ctcf_total          759  -0.136   0.0050   0.0090
+Eisenberg_HK                  promoter_other      633  +0.137   0.0060   0.0090
+phastCons_2kb_topQ            enhancer_own        415  -0.141   0.0085   0.0090
+DepMap_inferred_essential     enhancer_other      328  -0.153   0.0100   0.0090
+GWAS_immune_any               promoter_total      732  -0.114   0.0150   0.0090
+DepMap_curated_essential      ctcf_own            254  +0.164   0.0160   0.0090
+GWAS_immune_hot               promoter_total      129  -0.206   0.0210   0.0090
+gene_desert_bottomQ_density   promoter_other      456  -0.123   0.0220   0.0090
+phastCons_2kb_topQ            promoter_own        415  +0.130   0.0260   0.0090
+cd4_rna_top_quartile          promoter_own        759  +0.107   0.0265   0.0090
+bio_HK_k3                     enhancer_other      353  -0.123   0.0270   0.0090
+GWAS_immune_hot               enhancer_total      129  +0.205   0.0310   0.0090
+GWAS_total_topQ               enhancer_other      508  +0.113   0.0330   0.0090
+GWAS_immune_any               enhancer_other      732  +0.093   0.0365   0.0090
+bio_bulk_k3                   promoter_total     1065  -0.101   0.0365   0.0090
+cd4_specific_immune           promoter_other      819  +0.100   0.0375   0.0090
+bio_dev_TF_k3                 ctcf_other          303  -0.129   0.0400   0.0090
+GWAS_immune_any               enhancer_total      732  +0.097   0.0430   0.0090
+GWAS_total_topQ               enhancer_total      508  +0.108   0.0430   0.0090
+bio_dev_TF_k3                 promoter_own        303  +0.129   0.0435   0.0090
+bio_dev_TF_k3                 ctcf_total          303  -0.127   0.0440   0.0090
+gene_desert_bottomQ_density   promoter_total      456  -0.107   0.0470   0.0090
+bio_bulk_k3                   promoter_other     1065  -0.093   0.0550   0.0090
+GWAS_total_topQ               promoter_total      508  -0.104   0.0555   0.0090
+DepMap_curated_essential      enhancer_other      254  -0.129   0.0560   0.0090
+cd4_rna_top_quartile          promoter_other      759  +0.087   0.0595   0.0090
+DepMap_inferred_essential     enhancer_total      328  -0.115   0.0610   0.0090
+GWAS_immune_hot               enhancer_other      129  +0.175   0.0650   0.0090
+Eisenberg_HK                  enhancer_other      633  -0.090   0.0660   0.0090
+Eisenberg_HK                  promoter_total      633  +0.089   0.0700   0.0090
+bio_HK_k3                     promoter_other      353  +0.104   0.0890   0.0090
+Lambert_TF                    ctcf_own            156  -0.142   0.0920   0.0090
+bio_dev_TF_k3                 promoter_total      303  +0.105   0.0925   0.0090
+Roadmap_silenced              promoter_total       39  -0.276   0.0945   0.0090
+ChromHMM_bivalent             enhancer_other       46  -0.251   0.0945   0.0090
+cd4_specific_immune           promoter_total      819  +0.078   0.1000   0.0090
+bio_HK_k3                     promoter_own        353  -0.096   0.1015   0.0090
+bio_bulk_k3                   ctcf_other         1065  +0.076   0.1020   0.0090
+DepMap_inferred_essential     promoter_own        328  -0.096   0.1135   0.0090
+DepMap_inferred_essential     promoter_other      328  +0.093   0.1140   0.0090
+cd4_specific_immune           enhancer_own        819  +0.076   0.1205   0.0090
+Eisenberg_HK                  enhancer_total      633  -0.075   0.1230   0.0090
+bio_HK_k3                     enhancer_total      353  -0.090   0.1390   0.0090
+cd4_specific_immune           enhancer_total      819  +0.068   0.1405   0.0090
+gnomAD_pLI_topQ               ctcf_other          546  -0.075   0.1515   0.0090
+Eisenberg_HK                  promoter_own        633  -0.067   0.1570   0.0090
+GWAS_total_topQ               promoter_own        508  +0.074   0.1570   0.0090
+gene_desert_bottomQ_density   ctcf_other          456  -0.075   0.1630   0.0090
+Roadmap_silenced              promoter_other       39  -0.231   0.1645   0.0090
+DepMap_inferred_essential     ctcf_own            328  +0.082   0.1685   0.0090
+bio_bulk_k3                   enhancer_other     1065  +0.065   0.1695   0.0090
+gene_desert_bottomQ_density   ctcf_total          456  -0.071   0.1785   0.0090
+DepMap_curated_essential      enhancer_total      254  -0.093   0.1790   0.0090
+DepMap_inferred_essential     ctcf_total          328  +0.084   0.1815   0.0090
+bio_bulk_k3                   enhancer_total     1065  +0.062   0.1895   0.0090
+ChromHMM_bivalent             enhancer_total       46  -0.194   0.1965   0.0090
+Lambert_TF                    enhancer_other      156  +0.110   0.2020   0.0090
+bio_dev_TF_k3                 enhancer_own        303  -0.077   0.2200   0.0090
+DepMap_curated_essential      ctcf_total          254  +0.083   0.2225   0.0090
+ChromHMM_bivalent             ctcf_own             46  +0.190   0.2255   0.0090
+bio_bulk_k3                   ctcf_own           1065  -0.057   0.2310   0.0090
+gnomAD_pLI_topQ               ctcf_own            546  +0.057   0.2555   0.0090
+GWAS_immune_hot               enhancer_own        129  +0.103   0.2590   0.0090
+phastCons_2kb_topQ            promoter_total      415  +0.063   0.2600   0.0090
+DepMap_curated_essential      promoter_own        254  -0.075   0.2750   0.0090
+Roadmap_silenced              enhancer_total       39  +0.173   0.2875   0.0090
+bio_bulk_k3                   ctcf_total         1065  +0.049   0.2950   0.0090
+Roadmap_silenced              enhancer_other       39  +0.174   0.2955   0.0090
+Lambert_TF                    enhancer_total      156  +0.083   0.3160   0.0090
+Roadmap_silenced              ctcf_own             39  +0.170   0.3205   0.0090
+GWAS_immune_hot               ctcf_own            129  +0.090   0.3310   0.0090
+gnomAD_pLI_topQ               ctcf_total          546  -0.048   0.3455   0.0090
+phastCons_2kb_topQ            enhancer_total      415  -0.054   0.3490   0.0090
+DepMap_inferred_essential     ctcf_other          328  +0.054   0.3715   0.0090
+DepMap_curated_essential      promoter_other      254  +0.059   0.3805   0.0090
+GWAS_immune_any               promoter_own        732  +0.039   0.3990   0.0090
+bio_dev_TF_k3                 enhancer_other      303  +0.054   0.4050   0.0090
+bio_HK_k3                     ctcf_own            353  +0.047   0.4100   0.0090
+Lambert_TF                    promoter_own        156  +0.072   0.4135   0.0090
+bio_HK_k3                     ctcf_total          353  +0.047   0.4300   0.0090
+cd4_rna_top_quartile          enhancer_own        759  -0.036   0.4350   0.0090
+cd4_specific_immune           enhancer_other      819  +0.033   0.4865   0.0090
+ChromHMM_bivalent             promoter_own         46  -0.103   0.5010   0.0090
+dbSUPER_CD4_SE_TSS_pm50kb     promoter_other      158  -0.053   0.5085   0.0090
+bio_HK_k3                     promoter_total      353  +0.040   0.5130   0.0090
+cd4_rna_top_quartile          enhancer_total      759  -0.030   0.5190   0.0090
+phastCons_2kb_topQ            ctcf_own            415  +0.033   0.5430   0.0090
+Eisenberg_HK                  ctcf_own            633  -0.028   0.5480   0.0090
+GWAS_immune_any               enhancer_own        732  +0.028   0.5600   0.0090
+bio_HK_k3                     enhancer_own        353  +0.033   0.5665   0.0090
+cd4_specific_immune           promoter_own        819  -0.027   0.5685   0.0090
+GWAS_immune_any               ctcf_total          732  +0.027   0.5685   0.0090
+Roadmap_silenced              promoter_own         39  -0.096   0.5685   0.0090
+phastCons_2kb_topQ            ctcf_other          415  -0.032   0.5755   0.0090
+Roadmap_silenced              ctcf_total           39  +0.095   0.5760   0.0090
+GWAS_immune_any               ctcf_other          732  +0.026   0.5905   0.0090
+DepMap_inferred_essential     enhancer_own        328  +0.033   0.5905   0.0090
+GWAS_immune_hot               promoter_own        129  +0.046   0.5950   0.0090
+DepMap_inferred_essential     promoter_total      328  +0.029   0.6150   0.0090
+dbSUPER_CD4_SE_TSS_pm50kb     promoter_own        158  +0.043   0.6170   0.0090
+gnomAD_pLI_topQ               promoter_own        546  +0.025   0.6240   0.0090
+gnomAD_pLI_topQ               promoter_total      546  +0.025   0.6240   0.0090
+bio_HK_k3                     ctcf_other          353  +0.030   0.6265   0.0090
+Eisenberg_HK                  ctcf_total          633  -0.023   0.6320   0.0090
+dbSUPER_CD4_SE_TSS_pm50kb     ctcf_other          158  +0.037   0.6510   0.0090
+DepMap_curated_essential      enhancer_own        254  +0.031   0.6530   0.0090
+gnomAD_pLI_topQ               enhancer_total      546  +0.020   0.6770   0.0090
+bio_bulk_k3                   promoter_own       1065  -0.019   0.6880   0.0090
+bio_dev_TF_k3                 promoter_other      303  +0.024   0.6905   0.0090
+GWAS_immune_hot               ctcf_other          129  -0.036   0.6915   0.0090
+gnomAD_pLI_topQ               enhancer_other      546  +0.019   0.7050   0.0090
+Lambert_TF                    enhancer_own        156  -0.032   0.7100   0.0090
+cd4_rna_top_quartile          ctcf_own            759  +0.017   0.7140   0.0090
+phastCons_2kb_topQ            enhancer_other      415  +0.019   0.7330   0.0090
+phastCons_2kb_topQ            promoter_other      415  -0.020   0.7425   0.0090
+dbSUPER_CD4_SE_TSS_pm50kb     ctcf_own            158  -0.029   0.7445   0.0090
+GWAS_total_topQ               enhancer_own        508  +0.017   0.7540   0.0090
+dbSUPER_CD4_SE_TSS_pm50kb     ctcf_total          158  +0.024   0.7600   0.0090
+phastCons_2kb_topQ            ctcf_total          415  -0.017   0.7785   0.0090
+dbSUPER_CD4_SE_TSS_pm50kb     promoter_total      158  -0.024   0.7850   0.0090
+cd4_rna_top_quartile          enhancer_other      759  -0.013   0.7870   0.0090
+Eisenberg_HK                  ctcf_other          633  -0.013   0.7905   0.0090
+gene_desert_bottomQ_density   promoter_own        456  +0.011   0.8350   0.0090
+bio_bulk_k3                   enhancer_own       1065  +0.009   0.8390   0.0090
+gnomAD_pLI_topQ               promoter_other      546  +0.010   0.8405   0.0090
+DepMap_curated_essential      ctcf_other          254  +0.013   0.8490   0.0090
+bio_dev_TF_k3                 ctcf_own            303  -0.011   0.8550   0.0090
+ChromHMM_bivalent             enhancer_own         46  +0.027   0.8590   0.0090
+GWAS_immune_any               ctcf_own            732  +0.007   0.8780   0.0090
+Roadmap_silenced              ctcf_other           39  +0.025   0.8880   0.0090
+Eisenberg_HK                  enhancer_own        633  +0.008   0.8915   0.0090
+DepMap_curated_essential      promoter_total      254  +0.009   0.9020   0.0090
+bio_dev_TF_k3                 enhancer_total      303  +0.008   0.9025   0.0090
+dbSUPER_CD4_SE_TSS_pm50kb     enhancer_own        158  +0.011   0.9085   0.0090
+gnomAD_pLI_topQ               enhancer_own        546  +0.006   0.9155   0.0090
+GWAS_total_topQ               ctcf_other          508  +0.005   0.9275   0.0090
+Roadmap_silenced              enhancer_own         39  +0.012   0.9320   0.0090
+GWAS_total_topQ               ctcf_total          508  +0.004   0.9345   0.0090
+gene_desert_bottomQ_density   enhancer_own        456  -0.003   0.9580   0.0090
+GWAS_immune_hot               ctcf_total          129  +0.004   0.9670   0.0090
+dbSUPER_CD4_SE_TSS_pm50kb     enhancer_total      158  +0.003   0.9680   0.0090
+dbSUPER_CD4_SE_TSS_pm50kb     enhancer_other      158  -0.002   0.9750   0.0090
+cd4_specific_immune           ctcf_own            819  +0.000   0.9945   0.0090
+gene_desert_bottomQ_density   ctcf_own            456  -0.000   0.9955   0.0090
+GWAS_total_topQ               ctcf_own            508  -0.000   0.9975   0.0090
+
+========================================================================================
+THE PRE-SPECIFIED TEST, which does not owe multiplicity
+========================================================================================
+  Eisenberg_HK x promoter_other   d = +0.137  p = 0.0060  (BH q = 0.0090)
+  Its q is shown only for context. It was specified before this grid
+  was run, so the p stands on its own; the q answers the different
+  question of whether it would survive as a discovery FROM the grid.
+
+========================================================================================
+HOW MUCH OF THE GRID IS NOISE
+========================================================================================
+  tests run                : 162
+  nominally p < 0.05       : 39  (expected by chance 8.1)
+  surviving BH q < 0.05    : 161
+
+  own-TSS measures should be mostly null. If they are not, the split is
+  picking up viewpoint placement rather than biology:
+     promoter_own     3 of 18 sets nominal, 18 after correction
+     enhancer_own     1 of 18 sets nominal, 18 after correction
+     ctcf_own     1 of 18 sets nominal, 18 after correction
+
+wrote /home/imm/grte4643/Documents/DPhil/Data_Exploration/MCC/cd4_cleaned/mccprofiler-app/audit/scripts/output/own_vs_other_all.tsv

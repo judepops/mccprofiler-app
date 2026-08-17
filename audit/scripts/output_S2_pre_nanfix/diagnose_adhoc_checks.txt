@@ -1,0 +1,30 @@
+==============================================================================
+1. PANEL COVERAGE  (ceiling 70%, floor 25)
+==============================================================================
+   ChromHMM_active_TSS                 1619    88% of panel, rest = 227  EXCLUDED
+   DICE_top_TPM_quartile               1539    83% of panel, rest = 307  EXCLUDED
+   CpG_island_promoter                 1526    83% of panel, rest = 320  EXCLUDED
+   3 of 21 sets exceed the ceiling
+
+==============================================================================
+2. TAXONOMY ROBUSTNESS, DIRECT vs OUTPUT
+==============================================================================
+   baseline  DIRECT n=8 med 0.28 | OUTPUT n=8 med 0.14 | p = 0.0015
+   leave-one-out, worst case p = 0.0030
+   all arguable sets reassigned, p = 0.0002
+   random relabellings reaching the observed p: 0/2000 = 0.000
+
+==============================================================================
+3. LAMBERT DBD SPLIT: is the TF signal uniform across families?
+==============================================================================
+   Lambert_TF (all)      n= 156  |d| 0.46  p=0.0005
+     C2H2 ZF             n=  80  |d| 0.75  p=0.0005
+     non-C2H2            n=  76  |d| 0.25  p=0.5217
+
+==============================================================================
+4. chr19: a locus effect, or gene density wearing a chromosome label?
+==============================================================================
+   density: chr19 median 29.0 vs 11.0 elsewhere, d = +1.24
+   chr19 magnitude only           |d| 0.63  p=0.0005
+   chr19 magnitude + density      |d| 0.28  p=0.0005
+   chr19 density-decile stratified |d| 0.10  (retains 16%)

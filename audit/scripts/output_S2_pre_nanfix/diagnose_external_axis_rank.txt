@@ -1,0 +1,38 @@
+========================================================================================
+WHERE EACH SET FINDS ITS DISPLACEMENT, magnitude-corrected substrate
+========================================================================================
+set                                    n   axis    var%   trust       d        p
+Lambert_TF                           156   sPC1   11.1%     74%    0.46   0.0005
+gene_desert_bottomQ_density          456   sPC1   11.1%     74%   -0.71   0.0005
+GWAS_immune_hot                      130   sPC2   10.1%     76%    0.32   0.0005
+DICE_top_TPM_quartile               1539   sPC2   10.1%     76%    0.23   0.0005
+GWAS_total_topQ                      509   sPC2   10.1%     76%    0.24   0.0005
+GWAS_immune_any                      733   sPC2   10.1%     76%    0.20   0.0010
+Eisenberg_HK                         633   sPC3    7.8%     74%    0.11   0.0340
+Roadmap_silenced                      41   sPC3    7.8%     74%   -0.73   0.0005
+cd4_rna_top_quartile                 759   sPC3    7.8%     74%    0.15   0.0040
+ChromHMM_active_TSS                 1619   sPC3    7.8%     74%    0.29   0.0005
+ChromHMM_bivalent                     46   sPC4    5.5%     15%   -0.58   0.0005
+DepMap_inferred_essential            328   sPC7    3.6%     46%   -0.14   0.1709
+bio_HK_k3                            353   sPC7    3.6%     46%   -0.16   0.2799
+bio_bulk_k3                         1068  sPC10    3.1%     67%    0.12   0.0310
+gnomAD_pLI_topQ                      546  sPC10    3.1%     67%   -0.17   0.0005
+bio_dev_TF_k3                        303  sPC10    3.1%     67%   -0.24   0.0005
+DepMap_curated_essential             254  sPC11    2.9%     20%    0.12   0.2949
+dbSUPER_CD4_SE_TSS_pm50kb            158  sPC12    2.7%     43%   -0.16   0.1774  <-- SE
+cd4_specific_immune                  820  sPC14    2.4%     45%    0.14   0.0160
+CpG_island_promoter                 1526  sPC17    1.9%     62%   -0.18   0.0010
+phastCons_2kb_topQ                   415  sPC17    1.9%     62%   -0.16   0.0015
+
+Of the 17 sets that clear p < 0.05:
+  11 find their displacement in the top 4 components
+  median axis rank 3, median trust 74%
+Of the 4 that do not:
+  median axis rank 9, median trust 45%
+
+Super-enhancers: axis sPC12 (2.7% of variance, 43% trusted). Only 3 of 21 sets lean on a lower-ranked component.
+
+Rank correlation between significance and axis rank:
+  spearman(-log10 p, axis rank) = -0.53
+  Negative means: the more displaced a set is, the higher-variance the
+  component it displaces along. Sets with no architecture lean on noise.

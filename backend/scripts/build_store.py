@@ -197,6 +197,90 @@ def add_symbol_key(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def build_shape_embeddings(fm: pd.DataFrame, fnames: list[str], seed: int = 0):
+    """Amount-corrected coordinates. THIS IS THE DISPLAY DEFAULT.
+
+    Why this exists, added 2026-08-16. The app was plotting raw PCs while every
+    Aim 3 result was computed on the amount-corrected substrate, so the report
+    carried two coordinate systems and readers had to know which was which. That
+    is the same confusion behind the earlier sPC/PC mix-ups.
+
+    It also fixes a naming problem rather than papering over it. On the
+    73-feature substrate the raw PC1 correlates 0.505 with the magnitude basis
+    and PC3 correlates 0.519, so "amount" is smeared across two components and
+    neither can be honestly named. The app's default PC2xPC3 plane had been
+    chosen *because* PC1 was the amount axis, and that stopped being true.
+
+    Here magnitude is projected out first, so every component correlates 0.000
+    with it by construction and the axes are named for what they measure:
+
+        sPC1  reach            max_distance_to_viewpoint, mean_peak_gap
+        sPC2  enhancer vs promoter
+        sPC3  CTCF vs promoter
+        sPC4  spread vs bait-piled
+        sPC5  mid-range vs both extremes
+
+    The magnitude basis is MAG_OVERALL, imported rather than redefined so there
+    is one definition. It lists 11 features and resolves to 9 here, because
+    mean_degree and mean_degree_raw were dropped as degenerate on 2026-08-16;
+    the resolved basis is written to the `shape_basis` table for provenance.
+
+    Raw PCs remain available in `embeddings` / `pc_loadings` / `pc_scree` for
+    provenance and for the toggle, and `verify_store.py` still checks them.
+    """
+    import sys as _sys
+    _sys.path.insert(0, "/home/imm/grte4643/Documents/DPhil/Data_Exploration/MCC/"
+                        "cd4_cleaned/scripts_cleaned/audit/GW/scripts")
+    from _shape import MAG_OVERALL
+    from sklearn.decomposition import PCA
+
+    mag = [m for m in MAG_OVERALL if m in fnames]
+    keep = [f for f in fnames if f not in mag]
+    log(f"shape space: {len(keep)} features after removing a {len(mag)}-feature "
+        f"magnitude basis (MAG_OVERALL lists {len(MAG_OVERALL)})")
+
+    A = np.column_stack([np.ones(len(fm)), fm[mag].to_numpy(dtype=np.float64)])
+    X = fm[keep].to_numpy(dtype=np.float64)
+    beta, *_ = np.linalg.lstsq(A, X, rcond=None)
+    X = X - A @ beta
+    X = (X - X.mean(0)) / X.std(0)
+
+    pca = PCA(n_components=min(30, X.shape[1]), random_state=seed).fit(X)
+    scores = pca.transform(X)
+    var = pca.explained_variance_ratio_ * 100
+    log("shape variance %: " + ", ".join(f"sPC{i+1} {v:.2f}" for i, v in enumerate(var[:5])))
+
+    # Assert the correction actually worked. If any component still carries
+    # amount, the display would repeat the problem it was built to remove.
+    amount = fm[mag].to_numpy(dtype=np.float64)
+    amount = (amount - amount.mean(0)).mean(1)
+    worst = max(abs(float(np.corrcoef(scores[:, i], amount)[0, 1]))
+                for i in range(min(10, scores.shape[1])))
+    log(f"max |r| between any of the first 10 shape components and magnitude: {worst:.4f}")
+    if worst > 0.05:
+        raise RuntimeError(f"shape space still carries magnitude (|r| = {worst:.3f})")
+
+    rng_null = np.random.default_rng(seed)
+    Xn = X.copy()
+    for j in range(Xn.shape[1]):
+        rng_null.shuffle(Xn[:, j])
+    null_var = PCA(n_components=pca.n_components_, random_state=seed) \
+        .fit(Xn).explained_variance_ratio_ * 100
+    log(f"shape parallel analysis: {int((var > null_var).sum())} components above noise")
+
+    emb = pd.DataFrame({"gene_id": fm["gene_id"].astype(str).tolist()})
+    for i in range(scores.shape[1]):
+        emb[f"spc{i + 1}"] = scores[:, i]
+    load = pd.DataFrame([{"pc": i + 1, "feature": f, "loading": float(v)}
+                         for i in range(pca.components_.shape[0])
+                         for f, v in zip(keep, pca.components_[i])])
+    scree = pd.DataFrame({"pc": np.arange(1, len(var) + 1), "variance_pct": var,
+                          "cumulative_pct": np.cumsum(var), "noise_pct": null_var,
+                          "above_noise": var > null_var})
+    basis = pd.DataFrame({"feature": mag, "role": "magnitude_basis"})
+    return emb, load, scree, basis
+
+
 def build_embeddings(fm: pd.DataFrame, fnames: list[str], seed: int = 0
                      ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Per-gene 2D coordinates: PCA, gcPCA, UMAP, and a UMAP null.
@@ -411,8 +495,25 @@ def build_tables(gene_ids: list[str] | None, source_labels: list[str] | None) ->
         log(f"{name}: {len(df)} x {len(df.columns)}")
 
     # gene index -------------------------------------------------------------
+    # The taxonomy region is joined on here so every view can colour by it.
+    # `group` is KEPT unchanged for provenance and for joining back to the
+    # 2026-07-21 labels the audit outputs reference; it is no longer the display
+    # taxonomy, having been fit on the 91-feature substrate and named partly by
+    # Eisenberg overlap.
     if gene_ids is not None:
-        write("genes", build_genes(gene_ids, source_labels))
+        g = build_genes(gene_ids, source_labels)
+        tax_p = P.by_key("taxonomy_labels").path
+        if tax_p.exists():
+            tx = read_table(tax_p)[["gene_id", "region", "reach", "composition",
+                                    "top_weight", "mixedness"]]
+            g["gene_id"] = g["gene_id"].astype(str)
+            tx["gene_id"] = tx["gene_id"].astype(str)
+            before = len(g)
+            g = g.merge(tx, on="gene_id", how="left")
+            if len(g) != before:
+                raise SystemExit("taxonomy join changed the gene count")
+            log(f"genes: region attached, {int(g['region'].isna().sum())} without one")
+        write("genes", g)
 
     # named dimensions, the 08-03 reframe, kept in separate namespaces because
     # the two tables are keyed on PC index but computed in different feature
@@ -482,6 +583,25 @@ def build_tables(gene_ids: list[str] | None, source_labels: list[str] | None) ->
     write("embeddings", emb)
     write("pc_loadings", loadings)
     write("pc_scree", scree)
+
+    # reach x composition taxonomy -------------------------------------------
+    # Replaces the flat archetypes for display. Membership columns (w_*) are the
+    # point: every gene in the panel has a top weight below 0.5, so a hard label
+    # would assert a belonging the data does not support.
+    for key, name in (("taxonomy_labels", "taxonomy"),
+                      ("taxonomy_radar", "taxonomy_radar")):
+        pth = P.by_key(key).path
+        if pth.exists():
+            write(name, read_table(pth), pth)
+        else:
+            log(f"WARNING: {key} missing, taxonomy views will be unavailable")
+
+    # amount-corrected ("shape") embeddings, the DISPLAY DEFAULT ---------------
+    semb, sload, sscree, sbasis = build_shape_embeddings(fm, fnames)
+    write("shape_embeddings", semb)
+    write("shape_loadings", sload)
+    write("shape_scree", sscree)
+    write("shape_basis", sbasis)
 
     # reproducibility pairs (lab page) ---------------------------------------
     write("reproducibility_pairs", build_repro_pairs(fm, fnames))

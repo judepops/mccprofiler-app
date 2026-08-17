@@ -1,0 +1,36 @@
+63 features measured in both panels, 40 above rho 0.7
+
+PC       var%  coverage  trusted   top loading (rho)
+1      15.27%      58%      80%   mean_degree (0.75)
+2       9.47%      68%      82%   frac_far_distal (0.98)
+3       8.21%      63%      81%   promoter_signal_fraction (0.85)
+4       6.33%      47%      78%   enhancer_signal_fraction_raw (0.86)
+5       5.88%      72%      82%   mean_peak_gap_bp (0.82)
+6       4.29%      76%      56%   oe_tailedness_mean_all (0.66)
+7       3.59%      73%      51%   signal_profile_kurtosis (0.74)
+8       3.15%      80%      74%   peak_dominance_index (0.68)
+9       3.03%      85%      22%   oe_asymmetry_mean_all (0.27)
+10      2.87%      71%      59%   signal_entropy_distal (0.78)
+11      2.12%      87%      48%   oe_tailedness_mean_promoter (0.57)
+12      2.07%      77%      70%   local_to_distal_ratio (0.98)
+
+Across the 19 components above the noise ceiling:
+  weighted by variance, 67% of the retained structure rests on reproducible features
+
+  8 component(s) below 50% trusted, carrying 14.9% of variance:
+    PC9    3.03%  trusted 22%  top oe_asymmetry_mean_all (rho 0.27)
+    PC11   2.12%  trusted 48%  top oe_tailedness_mean_promoter (rho 0.57)
+    PC14   1.87%  trusted 24%  top oe_tailedness_mean_enhancer (rho 0.65)
+    PC15   1.71%  trusted 34%  top oe_asymmetry_mean_enhancer (rho 0.42)
+    PC16   1.69%  trusted 32%  top oe_tailedness_mean_ctcf (rho 0.68)
+    PC17   1.62%  trusted 26%  top oe_asymmetry_mean_promoter (rho 0.37)
+    PC18   1.49%  trusted 40%  top oe_asymmetry_mean_enhancer (rho 0.42)
+    PC19   1.38%  trusted 25%  top oe_asymmetry_mean_promoter (rho 0.37)
+
+Least reproducible features, which is where those components live:
+  0.274  oe_asymmetry_mean_all
+  0.317  distance_to_nearest_peak_bp
+  0.366  oe_asymmetry_mean_promoter
+  0.366  oe_asymmetry_mean_ctcf
+  0.421  oe_asymmetry_mean_enhancer
+  0.442  oe_local_enrichment_max_all

@@ -662,6 +662,80 @@ sets lean on a lower-ranked component. So the finding is not "weakly displaced".
 It is **no preferred direction anywhere in the well-measured part of the space**,
 with the strongest lean landing exactly where noise would put it.
 
+### NEW 2026-08-16: no feature combination rescues separation, and searching makes it worse
+
+The obvious objection to every null above is "you used the wrong features".
+`experiment_feature_search.py` answers it by letting an adversarial search pick
+the best possible combination for each set, and then asking what the same search
+achieves against **shuffled labels of the same size**. Separation is
+cross-validated AUC of a linear discriminant on the amount-corrected substrate,
+64 features after the 9-feature magnitude basis is regressed out.
+
+| search level | real | null | gap |
+|---|---|---|---|
+| all 64 features, no selection | 0.576 | 0.492 | **+0.084** |
+| best of 120 random subsets | 0.591 | 0.545 | +0.046 |
+| greedy forward selection, 12 steps | 0.625 | 0.581 | +0.044 |
+
+Read the null column first. On labels that carry no information, greedy
+selection climbs from 0.492 to **0.581**. The search manufactures **+0.089 of
+AUC out of noise**, which is twice the +0.044 that separates real labels from
+their own null at that level. Quoting "optimal feature selection reaches AUC
+0.625" without the permutation would have been reporting the search.
+
+**The gap is largest with no selection and shrinks as the search gets more
+aggressive.** Searching raises the real and null ceilings together and raises
+the null faster, so feature selection degrades the signal-to-artefact ratio
+here. The honest all-features baseline is the best discriminator available, not
+the worst. This is the empirical reason not to feature-select for the report.
+
+**Super-enhancers: greedy 0.630 against a null of 0.620, gap +0.010.** This is a
+stronger form of the null than the displacement test. It is not "we tested and
+found nothing" but "a search over 64 features, run specifically to separate SE,
+beat shuffled labels by one AUC point". The wrong-features objection is closed.
+
+Two sets clear +0.10 and neither is new information:
+
+- `gene_desert_bottomQ_density` +0.218 (AUC 0.811). Scores 0.806 with no
+  selection, so it needs no search. It is the positive control that collapses
+  under density stratification: it measures gene density, which contact
+  architecture genuinely sees.
+- `ChromHMM_bivalent` +0.107 at n=46. ChIP-derived, so partly chromatin
+  predicting chromatin, and its own null is already 0.683, which is where
+  small-set overfitting lives.
+
+**Reading trap.** `Roadmap_silenced` reaches greedy 0.732, which looks strong,
+against a null of 0.716: gap +0.016. The raw column is exactly what the null
+column exists to catch. Never quote a searched AUC without its permutation.
+
+**What is reportable, corrected 2026-08-16.** An earlier version of this section
+said nothing from this experiment could be quoted as an effect size. That is
+wrong and would have discarded the result the experiment exists to produce.
+
+- **The raw AUC is not reportable.** 0.630 alone is uninterpretable, because the
+  subset behind it was chosen to maximise it.
+- **The gap against the matched null IS reportable**, for a set specified in
+  advance. The null was produced by the identical selection procedure on the
+  identical set size, so the selection effect is present in both terms and
+  cancels. Super-enhancers were specified in advance, so **+0.010 is a
+  legitimate statistic**. Always state the null beside the gap, never the AUC
+  alone.
+- **One exception the framing must not lose: "the best set among 18" is
+  selected.** Each set's own null controls for feature selection but not for
+  testing 18 sets. A pre-specified set (SE, and the gene-desert positive
+  control) is clean. Nominating whichever set happened to top the table as a
+  finding is a multiplicity problem the per-set null does not touch, which is
+  the specific reason `ChromHMM_bivalent` at +0.107, n=46, null 0.683 must not
+  be promoted to a third positive control.
+
+**The calibration is the argument, and it is stronger than the effect size.**
+`gene_desert_bottomQ_density` reaches AUC 0.806 with *no* feature selection at
+all, so the procedure detects a genuinely separable set immediately, without
+searching. Super-enhancers reach 0.630 under maximum adversarial search against
+their own null of 0.620. The method finds separation where it exists and cannot
+find it for SE even when explicitly hunting. That is a calibrated null, which is
+what the displacement statistic on its own lacked.
+
 ### Three independent positive controls, on three different well-measured axes
 
 | set | defined by | n | axis | var | trust | d | p |
@@ -783,28 +857,83 @@ peak-level research programme.
 
 ---
 
-## 6. What the architecture groups are called, and the caveat
+## 6. The taxonomy: reach x composition, REPLACED 2026-08-16
 
-| canonical | display | top discriminating features |
+The five flat archetypes (`arch-HK` 844, `arch-ME-constitutive` 369,
+`arch-ME-effector` 351, `arch-sparse` 261, `arch-off` 21) are **retired for
+display**. They were fit by KMeans on the **91-feature** substrate on
+2026-07-21, and by the time they were retired they were wrong in three separate
+ways: the substrate no longer existed, one of the features that named the
+largest group (`mean_degree`) had been deleted as an algebraic artefact, and the
+cluster called "HK" was named by best Eisenberg Fisher p, which makes any later
+"enriched for housekeeping genes" claim circular. It was not even the most
+Eisenberg-enriched cluster (38.2% against `arch-ME-constitutive`'s 40.2%).
+
+They survive as `group` in the store for provenance and for joining back to
+audit outputs that reference them. Do not quote them.
+
+### What replaces them
+
+Two **orthogonal** levels, built on the amount-corrected substrate, named by
+architecture only, no external gene set anywhere:
+
+| | far-reaching (772) | mid-range (1,074) |
 |---|---|---|
-| `arch-HK` | dispersed | signal_entropy +1.25, empty_band_fraction -1.17, frac_far_distal +1.09 |
-| `arch-ME-constitutive` | promoter-local | promoter_signal_fraction_raw +1.13, n_peaks_promoter +0.93 |
-| `arch-ME-effector` | enhancer-focal | raw_peak_max_max_enhancer +1.03, signal_entropy -0.97 |
-| `arch-sparse` | sparse | n_high_consensus_peaks_075 -1.62, n_peaks_all -1.57 |
-| `arch-off` | empty (QC) | all CTCF descriptors at floor |
+| CTCF-dominated | 253 | - |
+| enhancer-dominated | 281 | 519 |
+| promoter-dominated | 238 | 555 |
 
-Sizes 844 / 369 / 351 / 261 / 21. Core (posterior >= 0.8): 1,040 of 1,846; mean
-max posterior 0.793; 44% of active genes are mixtures.
+**Level 1, reach.** 50-250 kb against >250 kb. This is sPC1.
+**Level 2, composition.** Which element class dominates. This is the sPC2/sPC3
+plane, and carries **1-4% of its variance on sPC1**, so it is genuinely
+independent of reach. That orthogonality is why no flat method found it: reach
+dominates the distance metric and swamps composition entirely.
 
-**`arch-HK` is not the housekeeping group**: Eisenberg-HK fraction 38.2% against
-`arch-ME-constitutive`'s 40.2%, and it has the lowest median blood expression of
-the three active groups (4.5 TPM vs 11.8 and 9.9).
+### The asymmetry is a finding, not an artefact
 
-**These names are provisional.** They were derived from *unadjusted* group means,
-and amount is now known to dominate the geometry. They must be re-derived on the
-amount-corrected substrate before use (Phase 0.2 in `PLAN_FORWARD.md`).
+A CTCF-dominated group exists **only among far-reaching genes**. k was chosen
+inside each half rather than forced symmetric:
 
----
+| half | k | smallest group | seed stability |
+|---|---|---|---|
+| mid-range | **2** | 519 | **0.998** |
+| mid-range | 3 | **4** | 0.796 |
+| far-reaching | 2 | 333 | 0.965 |
+| far-reaching | **3** | 238 | **0.950** |
+
+Forcing a third mid-range group yields four genes and collapses stability. That
+CTCF-dominated architecture is a far-reaching phenomenon is what CTCF biology
+predicts, since CTCF loops are long-range structural contacts, and it came out
+of the data rather than being imposed.
+
+### Reproducibility, which is the only thing licensing a partition at all
+
+Cross-capture ARI on the 116 twice-captured genes: **reach 0.741, composition
+0.616**. Seed stability **0.977**. The old kappa 0.72 figure belongs to the
+retired KMeans partition and does NOT transfer; do not quote it for this one.
+
+### These are areas of a continuum, and the membership statistic says so
+
+**99.7% of genes have a top membership below 0.5** (median 0.28, against 0.20
+for an even split over five regions). Genes are therefore stored and displayed
+as a **blend**, never a label. LCK, for example, is 27 / 22 / 20 / 18 / 14 across
+the five regions, mixedness 0.98. The old readout showed it a single archetype
+at p = 0.99.
+
+Leiden agrees with everything else: it returns a **single community** at every
+resolution below 0.4, and on the 116 twice-captured genes it finds no
+communities at all. That is a third and fourth independent confirmation of the
+continuum, after HDBSCAN (0 clusters, 16 conditions) and the gap statistic
+(still rising at k=8).
+
+**Method note.** Leiden was tried first for the assignment and rejected: 0.703
+agreement over 50 seeds. KMeans within each reach half reaches 0.977. Leiden is
+the better tool for *asking* whether communities exist and the worse one for
+assigning a stable label once you have decided to impose one.
+
+Built by `audit/scripts/build_taxonomy.py`. Plan and open items in
+`audit/PLAN_TAXONOMY.md`.
+
 
 ## 6b. NEW 2026-08-16: contact asymmetry is strand-dependent, and the feature destroys it
 
@@ -906,6 +1035,391 @@ as one.
 of 23, and a real CpG contrast instead of an 85% majority. This is the third
 independent argument for Aim 4 found this week, alongside n being thin for
 representation learning and three reference sets exceeding the coverage ceiling.
+
+---
+
+## 6d. NEW 2026-08-16: housekeeping genes put more of their contact signal on other genes' promoters
+
+`audit/scripts/diagnose_promoter_assembly.py`.
+
+**WHAT THIS IS NOT, corrected 2026-08-16.** An earlier version of this section
+presented the result as support for the promoter-assembly hypothesis. **It is
+not, and cannot be.** The measure is the share of a gene's contact signal landing
+on promoter-classed peaks. It is silent on **partner identity**: a gene
+contacting random neighbouring promoters and a gene assembled with specific
+partners score identically. Assembly is a pairwise property and every feature in
+this substrate is a per-gene summary, so no result in this section could bear on
+it whatever it returned. The assembly hypothesis is tested properly in **section
+6e**, with a different statistic, and is not supported there. Do not cite 6d as
+evidence for assemblies.
+
+What the result IS: a magnitude-, density-, length-, expression-, CpG- and
+chromosome-controlled difference in where housekeeping genes' contact signal
+falls. That is worth reporting on its own terms and is all it is.
+
+**A false start worth recording.** The initial suspicion was that
+`promoter_signal_fraction` conflates the gene's own TSS with other genes'
+promoters, and that the `Eisenberg_HK` null was therefore null on the wrong
+quantity. `aggregate.py` does apply no distance filter, so the conflation is real
+in the code. But it is **5.8%**: only 583 of 10,056 promoter-classed peaks lie
+within 5 kb of the gene's own TSS, median distance 115 kb, so the feature was
+already almost purely other-promoter signal. Note also that
+`frac_promoter_proximal` is not a promoter feature at all, it is the distance
+band `(0, 10_000)` in `config.py` (see `audit/FEATURE_NAMING.md`).
+
+**The real issue was confounding, not conflation.** A gene with more neighbours
+has more promoters available to contact, so this measure is a gene-density proxy
+by construction. `gene_desert` confirms it and calibrates the control:
+**d = -0.538 -> -0.005** once density is controlled.
+
+**The result.** `Eisenberg_HK`, other-promoter signal fraction, magnitude-
+residualised then progressively controlled:
+
+| control | d | p |
+|---|---|---|
+| magnitude (9-feature basis) | +0.177 | 0.0005 |
+| + gene density (and its square) | +0.138 | 0.0035 |
+| + gene length, expression, CpG | +0.136 | 0.0075 |
+| + chromosome dummies | +0.141 | 0.0040 |
+| excluding chr19 entirely | **+0.167** | **0.0010** |
+
+**It strengthens under the chromosome control rather than collapsing**, which is
+the opposite of `Lambert_TF` (0.46 -> 0.20 excluding chr19). chr19 is 7.1% of the
+HK set against 7.3% of the rest, so there is nothing there to inherit.
+
+**Four specificity controls, all of which had to hold and do:**
+
+| control | d (fully controlled) | p | why it matters |
+|---|---|---|---|
+| `prom_own` for HK | -0.067 | 0.17 | not "housekeeping genes have more contacts" |
+| `DepMap_curated_essential` | +0.048 | 0.46 | not essentiality |
+| `dbSUPER` SE | -0.082 | 0.31 | not the SE story |
+| `gene_desert` | -0.005 | 0.91 | the density control demonstrably works |
+
+The own-promoter null is the important one: the effect is specific to *other*
+genes' promoters, and is not what a generic "more contacts" story would produce.
+It says nothing about **which** other promoters, so it is still not an assembly
+result. See section 6e.
+
+### What this does and does not license
+
+- **It is displaced, not separated.** d = 0.136 to 0.167 leaves about **95%
+  overlap**. This is the same pattern as every other set in Section 4 and it
+  does **not** reinstate a categorical reading. It strengthens the thesis rather
+  than complicating it: categories are directions, and here is a direction with
+  a mechanism attached.
+- **`bio_HK_k3` is underpowered, not a replication and not a failure.** An
+  independent housekeeping definition gives +0.133 -> +0.099 under full control,
+  p = 0.083. Same sign, similar magnitude, n = 353 against 633. Do not report it
+  either way.
+- **The panel bias argues FOR this, not against.** The panel is 85% CpG-island
+  by ATAC-gated construction (Section 6c), so housekeeping genes are being
+  compared against a background that is largely housekeeping-like in promoter
+  class. Restriction of range attenuates, so surviving it is evidence.
+- **Pre-specified.** `Eisenberg_HK` x other-promoter was the planned test, so its
+  p stands without multiplicity correction. Nothing else in that table may be
+  promoted to a finding without one.
+- **Reconstruction caveat.** The split uses `peak_max` from `annotated.tsv`
+  rather than the pipeline's `oe_max`; the reconstructed total correlates with
+  the shipped `promoter_signal_fraction_raw` at **r = 0.959**. Treat the
+  own/other split as the result, not the absolute level.
+- **Not yet reproduced across captures.** This should be the first thing tested
+  on the held-back 791-gene immune panel.
+
+**Consequence for Section 4.** The `Eisenberg_HK` entry there is not simply a
+null. There is no *total* promoter effect worth reporting (d = +0.088, p = 0.066
+fully controlled), but there is an other-promoter effect underneath it. Both must
+be stated, because the total is what earlier drafts quoted.
+
+---
+
+## 6e. NEW 2026-08-16: no evidence that RONIN targets assemble with each other (and this is NOT evidence against)
+
+`diagnose_ronin_assortativity.py`, `diagnose_ronin_assortativity_controlled.py`.
+The promoter-assembly hypothesis, tested in a form that could actually detect it.
+
+**The paper is Dejosez et al., Cell Reports 2023**, doi
+10.1016/j.celrep.2023.112505. The wiki page
+`2023-Hwang-HousekeepingGeneArchitecture.md` gives the authors as Hwang, Monahan
+and Zakian; Crossref on that same DOI returns Dejosez M, Dall'Agnese A,
+Ramamoorthy M, Platt J, Yin X, Hogan M et al. **The CONTEXT.md discrepancy is
+resolved in favour of Dejosez, and the wiki is wrong** (fix is Mac-side).
+
+**Why every previous test was the wrong shape.** The claim is that housekeeping
+promoters cluster *with each other*: a claim about **partner identity**. Every
+feature in the substrate is a per-gene summary, so `promoter_other` returns the
+same number whether or not partner identity matters. The right statistic is
+pairwise: of the promoters a gene actually contacts, what share are themselves
+targets, against what the neighbourhood makes available.
+
+Targets built from ENCODE IDR peaks within 1 kb of an annotated TSS: THAP11
+HepG2 (ENCFF054TEP), HCFC1 GM12878 (ENCFF722QBB), HCFC1 HepG2 (ENCFF485SRU),
+ZNF143 K562 (ENCFF978YEJ), plus the intersection of all three.
+
+**The uncontrolled result is an 80% artefact.** Target genes contact target
+promoters +0.27 above neighbourhood availability, but **non-target genes do the
+same at +0.21**. Contact peaks preferentially land on active, accessible,
+CpG-island promoters, which are exactly the promoters THAP11 binds, so every
+gene's contacts look RONIN-enriched. Reading the raw `obs 0.848 vs exp 0.576` as
+assembly would have been a serious error, and it is the number that would have
+gone into a figure.
+
+**Two controls on the ~+0.05 residual.**
+
+| factor | A: activity-matched | A ctrl | A d | A p | B: within-contact | B ctrl | B d | B p |
+|---|---|---|---|---|---|---|---|---|
+| THAP11 HepG2 | +0.116 | +0.062 | +0.370 | 0.0005 | +0.037 | +0.010 | +0.103 | 0.54 |
+| HCFC1 HepG2 | +0.130 | +0.098 | +0.206 | 0.0010 | +0.032 | +0.023 | +0.035 | 0.62 |
+| HCFC1 GM12878 | +0.135 | +0.106 | +0.202 | 0.0035 | +0.033 | +0.009 | +0.094 | 0.26 |
+| ZNF143 K562 | +0.075 | +0.048 | +0.209 | 0.0010 | +0.032 | +0.010 | +0.080 | 0.38 |
+| RONIN module (all 3) | +0.077 | +0.051 | +0.211 | 0.0015 | +0.035 | +0.021 | +0.053 | 0.58 |
+
+**A survives 5/5; B fails 0/5**, and B is the control to believe. A still compares
+contacted against uncontacted promoters, so it stays exposed to whatever decides
+which promoters become peaks at all, and `annotated.tsv` peaks are
+ATAC-intersected by construction while THAP11 binds accessible CpG-island
+promoters. GTEx whole blood is only a partial proxy for accessibility, which is
+why **A's non-target control is still +0.05 to +0.11 after matching**: the
+matching is demonstrably incomplete. B never makes that comparison, since every
+promoter in it has already been called as a contact peak.
+
+**State it as: no evidence for assembly, NOT evidence against.** Control B's
+point estimates are small in absolute terms (+0.032 target against +0.009 to
++0.023 non-target), which is a stronger statement than a bare non-significant p
+at n = 978. But d = 0.10 with p = 0.54 does not exclude a small real effect, and
+the write-up must say so.
+
+**Two limits that are not resolved and are not worth resolving.** ENCODE binding
+is a proxy for the paper's functional target definition (motif + binding +
+expression effect), and none of HepG2 / GM12878 / K562 is CD4. The paper's own
+supplementary lists were deliberately **not** fetched: Control B's structure
+kills the claim for *any* target definition, because a different gene list does
+not change that the strength measure shows no partner preference among promoters
+that are already contacted.
+
+### The methodological result, which outlasts the null
+
+**The pairwise framing caught an 80% artefact that the per-gene feature framework
+structurally could not express.** `promoter_other` would have returned the same
+value whether or not partner identity mattered. That is the Phase A argument
+demonstrated rather than asserted: it is direct evidence that the unit of
+analysis has to change, and it belongs in the forward-programme section of the
+report. It is a better justification for the next phase than anything the project
+had before, and it came out of a negative result.
+
+---
+
+## 6f. NEW 2026-08-17: the membership softmax is uninformative at both ends, and it looks confident in both failure modes
+
+Found from a reader's question, not from a test: a gene with **79%** of its peak
+signal within 50 kb and **0%** beyond 250 kb was shown carrying **20%
+extended-enhancer** and **19% extended-ctcf**. That reads as a contradiction. It
+is not a bug in the weights; it is the softmax having almost no room to move, and
+the display presenting the floor as if it were a share.
+
+**The floor.** With K = 5 regions, a gene that resembles nothing in particular
+gets 20% everywhere. So 20% is not one fifth of the architecture, it is exactly
+no evidence, and anything below 20% is evidence *against*. Measured on all 1,846
+genes:
+
+| quantity | value |
+|---|---|
+| nearest-centroid distance, median | 7.29 |
+| furthest-centroid distance, median | 9.67 |
+| spread as a fraction of the nearest distance | 31% |
+| top weight, median | 28.3% (uniform 20.0%) |
+| top minus lowest weight, median | 15.1 pp |
+| TVD from uniform, median | 0.119 (0 = no information, 1 = a hard label) |
+| genes with their ENTIRE profile within 10 pp of uniform | **1,170 of 1,846 (63%)** |
+| genes reaching any weight >= 40% | **54 (3%)** |
+
+The cause is concentration of measure, not a bad temperature. In 77 dimensions
+every centroid sits at similar distance from every point, so `exp(-d^2/tau)`
+cannot separate them. Retuning tau trades one failure for the other; it cannot
+remove both. The gene that prompted the question has TVD 0.075, *below* the panel
+median, so its profile is less informative than typical.
+
+**The opposite failure, which is the dangerous one.** Because the weight squares
+the distance, a gene far from *every* centroid gets a confident-looking profile
+from a small relative gap. SACS sits 31.15 to 34.39 from the five centroids, a
+10% spread, but squared that is a gap of 212, and the softmax returns **62.9%**
+for the nearest region. SACS is not near contained-enhancer; it is the 99.8th
+percentile for distance from everything.
+
+This is systematic, not one gene:
+
+    spearman(nearest-centroid distance, top weight) = +0.315
+    pearson  (same)                                 = +0.436  <- inflated by the
+                                                     very outliers it describes;
+                                                     quote the Spearman
+    top weight, top distance decile:  median 32.6%   vs 27.9% for the rest
+    of the 54 genes reaching any weight >= 40%, 29 are in the top distance decile
+
+The last line is the cleanest statement because it does not depend on which
+correlation is used.
+
+**Bounded, though: it is a tail effect, not a gradient.** An earlier draft of this
+section said confidence was inversely proportional to evidence. That is wrong
+panel-wide and is withdrawn: `spearman(n_peaks, top_weight) = -0.072`, and top
+weight is flat across peak-count quintiles (28.9%, 28.6%, 28.1%, 27.9%, 28.3%).
+The effect is confined to a nine-gene tail.
+
+| peaks called | n | median top weight | median nearest distance |
+|---|---|---|---|
+| 0 | 3 | 48.7% | 35.71 |
+| 1-2 | 6 | 36.4% | 20.21 |
+| 3-5 | 22 | 31.7% | 10.54 |
+| whole panel | 1,846 | 28.3% | 7.29 |
+
+**Those nine genes are still described as though they were measured.** ASB9,
+PADI4 and TTPAL have ZERO called peaks and carry region labels
+(contained-enhancer, contained-enhancer, contained-promoter) with the three
+highest top weights in the panel. Six more have one or two peaks. All nine are
+counted in the region totals (6 contained-enhancer, 3 contained-promoter). The
+gene page correctly refuses to describe them, and every other surface counts
+them, which is an inconsistency rather than a safeguard.
+
+**SACS has one peak.** Its entire architecture description rests on it, so every
+class share is necessarily 0% or 100%. That is a second, independent cause of the
+2026-08-17 SACS episode: the misleading `frac_promoter_proximal` name was real,
+but even with a correct name the gene has no architecture to describe. Any future
+"clean example" pulled from a ranked list needs a peak-count floor.
+
+So **more than half of the confident-looking assignments come from a tenth of the
+panel selected for being unlike everything**, and they are precisely the genes a
+reader would pick out as clean examples. This inverts their meaning: the highest
+memberships in the panel are the least trustworthy.
+
+**What changed.** Nothing in the clustering, which is unaffected: assignment is
+`argmin` over distances and does not use the softmax. Only the *reporting* moved.
+`/api/genes/{g}/taxonomy` now serves a `flatness` block with the uniform floor,
+TVD, the nearest distance and its panel percentile, and two flags,
+`near_uniform` and `distance_inflated`. Weights are reported as signed
+deviations from the floor as well as shares, and the gene page draws them
+diverging from the floor rather than stacked. Discriminates correctly:
+
+| gene | nearest d | percentile | max deviation | verdict |
+|---|---|---|---|---|
+| SACS | 31.15 | p99.8 | 42.9 pp | distance-inflated |
+| GATA3 | 8.62 | p75.6 | 17.9 pp | informative |
+| BCCIP | 8.95 | p79.4 | 11.3 pp | informative |
+| LCK | 8.16 | p68.0 | 6.8 pp | flat |
+
+**For the report.** Do not quote a membership percentage for any single gene
+without its floor and its nearest distance. The defensible claims remain the
+population-level ones (cross-capture ARI 0.741 reach, 0.616 composition, seed
+stability 0.977); a per-gene membership is a coordinate with a large error bar,
+and for 63% of the panel it carries essentially no information at all. This is
+another instance of the pattern in section 0 and in the `frac_promoter_proximal`
+rename: a quantity that was correct as computed and wrong as displayed.
+
+Reproduce with the block at the end of this file, or read the measured constants
+in `main.py::gene_taxonomy` and `_nearest_distance_quantiles`.
+
+---
+
+## 6g. 2026-08-17: feature-set sensitivity, and why the first version of this section was wrong
+
+**Read the correction before the finding.** The first draft of this section
+claimed "the partition is not robust to the feature set" and called it the most
+important item of the day. Jude objected that fragility under feature removal may
+simply mean every feature carries non-redundant information, which is a property
+you work for rather than a defect. The objection was right, and three
+measurements from `audit/scripts/robustness_sweep.py` settle it against the
+original claim.
+
+**What the first version got wrong.**
+
+1. **It quoted one noisy draw as if it were an estimate.** Reach ARI at a
+   12-feature drop was reported as 0.403. A rerun with different draws gives
+   **0.589**, and the p10-p90 band is 0.201 to 0.839. The spread is wider than
+   the effect, so no single number should have been quoted, least of all the low
+   one.
+2. **It reported ARI only, which is the harsh metric for a k=2 split of a
+   continuum.** In permutation-matched label agreement, a 12-feature drop leaves
+   **88.4% of genes with the same reach label**. "ARI 0.403" and "88% of genes
+   unchanged" describe the same result and read completely differently.
+3. **It never tested the alternative explanation.** It went straight from
+   "sensitive" to "arbitrary" without asking whether the sensitivity was smooth.
+
+**Test 1, the drop-size sweep. This supports Jude, not the original claim.**
+
+| features dropped | reach ARI (median) | p10-p90 | reach agreement |
+|---|---|---|---|
+| 1 | 0.914 | 0.859-0.990 | 97.8% |
+| 3 | 0.907 | 0.756-0.939 | 97.6% |
+| 6 | 0.787 | 0.530-0.860 | 94.4% |
+| 12 | 0.589 | 0.201-0.839 | 88.4% |
+| 24 | 0.198 | 0.031-0.661 | 72.3% |
+| 38 (half) | 0.115 | 0.002-0.335 | 67.0% |
+
+Smooth and monotonic, with **no cliff at k=1**. Removing one feature costs 2% of
+labels; removing half costs 33%. That is what a substrate with information spread
+across its features looks like. If the partition were knife-edge, dropping a
+single feature would collapse it, and it does not. **This is evidence for the
+feature set, and the original section had it backwards.**
+
+**Test 2, the decisive one: cross-capture reproducibility, full substrate against
+random subsets of it.** Reproducibility on the 116 twice-captured genes is the
+only evidence licensing the regions, so the question is whether the engineered
+feature set earns its reproducibility or whether anything would do.
+
+| level | full 41 shared features | random 31-feature subsets (median, p10-p90) | subsets doing at least as well |
+|---|---|---|---|
+| reach (k=2) | ARI 0.682 | 0.653 (0.471-0.802) | 42% |
+| composition (k=3) | ARI 0.678 | 0.521 (0.305-0.683) | 12% |
+
+Two different answers, and both are informative.
+
+- **Reach is redundantly encoded, which is a strength.** Almost any subset
+  recovers it: the random median is 0.653 against the full set's 0.682. The right
+  reading is not "the full set is not special" but "**reach is so robust that many
+  feature subsets find it**". A direction that survives dropping a quarter of the
+  substrate at random is a real property of the data, not an artefact of feature
+  choice.
+- **Composition genuinely depends on the engineered features.** 0.678 against a
+  random median of 0.521, with only 12% of subsets matching it. The per-class and
+  O/E feature engineering is doing real work here, and this is the cleanest
+  quantitative defence of that work in the audit.
+
+**What survives, narrowly.** The reach and composition AXES are real and
+robustly recoverable. What moves under feature perturbation is the **gene-level
+boundary**: at a 12-feature drop, about 12% of genes change reach label. So a
+specific gene's region assignment carries more uncertainty than seed stability
+0.977 suggests, since that figure varies the optimiser and holds the substrate
+fixed. This is a per-gene caveat, not a population one, and it is already the
+app's framing: genes are blends, not labels, with 99.7% below a top weight of
+0.5. It reinforces the existing position rather than undermining it.
+
+**The population-level claims are untouched.** Cross-capture ARI, the region
+counts, and the continuum result (HDBSCAN zero clusters, unimodal dip tests, gap
+rising at k=8, Leiden one community below resolution 0.4) all stand.
+
+**One discrepancy to chase.** This script computes cross-capture ARI as 0.682
+reach / 0.678 composition against the recorded 0.741 / 0.616, on 41 shared
+features where `verify_store.py` asserts 63. The gap is a `dropna` on the pivoted
+`reproducibility_pairs` frame. Close enough not to change any conclusion, far
+enough apart that one of the two code paths is not what it is documented to be.
+Worth an hour before either number is printed in the report.
+
+**Method note for next time.** The failure here was reporting a single draw of a
+high-variance statistic under the harshest available metric, with no test of the
+competing explanation. The drop-size sweep costs two minutes and would have
+prevented the whole section.
+
+Reproduce: `/home/imm/grte4643/miniconda3/envs/cd4env/bin/python
+audit/scripts/robustness_sweep.py` (and `ablate_decay_features.py` for the decay
+question, which is separate and still stands: dropping the 12 decay-carrying
+class features destroys composition within the contained half, ARI 0.000 at
+p=0.05, so a high enhancer share is partly reporting that a gene's peaks are
+close).
+
+**Process item, unrelated to the above but found alongside it.**
+`audit/scripts/build_taxonomy.py` imports `_shape`, and that file was **absent
+from the app**, so the shipped taxonomy could not be rebuilt from the repo at all.
+Restored 2026-08-17 by copying `scripts_cleaned/audit/GW/scripts/_shape.py`
+(byte-identical to the ArchetypalAnalysis copy). Three copies now exist and it is
+still untracked; it should be an installed module, not a sibling file.
 
 ---
 

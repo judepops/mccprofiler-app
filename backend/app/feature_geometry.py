@@ -23,7 +23,7 @@ from __future__ import annotations
 # band is defined on |distance from viewpoint|.
 BANDS = {
     "bait": (0, 2_000),
-    "promoter_proximal": (0, 10_000),
+    "viewpoint_proximal": (0, 10_000),
     "local": (10_000, 50_000),
     "distal": (50_000, 250_000),
     "far_distal": (250_000, 1_000_000),
@@ -44,12 +44,12 @@ def _band(name: str, what: str, band: str) -> dict:
 # falls through to `describe()`'s honest default.
 GEOMETRY: dict[str, dict] = {
     # -- G2 spatial allocation: the clearest case, a band fraction -----------
-    "frac_promoter_proximal": _band(
-        "frac_promoter_proximal",
+    "frac_viewpoint_proximal": _band(
+        "frac_viewpoint_proximal",
         "Share of all contact signal falling within 10 kb of the viewpoint. High "
         "means bait-dominated, typical of silenced genes where almost everything "
         "sits at the viewpoint itself.",
-        "promoter_proximal",
+        "viewpoint_proximal",
     ),
     "frac_local": _band(
         "frac_local",

@@ -55,6 +55,8 @@ sequence: each assumes the previous correction is in place.
 | `diagnose_external_power` | minimum detectable effect, so a null is interpretable |
 | `diagnose_external_axis_rank` | which component each set leans on |
 | `diagnose_definition_type` | does the KIND of definition predict displacement |
+| `experiment_feature_search` | can ANY feature subset separate them, scored against permuted labels |
+| `diagnose_promoter_assembly` | splits promoter contacts into own-TSS vs other genes', tests the HK assembly hypothesis |
 
 `diagnose_external_structure.py` is the superseded version that ran on raw
 components. Kept for provenance, not for quoting.

@@ -1,0 +1,44 @@
+1846 genes, 64 amount-corrected features (9 magnitude features removed)
+
+18 sets within the size floor and coverage ceiling
+
+set                               all  rand best   greedy    NULL all  NULL rand NULL greedy    gap
+--------------------------------------------------------------------------------------------------
+ChromHMM_bivalent               0.676      0.733    0.790       0.459      0.630       0.683 +0.107  <--
+DepMap_curated_essential        0.577      0.602    0.636       0.504      0.537       0.588 +0.048
+DepMap_inferred_essential       0.556      0.571    0.613       0.484      0.538       0.569 +0.044
+Eisenberg_HK                    0.522      0.556    0.580       0.508      0.531       0.565 +0.014
+GWAS_immune_any                 0.578      0.590    0.604       0.520      0.558       0.585 +0.019
+GWAS_immune_hot                 0.586      0.669    0.703       0.591      0.600       0.647 +0.056
+GWAS_total_topQ                 0.598      0.620    0.647       0.484      0.534       0.551 +0.097
+Lambert_TF                      0.612      0.650    0.698       0.494      0.557       0.613 +0.084
+Roadmap_silenced                0.512      0.610    0.732       0.450      0.643       0.716 +0.016
+bio_HK_k3                       0.529      0.573    0.601       0.472      0.544       0.576 +0.025
+bio_bulk_k3                     0.543      0.570    0.589       0.490      0.535       0.556 +0.033
+bio_dev_TF_k3                   0.615      0.634    0.656       0.530      0.565       0.598 +0.058
+cd4_rna_top_quartile            0.551      0.588    0.607       0.491      0.529       0.540 +0.068
+cd4_specific_immune             0.520      0.552    0.578       0.512      0.546       0.578 +0.000
+dbSUPER_CD4_SE_TSS_pm50kb       0.552      0.586    0.630       0.530      0.564       0.620 +0.010
+gene_desert_bottomQ_density     0.806      0.807    0.811       0.540      0.568       0.593 +0.218  <--
+gnomAD_pLI_topQ                 0.577      0.593    0.621       0.490      0.523       0.557 +0.063
+phastCons_2kb_topQ              0.575      0.585    0.612       0.478      0.535       0.559 +0.053
+
+==================================================================================================
+WHAT THE SEARCH ITSELF MANUFACTURES
+==================================================================================================
+  using all features, no selection : real 0.576  null 0.492   gap +0.084
+  best of 120 random subsets  : real 0.591  null 0.545   gap +0.046
+  greedy forward selection         : real 0.625  null 0.581   gap +0.044
+
+  search inflation on NULL labels: 0.492 with no selection rises to 0.581 under greedy search.
+  That rise is entirely artefact. Any real result must clear it.
+
+==================================================================================================
+SETS WHERE THE SEARCH BEATS ITS OWN NULL BY MORE THAN 0.10 AUC
+==================================================================================================
+   gene_desert_bottomQ_density    greedy 0.811 vs null 0.593  gap +0.218  (n=456)
+   ChromHMM_bivalent              greedy 0.790 vs null 0.683  gap +0.107  (n=46)
+
+   super-enhancers: greedy 0.630 vs null 0.620, gap +0.010
+
+wrote /home/imm/grte4643/Documents/DPhil/Data_Exploration/MCC/cd4_cleaned/mccprofiler-app/audit/scripts/output/feature_search.tsv

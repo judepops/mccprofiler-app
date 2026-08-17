@@ -1,3 +1,4 @@
+import { inSpace, type Space } from './space'
 /**
  * All 1,846 genes as a scatter, with the selected gene highlighted.
  *
@@ -11,20 +12,28 @@
 import { useEffect, useRef, useState } from 'react'
 import { api, type Embedding, type PlaneLoadings } from './api'
 
+// Colour is the CURRENT taxonomy (region), not the superseded archetypes.
+// Far-reaching regions take the saturated tone of their element class and
+// mid-range the muted one, so the two levels are legible at once: hue is
+// composition, lightness is reach.
 const GROUP_COLOR: Record<string, string> = {
-  'arch-HK': '#3d6b91',
-  'arch-ME-constitutive': '#2b5070',
-  'arch-ME-effector': '#c2703d',
-  'arch-sparse': '#8badc9',
-  'arch-off': '#c3d6e4',
+  'extended-ctcf': '#4a7c59',
+  'extended-enhancer': '#c2703d',
+  'extended-promoter': '#2b5070',
+  'contained-ctcf': '#7fa98b',
+  'contained-enhancer': '#dba57f',
+  'contained-promoter': '#6d94b8',
 }
 
+// Legend for the CURRENT taxonomy. The old entries (dispersed / promoter-local
+// / enhancer-focal / sparse / empty) named the superseded archetypes and would
+// have kept a retired vocabulary on screen under new colours.
 const GROUP_DISPLAY: Record<string, string> = {
-  'arch-HK': 'dispersed',
-  'arch-ME-constitutive': 'promoter-local',
-  'arch-ME-effector': 'enhancer-focal',
-  'arch-sparse': 'sparse',
-  'arch-off': 'empty (QC)',
+  'contained-promoter': 'contained, promoter',
+  'contained-enhancer': 'contained, enhancer',
+  'extended-promoter': 'extended, promoter',
+  'extended-enhancer': 'extended, enhancer',
+  'extended-ctcf': 'extended, CTCF',
 }
 
 const PAD = { top: 12, right: 12, bottom: 46, left: 62 }
@@ -37,6 +46,8 @@ interface Props {
    *  silently reverted the first. */
   axes: [string, string]
   onAxisChange: (x: string, y: string) => void
+  /** Page-level coordinate space; the axis menus are filtered to it. */
+  space?: Space
   onPick?: (symbol: string) => void
   loading?: boolean
   error?: string | null
@@ -58,6 +69,7 @@ export function ContinuumMap({
   data,
   axes,
   onAxisChange,
+  space = 'corrected',
   onPick,
   loading,
   error,
@@ -133,7 +145,7 @@ export function ContinuumMap({
       const a = dimByConfidence ? 0.15 + 0.5 * (p.max_posterior ?? 0.5) : 0.5
       ctx.beginPath()
       ctx.arc(sx(p.x), sy(p.y), 2.1, 0, Math.PI * 2)
-      ctx.fillStyle = (GROUP_COLOR[p.group ?? ''] ?? '#8badc9') + Math.round(a * 255).toString(16).padStart(2, '0')
+      ctx.fillStyle = (GROUP_COLOR[p.region ?? p.group ?? ''] ?? '#8badc9') + Math.round(a * 255).toString(16).padStart(2, '0')
       ctx.fill()
     }
 
@@ -310,7 +322,38 @@ export function ContinuumMap({
     setHover(best ? { x: mx, y: my, label: best.gene_symbol } : null)
   }
 
-  const axisOptions = data.axes_available
+  // Only offer axes from the active space. Listing all 68 (both spaces) would
+  // let a viewer cross sPC1 with PC3, which is meaningless: the numbering does
+  // not correspond between spaces and the two are different decompositions.
+  // UMAP axes survive the filter because they belong to neither and are
+  // labelled separately.
+  // Only axes from the active space, and GROUPED, because the raw list is 30
+  // components per space and a flat menu of 30 is unusable. Only the first five
+  // carry interpretations; past that a component is a number, and offering them
+  // with equal prominence invites reading meaning into an axis that has none.
+  const inThisSpace = data.axes_available.filter((a: { key: string }) =>
+    inSpace(a.key, space),
+  )
+  const num = (k: string) => Number(k.replace(/^s?pc/, ''))
+  const isComp = (k: string) => /^s?pc\d+$/.test(k)
+  const AXIS_GROUPS: { label: string; opts: typeof inThisSpace }[] = [
+    {
+      label: 'Named axes',
+      opts: inThisSpace.filter((a) => isComp(a.key) && num(a.key) <= 5),
+    },
+    {
+      label: 'Higher components (unnamed)',
+      opts: inThisSpace.filter((a) => isComp(a.key) && num(a.key) > 5),
+    },
+    {
+      label: 'Nonlinear (see caveat)',
+      opts: inThisSpace.filter((a) => a.key.startsWith('umap')),
+    },
+    {
+      label: 'Other',
+      opts: inThisSpace.filter((a) => !isComp(a.key) && !a.key.startsWith('umap')),
+    },
+  ].filter((g) => g.opts.length > 0)
 
   return (
     <div className="rounded-lg border border-ink-200 bg-white p-4">
@@ -341,21 +384,36 @@ export function ContinuumMap({
           </label>
           <select
             value={axes[0]}
-            onChange={(e) => onAxisChange(e.target.value, axes[1])}
+            onChange={(e) => {
+              // Swap rather than duplicate; x == y is rejected by the API.
+              const v = e.target.value
+              onAxisChange(v, v === axes[1] ? axes[0] : axes[1])
+            }}
             className="rounded border border-ink-200 px-1.5 py-0.5"
           >
-            {axisOptions.map((a) => (
-              <option key={a.key} value={a.key}>{a.label}</option>
+            {AXIS_GROUPS.map((g) => (
+              <optgroup key={g.label} label={g.label}>
+                {g.opts.map((a) => (
+                  <option key={a.key} value={a.key}>{a.label}</option>
+                ))}
+              </optgroup>
             ))}
           </select>
           <span className="text-ink-400">×</span>
           <select
             value={axes[1]}
-            onChange={(e) => onAxisChange(axes[0], e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value
+              onAxisChange(v === axes[0] ? axes[1] : axes[0], v)
+            }}
             className="rounded border border-ink-200 px-1.5 py-0.5"
           >
-            {axisOptions.map((a) => (
-              <option key={a.key} value={a.key}>{a.label}</option>
+            {AXIS_GROUPS.map((g) => (
+              <optgroup key={g.label} label={g.label}>
+                {g.opts.map((a) => (
+                  <option key={a.key} value={a.key}>{a.label}</option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </div>
